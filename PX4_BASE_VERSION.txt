@@ -1,0 +1,14 @@
+PX4 Base Version: v1.16.0
+Commit: 6ea3539157ca358c70a515878b77077af7d4611d
+Date: 2025-08-05 14:54:48 -0800
+Description: This wheel_loader_robot project is based on PX4 Autopilot v1.16.0 release
+
+Cherry-pick Workflow:
+To cherry-pick updates from PX4 upstream:
+1. git fetch px4-upstream
+2. git cherry-pick <commit-hash>
+3. Resolve conflicts if any
+4. Test the changes
+
+Upstream Remote:
+- px4-upstream: https://github.com/PX4/PX4-Autopilot.git
