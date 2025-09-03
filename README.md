@@ -1,4 +1,21 @@
-# PX4 Drone Autopilot
+# Wheel Loader Robot Control System
+
+**An autonomous wheel loader robot system built on PX4 autopilot framework**
+
+This repository contains a specialized control system for autonomous wheel loader robots, based on the PX4 autopilot platform. The system provides comprehensive control capabilities for heavy-duty wheel loader operations including:
+
+- **Boom and Bucket Control**: Precise hydraulic actuator control for boom kinematics and bucket operations
+- **Autonomous Navigation**: Advanced path planning and obstacle avoidance for construction environments  
+- **Load Management**: Intelligent load detection, pickup, and placement algorithms
+- **Safety Systems**: Multi-layered safety monitoring with emergency stop capabilities
+- **Dual-Mode Operation**: Support for both manual operator control and fully autonomous operation
+- **Real-time Monitoring**: Telemetry and status reporting for remote monitoring and fleet management
+
+The system is designed for industrial applications in construction, mining, and material handling environments, providing reliable autonomous operation while maintaining the safety standards required for heavy equipment.
+
+---
+
+## Original PX4 Drone Autopilot
 
 [![Releases](https://img.shields.io/github/release/PX4/PX4-Autopilot.svg)](https://github.com/PX4/PX4-Autopilot/releases) [![DOI](https://zenodo.org/badge/22634/PX4/PX4-Autopilot.svg)](https://zenodo.org/badge/latestdoi/22634/PX4/PX4-Autopilot)
 
@@ -60,3 +77,47 @@ The PX4 Autopilot project including all of its trademarks is hosted under [Drone
 
 <a href="https://www.dronecode.org/" style="padding:20px" ><img src="https://dronecode.org/wp-content/uploads/sites/24/2020/08/dronecode_logo_default-1.png" alt="Dronecode Logo" width="110px"/></a>
 <div style="padding:10px">&nbsp;</div>
+
+---
+
+## Wheel Loader Robot Specific Features
+
+### Supported Hardware Configurations
+
+This wheel loader control system supports the following hardware configurations:
+
+- **CUAV X7Plus-WL**: Wheel loader variant with enhanced I/O for hydraulic control
+- **HKUST NXT-Dual-WL-Front**: Front-mounted control unit for dual-controller setups  
+- **HKUST NXT-Dual-WL-Rear**: Rear-mounted control unit for comprehensive vehicle control
+
+### Building for Wheel Loader Targets
+
+```bash
+# Build for CUAV X7Plus wheel loader variant
+make cuav_x7plus-wl_default
+
+# Build for HKUST NXT dual wheel loader configurations
+make hkust_nxt-dual-wl-front_default
+make hkust_nxt-dual-wl-rear_default
+```
+
+### Key Wheel Loader Modules
+
+- **Boom Control Module**: Advanced kinematic control for boom positioning
+- **Bucket Control Module**: Hydraulic control for bucket tilt and curl operations
+- **Load Detection**: Weight and load distribution sensing
+- **Safety Monitor**: Continuous monitoring of hydraulic pressure, temperature, and system status
+- **Autonomous Navigation**: GPS-based waypoint navigation with obstacle avoidance
+
+### Documentation
+
+Additional wheel loader specific documentation can be found in:
+- [Boom Kinematics Design](docs/BOOM_KINEMATICS_DESIGN.md)
+- [Bucket Control Design](docs/BUCKET_KINEMATICS_DESIGN.md) 
+- [VLA Dual Mode Robot](docs/VLA_Dual_Mode_Robot.md)
+- [Wheel Loader Robot Design](design/wheel_loader_robot_design.md)
+
+### Version Information
+
+Current wheel loader robot system version: **v0.1.0**
+Based on PX4 Autopilot framework with specialized wheel loader extensions.
