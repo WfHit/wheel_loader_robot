@@ -1,4 +1,4 @@
-# Robotic servo command message for smart servos like ST3125
+# Robotic servo setpoint message for smart servos like ST3125
 
 uint64 timestamp          # time since system start (microseconds)
 uint8 id                  # Servo ID (1-253)
@@ -11,7 +11,7 @@ float32 goal_current      # Target current limit (Amperes)
 
 # PID gains (optional, 0 = use servo defaults)
 uint16 position_p_gain    # Position P gain
-uint16 position_i_gain    # Position I gain  
+uint16 position_i_gain    # Position I gain
 uint16 position_d_gain    # Position D gain
 
 # Control flags

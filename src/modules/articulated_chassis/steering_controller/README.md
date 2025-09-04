@@ -45,12 +45,12 @@ The Steering Controller module provides steering control for articulated wheel l
 
 ### Subscriptions
 - `steering_setpoint`: Steering angle commands
-- `robotic_servo_feedback`: ST3125 servo feedback
+- `robotic_servo_status`: ST3125 servo status
 - `limit_sensor`: Position limit sensor data
 - `parameter_update`: Parameter updates
 
 ### Publications
-- `robotic_servo_command`: Commands to ST3125 servo
+- `robotic_servo_setpoint`: Commands to ST3125 servo
 
 ## Usage
 

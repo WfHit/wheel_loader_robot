@@ -163,18 +163,16 @@ void BoomControl::process_commands()
 		_last_command_time = hrt_absolute_time();
 
 		// Handle emergency stop
-		if (trajectory_setpoint.emergency_stop) {
+		if (trajectory_setpoint.control_mode == boom_trajectory_setpoint_s::MODE_EMERGENCY_STOP) {
 			handle_emergency_stop();
 			return;
 		}
 
-		// Check if trajectory is valid and enabled
-		if (!trajectory_setpoint.valid || !trajectory_setpoint.enable_trajectory) {
-			// If trajectory is not valid or disabled, hold current position
-			if (trajectory_setpoint.hold_position) {
-				_motion_controller.set_mode(BoomMotionController::ControlMode::POSITION);
-				_motion_controller.set_target_position(_current_boom_angle, 0.5f); // Conservative velocity
-			}
+		// Check if trajectory is valid and in trajectory mode
+		if (!trajectory_setpoint.valid || trajectory_setpoint.control_mode == boom_trajectory_setpoint_s::MODE_STOP) {
+			// If trajectory is not valid or in stop mode, hold current position
+			_motion_controller.set_mode(BoomMotionController::ControlMode::POSITION);
+			_motion_controller.set_target_position(_current_boom_angle, 0.5f); // Conservative velocity
 			return;
 		}
 

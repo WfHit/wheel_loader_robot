@@ -592,7 +592,7 @@ bool ST3215Servo::set_torque_enable(uint8_t servo_id, bool enable)
 
 void ST3215Servo::process_message()
 {
-	robotic_servo_command_s cmd;
+	robotic_servo_setpoint_s cmd;
 	if (_servo_command_sub.update(&cmd)) {
 		uint8_t servo_id = _param_servo_id.get();
 
@@ -757,7 +757,7 @@ void ST3215Servo::process_command_line()
 
 void ST3215Servo::publish_feedback()
 {
-	robotic_servo_feedback_s feedback{};
+	robotic_servo_status_s feedback{};
 	feedback.timestamp = hrt_absolute_time();
 	feedback.id = _param_servo_id.get();
 	feedback.position = _current_position;

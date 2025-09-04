@@ -50,8 +50,8 @@
 #include <uORB/Publication.hpp>
 #include <uORB/Subscription.hpp>
 #include <uORB/SubscriptionMultiArray.hpp>
-#include <uORB/topics/robotic_servo_command.h>
-#include <uORB/topics/robotic_servo_feedback.h>
+#include <uORB/topics/robotic_servo_setpoint.h>
+#include <uORB/topics/robotic_servo_status.h>
 #include <uORB/topics/limit_sensor.h>
 
 #include <poll.h>
@@ -125,8 +125,8 @@ private:
 	char _port_name[32];
 
 	// uORB topics
-	uORB::Subscription _servo_command_sub{ORB_ID(robotic_servo_command)};
-	uORB::Publication<robotic_servo_feedback_s> _servo_feedback_pub{ORB_ID(robotic_servo_feedback)};
+	uORB::Subscription _servo_command_sub{ORB_ID(robotic_servo_setpoint)};
+	uORB::Publication<robotic_servo_status_s> _servo_feedback_pub{ORB_ID(robotic_servo_status)};
 	uORB::SubscriptionMultiArray<limit_sensor_s, 4> _limit_sensor_sub{ORB_ID::limit_sensor};
 
 	// Performance counters

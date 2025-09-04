@@ -48,6 +48,7 @@ set(msg_files
 	Airspeed.msg
 	AirspeedWind.msg
 	AutotuneAttitudeControlStatus.msg
+	BoomStatus.msg
 	BoomTrajectorySetpoint.msg
 	BucketStatus.msg
 	BucketTrajectorySetpoint.msg
@@ -130,6 +131,7 @@ set(msg_files
 	LaunchDetectionStatus.msg
 	LedControl.msg
 	LimitSensor.msg
+	LoadLampCommand.msg
 	LoggerStatus.msg
 	LogMessage.msg
 	MagnetometerBiasEstimate.msg
@@ -187,6 +189,8 @@ set(msg_files
 	RoverSteeringSetpoint.msg
 	RoverThrottleSetpoint.msg
 	RoverVelocityStatus.msg
+	RoboticServoSetpoint.msg
+	RoboticServoStatus.msg
 	Rpm.msg
 	RtlStatus.msg
 	RtlTimeEstimate.msg

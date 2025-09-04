@@ -51,8 +51,8 @@
 #include <uORB/Subscription.hpp>
 #include <uORB/SubscriptionMultiArray.hpp>
 #include <uORB/topics/steering_setpoint.h>
-#include <uORB/topics/robotic_servo_command.h>
-#include <uORB/topics/robotic_servo_feedback.h>
+#include <uORB/topics/robotic_servo_setpoint.h>
+#include <uORB/topics/robotic_servo_status.h>
 #include <uORB/topics/limit_sensor.h>
 #include <uORB/topics/parameter_update.h>
 
@@ -96,12 +96,12 @@ private:
 
 	// uORB subscriptions
 	uORB::Subscription _steering_setpoint_sub{ORB_ID(steering_setpoint)};
-	uORB::Subscription _servo_feedback_sub{ORB_ID(robotic_servo_feedback)};
+	uORB::Subscription _servo_feedback_sub{ORB_ID(robotic_servo_status)};
 	uORB::SubscriptionMultiArray<limit_sensor_s> _limit_sensor_sub{ORB_ID::limit_sensor};
 	uORB::Subscription _parameter_update_sub{ORB_ID(parameter_update)};
 
 	// uORB publications
-	uORB::Publication<robotic_servo_command_s> _servo_command_pub{ORB_ID(robotic_servo_command)};
+	uORB::Publication<robotic_servo_setpoint_s> _servo_command_pub{ORB_ID(robotic_servo_setpoint)};
 
 	// State variables
 	float _target_angle_rad{0.0f};      ///< Target steering angle from setpoint

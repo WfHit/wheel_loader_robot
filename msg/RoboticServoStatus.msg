@@ -1,4 +1,4 @@
-# Feedback message for smart servos like ST3125
+# Status message for smart servos like ST3125
 
 uint64 timestamp          # time since system start (microseconds)
 uint8 id                  # Servo ID (ST3125 servo ID)

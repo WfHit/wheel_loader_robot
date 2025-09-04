@@ -147,7 +147,7 @@ void SteeringController::send_servo_command(float position_rad)
 		return;
 	}
 
-	robotic_servo_command_s cmd{};
+	robotic_servo_setpoint_s cmd{};
 	cmd.timestamp = hrt_absolute_time();
 	cmd.id = _st3125_servo_id.get();
 	cmd.command_type = 0; // position control
@@ -161,7 +161,7 @@ void SteeringController::send_servo_command(float position_rad)
 
 void SteeringController::process_servo_feedback()
 {
-	robotic_servo_feedback_s feedback;
+	robotic_servo_status_s feedback;
 
 	if (_servo_feedback_sub.update(&feedback)) {
 		if (feedback.id == _st3125_servo_id.get()) {
