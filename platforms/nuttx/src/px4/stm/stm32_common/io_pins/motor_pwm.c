@@ -107,10 +107,6 @@ int up_motor_pwm_set_duty_cycle(unsigned channel, float duty_cycle)
 	/* Store the duty cycle */
 	motor_pwm_duty_cycles[channel] = duty_cycle;
 
-	/* Get current CCR value and calculate period from it and current duty cycle */
-	uint16_t current_ccr = io_channel_get_ccr(channel);
-
-	/* If current duty cycle is 0, we can't calculate period this way */
 	/* Use a reasonable period value - this will be set properly by io_timer_set_pwm_rate */
 	uint32_t period = 1000;  /* Default period, will be corrected by rate setting */
 
