@@ -48,6 +48,8 @@ set(msg_files
 	Airspeed.msg
 	AirspeedWind.msg
 	AutotuneAttitudeControlStatus.msg
+	BoomTrajectorySetpoint.msg
+	BucketTrajectorySetpoint.msg
 	ButtonEvent.msg
 	CameraCapture.msg
 	CameraStatus.msg
@@ -111,6 +113,7 @@ set(msg_files
 	GpsInjectData.msg
 	Gripper.msg
 	HealthReport.msg
+	HbridgeSetpoint.msg
 	HeaterStatus.msg
 	HoverThrustEstimate.msg
 	InputRc.msg
@@ -232,6 +235,7 @@ set(msg_files
 	VehicleThrustSetpoint.msg
 	VehicleTorqueSetpoint.msg
 	VelocityLimits.msg
+	VlaTrajectorySetpoint.msg
 	WheelEncoders.msg
 	Wind.msg
 	YawEstimatorStatus.msg
