@@ -31,15 +31,8 @@
 #
 ############################################################################
 
-px4_add_module(
-	MODULE modules__safety_manager
-	MAIN safety_manager
-	STACK_MAIN 2048
-	SRCS
-		SafetyManager.cpp
-		safety_manager_main.cpp
-	DEPENDS
-		mathlib
-	MODULE_CONFIG
-		module.yaml
-)
+# Trajectory Followers - Parent module for trajectory following components
+
+add_subdirectory(chassis_trajectory_follower)
+add_subdirectory(end_effector_trajectory_follower)
+

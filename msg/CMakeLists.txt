@@ -58,6 +58,8 @@ set(msg_files
 	CameraTrigger.msg
 	CanInterfaceStatus.msg
 	CellularStatus.msg
+	ChassisStatus.msg
+	ChassisTrajectorySetpoint.msg
 	CollisionConstraints.msg
 	ControlAllocatorStatus.msg
 	Cpuload.msg
@@ -146,6 +148,7 @@ set(msg_files
 	MountOrientation.msg
 	NavigatorMissionItem.msg
 	NavigatorStatus.msg
+	NavLampCommand.msg
 	NormalizedUnsignedSetpoint.msg
 	NpfgStatus.msg
 	ObstacleDistance.msg
@@ -155,6 +158,7 @@ set(msg_files
 	OpenDroneIdOperatorId.msg
 	OpenDroneIdSelfId.msg
 	OpenDroneIdSystem.msg
+	OperationModeCommand.msg
 	OrbitStatus.msg
 	OrbTest.msg
 	OrbTestLarge.msg

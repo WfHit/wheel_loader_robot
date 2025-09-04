@@ -29,11 +29,4 @@ config ARTICULATED_CHASSIS_TRACTION_CONTROL
 		Advanced traction control for articulated wheel loader
 		with slip estimation and dynamic torque distribution for mining operations.
 
-config ARTICULATED_CHASSIS_CHASSIS_CONTROLLER
-	bool "Enable main chassis controller"
-	default y
-	help
-		Main coordinator module for the articulated chassis system.
-		Integrates all subsystems and provides unified control interface.
-
 endif # MODULES_ARTICULATED_CHASSIS

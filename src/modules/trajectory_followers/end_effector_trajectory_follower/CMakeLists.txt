@@ -41,12 +41,11 @@ px4_add_module(
 		end_effector_trajectory_follower_main.cpp
 		end_effector_trajectory_follower.cpp
 	DEPENDS
-		lib_mathlib
-		lib_matrix
-		lib_pid
-		lib_perf
-		lib_hysteresis
-		lib_conversion
+		mathlib
+		PID
+		perf
+		hysteresis
+		conversion
 		px4_work_queue
 	MODULE_CONFIG
 		module.yaml

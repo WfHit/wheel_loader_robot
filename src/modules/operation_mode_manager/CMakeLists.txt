@@ -43,12 +43,11 @@ px4_add_module(
 		modes/vla_mode/vla_mode.cpp
 		modes/vla_mode/vla_trajectory_decomposer.cpp
 	DEPENDS
-		lib_mathlib
-		lib_matrix
-		lib_pid
-		lib_perf
-		lib_hysteresis
-		lib_conversion
+		mathlib
+		PID
+		perf
+		hysteresis
+		conversion
 		px4_work_queue
 	MODULE_CONFIG
 		module.yaml

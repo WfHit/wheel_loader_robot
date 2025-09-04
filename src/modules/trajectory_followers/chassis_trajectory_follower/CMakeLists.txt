@@ -42,11 +42,11 @@ px4_add_module(
 		chassis_trajectory_follower.cpp
 		chassis_mpc_controller.cpp
 	DEPENDS
-		lib_mathlib
-		lib_matrix
-		lib_perf
-		lib_hysteresis
-		lib_conversion
+		mathlib
+		PID
+		perf
+		hysteresis
+		conversion
 		px4_work_queue
 	MODULE_CONFIG
 		module.yaml

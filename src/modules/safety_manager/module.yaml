@@ -1,9 +1,4 @@
 module_name: Safety Manager
-serial_config:
-    - command: safety_manager start
-      port_config_param:
-        name: SM_SER_CFG
-        group: Safety Manager
 
 parameters:
     - group: Safety Manager
@@ -32,7 +27,7 @@ parameters:
             default: 3.0
             decimal: 1
 
-        SM_MAX_STEER_ANGLE:
+        SM_MAX_STR_ANG:
             description:
                 short: Maximum steering angle
                 long: |
@@ -44,7 +39,7 @@ parameters:
             default: 0.785
             decimal: 3
 
-        SM_MAX_STEER_RATE:
+        SM_MAX_STR_RATE:
             description:
                 short: Maximum steering rate
                 long: |
@@ -56,7 +51,7 @@ parameters:
             default: 0.524
             decimal: 3
 
-        SM_MAX_ROLL_ANGLE:
+        SM_MAX_ROLL:
             description:
                 short: Maximum roll angle
                 long: |
@@ -68,7 +63,7 @@ parameters:
             default: 0.349
             decimal: 3
 
-        SM_MAX_PITCH_ANGLE:
+        SM_MAX_PITCH:
             description:
                 short: Maximum pitch angle
                 long: |
@@ -92,7 +87,7 @@ parameters:
             default: 8000
             decimal: 0
 
-        SM_MAX_CG_OFFSET:
+        SM_MAX_CG_OFF:
             description:
                 short: Maximum CG offset
                 long: |
@@ -128,7 +123,7 @@ parameters:
             default: 1.0
             decimal: 2
 
-        SM_SENSOR_TIMEOUT:
+        SM_SENS_TIMEOUT:
             description:
                 short: Sensor timeout
                 long: |
@@ -140,7 +135,7 @@ parameters:
             default: 0.5
             decimal: 2
 
-        SM_EMERGENCY_DECEL:
+        SM_EMRG_DECEL:
             description:
                 short: Emergency deceleration rate
                 long: |
@@ -152,7 +147,7 @@ parameters:
             default: 5.0
             decimal: 1
 
-        SM_STABILITY_MARGIN:
+        SM_STAB_MARGIN:
             description:
                 short: Stability margin factor
                 long: |
@@ -163,7 +158,7 @@ parameters:
             default: 1.5
             decimal: 2
 
-        SM_RISK_THRESHOLD:
+        SM_RISK_THRESH:
             description:
                 short: Risk assessment threshold
                 long: |
@@ -174,28 +169,22 @@ parameters:
             default: 0.7
             decimal: 2
 
-        SM_ENABLE_OVERRIDE:
+        SM_EN_OVERRIDE:
             description:
                 short: Enable safety override
                 long: |
                     Enable manual safety override capability.
-            type: bool
-            default: true
+            type: int32
+            min: 0
+            max: 1
+            default: 1
 
-        SM_AUTO_RECOVERY:
+        SM_AUTO_RECOV:
             description:
                 short: Enable auto recovery
                 long: |
                     Enable automatic recovery from safety events.
-            type: bool
-            default: false
-
-        SM_SER_CFG:
-            description:
-                short: Serial Configuration for Safety Manager
-                long: |
-                    Configure on which serial port to run Safety Manager.
             type: int32
             min: 0
-            max: 6
+            max: 1
             default: 0

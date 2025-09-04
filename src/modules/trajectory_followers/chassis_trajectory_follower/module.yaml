@@ -1,9 +1,4 @@
 module_name: Chassis Trajectory Follower
-serial_config:
-  - command: chassis_trajectory_follower start
-    port_config_param:
-      name: TEL_FRSKY_CONFIG
-      group: Radio Switches
 
 parameters:
     - group: Chassis Trajectory Follower
