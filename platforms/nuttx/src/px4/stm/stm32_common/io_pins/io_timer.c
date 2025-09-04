@@ -54,6 +54,7 @@
 
 #include <arch/board/board.h>
 #include <drivers/drv_pwm_output.h>
+#include <drivers/drv_motor_pwm.h>
 
 #include <px4_arch/io_timer.h>
 #include <px4_arch/dshot.h>
@@ -155,8 +156,8 @@ static int io_timer_handler7(int irq, void *context, void *arg);
 /* The transfer is done to 4 registers starting from TIMx_CR1 + TIMx_DCR.DBA  */
 #define TIM_DMABURSTLENGTH_4TRANSFERS   0x00000300U
 
-//                                                                NotUsed   PWMOut  PWMIn Capture OneShot Trigger Dshot LED PPS Other
-io_timer_channel_allocation_t channel_allocations[IOTimerChanModeSize] = { UINT16_MAX,   0,  0,  0, 0, 0, 0, 0, 0, 0 };
+//                                                                    NotUsed   PWMOut  PWMIn Capture OneShot Trigger Dshot LED PPS RPM Other DshotInv CaptureDMA
+io_timer_channel_allocation_t channel_allocations[IOTimerChanModeSize] = { UINT16_MAX,   0,    0,     0,      0,       0,    0,   0,  0,  0,   0,     0,      0 };
 
 typedef uint8_t io_timer_allocation_t; /* big enough to hold MAX_IO_TIMERS */
 
@@ -806,7 +807,8 @@ int io_timer_init_timer(unsigned timer, io_timer_channel_mode_t mode)
 int io_timer_set_pwm_rate(unsigned timer, unsigned rate)
 {
 	/* Change only a timer that is owned by pwm or one shot */
-	if (timer_allocations[timer] != IOTimerChanMode_PWMOut && timer_allocations[timer] != IOTimerChanMode_OneShot) {
+	if (timer_allocations[timer] != IOTimerChanMode_PWMOut &&
+	    timer_allocations[timer] != IOTimerChanMode_OneShot) {
 		return -EINVAL;
 	}
 

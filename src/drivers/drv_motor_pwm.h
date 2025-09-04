@@ -73,7 +73,7 @@ __BEGIN_DECLS
 
 /**
  * Initialize motor PWM outputs using the specified configuration.
- * Uses the same io_timer infrastructure as PWM servo but with IOTimerChanMode_MotorPWM
+ * Uses the same io_timer infrastructure as PWM servo but with IOTimerChanMode_PWMOut
  *
  * @param channel_mask	Bitmask of channels (LSB = channel 0) to enable.
  * @return		<0 on error, the initialized channels mask on success.
