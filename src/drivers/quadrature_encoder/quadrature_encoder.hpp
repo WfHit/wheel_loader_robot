@@ -39,7 +39,7 @@
 #include <px4_platform_common/px4_config.h>
 #include <drivers/drv_hrt.h>
 #include <uORB/topics/sensor_quad_encoder.h>
-#include <uORB/topics/quad_encoder_reset.h>
+#include <uORB/topics/sensor_quad_encoder_reset.h>
 #include <uORB/topics/parameter_update.h>
 #include <uORB/Subscription.hpp>
 #include <lib/perf/perf_counter.h>
@@ -117,7 +117,7 @@ private:
 
     // === uORB Communication ===
     orb_advert_t _pub_handle{nullptr};                                    // Multi-instance publication handle
-    uORB::Subscription _reset_sub{ORB_ID(quad_encoder_reset)};           // Position reset events
+    uORB::Subscription _reset_sub{ORB_ID(sensor_quad_encoder_reset)};           // Position reset events
     uORB::Subscription _parameter_update_sub{ORB_ID(parameter_update)};  // Parameter update notifications
 
     // === Performance Monitoring ===

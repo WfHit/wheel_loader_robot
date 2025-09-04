@@ -50,7 +50,7 @@
 #include <lib/perf/perf_counter.h>
 #include <parameters/param.h>
 #include <uORB/topics/sensor_quad_encoder.h>
-#include <uORB/topics/quad_encoder_reset.h>
+#include <uORB/topics/sensor_quad_encoder_reset.h>
 #include <uORB/topics/parameter_update.h>
 #include <px4_arch/quad_encoder.h>
 #include <px4_arch/board_encoder.h>
@@ -352,7 +352,7 @@ void QuadratureEncoder::handle_reset_events()
 {
     // Check for reset events (only regular instances handle resets)
     if (_instance != MANAGER_INSTANCE && _reset_sub.updated()) {
-        quad_encoder_reset_s reset_msg;
+        sensor_quad_encoder_reset_s reset_msg;
         if (_reset_sub.copy(&reset_msg) && reset_msg.instance == _instance) {
             reset_position();
             PX4_INFO("Encoder %d position reset via uORB event", _instance);

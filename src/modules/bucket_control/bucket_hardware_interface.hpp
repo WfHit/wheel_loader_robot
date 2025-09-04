@@ -47,7 +47,7 @@
 #include <uORB/topics/sensor_quad_encoder.h>
 #include <uORB/topics/sensor_mag_encoder.h>
 #include <uORB/topics/limit_sensor.h>
-#include <uORB/topics/quad_encoder_reset.h>
+#include <uORB/topics/sensor_quad_encoder_reset.h>
 
 /**
  * @brief Abstracts all hardware interactions for bucket control
@@ -184,7 +184,7 @@ private:
 
 	// uORB publications
 	uORB::PublicationMulti<hbridge_setpoint_s> _hbridge_command_pub{ORB_ID(hbridge_setpoint)};
-	uORB::Publication<quad_encoder_reset_s> _encoder_reset_pub{ORB_ID(quad_encoder_reset)};
+	uORB::Publication<sensor_quad_encoder_reset_s> _encoder_reset_pub{ORB_ID(sensor_quad_encoder_reset)};
 
 	// Timeout constants
 	static constexpr hrt_abstime SENSOR_TIMEOUT_US = 100000;      // 100ms

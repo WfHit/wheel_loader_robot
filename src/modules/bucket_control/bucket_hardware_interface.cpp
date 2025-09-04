@@ -333,7 +333,7 @@ void BucketHardwareInterface::emergency_stop()
 
 bool BucketHardwareInterface::reset_encoder()
 {
-	quad_encoder_reset_s reset_cmd{};
+	sensor_quad_encoder_reset_s reset_cmd{};
 	reset_cmd.timestamp = hrt_absolute_time();
 	reset_cmd.instance = _encoder_index;
 

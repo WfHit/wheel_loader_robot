@@ -49,6 +49,7 @@ set(msg_files
 	AirspeedWind.msg
 	AutotuneAttitudeControlStatus.msg
 	BoomTrajectorySetpoint.msg
+	BucketStatus.msg
 	BucketTrajectorySetpoint.msg
 	ButtonEvent.msg
 	CameraCapture.msg
@@ -114,6 +115,7 @@ set(msg_files
 	Gripper.msg
 	HealthReport.msg
 	HbridgeSetpoint.msg
+	HbridgeStatus.msg
 	HeaterStatus.msg
 	HoverThrustEstimate.msg
 	InputRc.msg
@@ -127,6 +129,7 @@ set(msg_files
 	LandingTargetPose.msg
 	LaunchDetectionStatus.msg
 	LedControl.msg
+	LimitSensor.msg
 	LoggerStatus.msg
 	LogMessage.msg
 	MagnetometerBiasEstimate.msg
@@ -200,8 +203,11 @@ set(msg_files
 	SensorGyroFifo.msg
 	SensorHygrometer.msg
 	SensorMag.msg
+	SensorMagEncoder.msg
 	SensorOpticalFlow.msg
 	SensorPreflightMag.msg
+	SensorQuadEncoder.msg
+	SensorQuadEncoderReset.msg
 	SensorSelection.msg
 	SensorsStatus.msg
 	SensorsStatusImu.msg

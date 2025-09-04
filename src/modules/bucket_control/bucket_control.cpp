@@ -182,7 +182,7 @@ void BucketControl::process_commands()
 	auto state_info = _state_manager->get_state_info();
 
 	// Handle emergency stop first
-	if (setpoint.emergency_stop || setpoint.control_mode == bucket_trajectory_setpoint_s::MODE_EMERGENCY_STOP) {
+	if (setpoint.control_mode == bucket_trajectory_setpoint_s::MODE_EMERGENCY_STOP) {
 		_state_manager->trigger_emergency_stop("Command emergency stop");
 		return;
 	}
@@ -230,7 +230,7 @@ void BucketControl::process_commands()
 
 		case bucket_trajectory_setpoint_s::MODE_TRAJECTORY:
 			// World frame trajectory following
-			if (setpoint.valid && setpoint.enable_trajectory) {
+			if (setpoint.valid) {
 				// Use the target_angle for chassis-relative control while maintaining trajectory semantics
 				_target_bucket_angle_chassis = setpoint.target_angle;
 
@@ -241,12 +241,9 @@ void BucketControl::process_commands()
 
 				PX4_DEBUG("Trajectory position command: %.2f°",
 					 (double)math::degrees(_target_bucket_angle_chassis));
-			} else if (setpoint.hold_position) {
-				// Hold current position
-				_state_manager->request_state_transition(
-					BucketStateManager::OperationalState::READY,
-					"Hold position requested"
-				);
+			} else {
+				// Invalid trajectory - keep current state
+				PX4_DEBUG("Invalid trajectory setpoint received");
 			}
 			break;
 
