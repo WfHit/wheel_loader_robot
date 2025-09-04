@@ -45,7 +45,7 @@
 // uORB includes (use lowercase topic names)
 #include <uORB/Publication.hpp>
 #include <uORB/Subscription.hpp>
-#include <uORB/topics/boom_command.h>
+#include <uORB/topics/boom_trajectory_setpoint.h>
 #include <uORB/topics/boom_status.h>
 #include <uORB/topics/parameter_update.h>
 
@@ -137,7 +137,7 @@ private:
 
 	// uORB interface (using modern uORB::Publication/Subscription classes)
 		// Subscriptions
-	uORB::Subscription _boom_command_sub{ORB_ID(boom_command)};           // Command input
+	uORB::Subscription _boom_trajectory_setpoint_sub{ORB_ID(boom_trajectory_setpoint)}; // Trajectory input
 	uORB::Subscription _parameter_update_sub{ORB_ID(parameter_update)};   // Parameter updates
 	uORB::Publication<boom_status_s> _boom_status_pub{ORB_ID(boom_status)}; // Outgoing status telemetry
 

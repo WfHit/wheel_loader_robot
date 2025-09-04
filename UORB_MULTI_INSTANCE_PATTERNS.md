@@ -16,12 +16,11 @@ All modules follow the EKF2-style pattern where:
 #### Example from wheel_controller.cpp:
 ```cpp
 // Declaration
-uORB::PublicationMulti<hbridge_command_s> _motor_cmd_pub{ORB_ID(hbridge_command)};
+uORB::PublicationMulti<hbridge_setpoint_s> _motor_cmd_pub{ORB_ID(hbridge_setpoint)};
 
-// Usage
-void WheelController::publish_motor_command()
+// In publishing code:
 {
-    hbridge_command_s cmd{};
+    hbridge_setpoint_s cmd{};
     cmd.timestamp = hrt_absolute_time();
     cmd.channel = static_cast<uint8_t>(_param_motor_channel.get());  // Parameter-based!
     cmd.duty_cycle = _state.pwm_output;

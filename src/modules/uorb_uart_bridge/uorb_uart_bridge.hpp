@@ -13,9 +13,9 @@
 #include <uORB/topics/limit_sensor.h>
 #include <uORB/topics/slip_estimation.h>
 #include <uORB/topics/traction_control.h>
-#include <uORB/topics/boom_command.h>
+#include <uORB/topics/boom_trajectory_setpoint.h>
 #include <uORB/topics/boom_status.h>
-#include <uORB/topics/bucket_command.h>
+#include <uORB/topics/bucket_trajectory_setpoint.h>
 #include <uORB/topics/bucket_status.h>
 #include <uORB/topics/steering_command.h>
 #include <uORB/topics/steering_status.h>
@@ -78,8 +78,8 @@ private:
 	uORB::Subscription _actuator_outputs_rear_sub{ORB_ID(actuator_outputs), 1};
 	uORB::Subscription _vehicle_status_sub{ORB_ID(vehicle_status)};
 	uORB::Subscription _traction_control_sub{ORB_ID(traction_control)};
-	uORB::Subscription _boom_command_sub{ORB_ID(boom_command)};
-	uORB::Subscription _bucket_command_sub{ORB_ID(bucket_command)};
+	uORB::Subscription _boom_trajectory_setpoint_sub{ORB_ID(boom_trajectory_setpoint)};
+	uORB::Subscription _bucket_trajectory_setpoint_sub{ORB_ID(bucket_trajectory_setpoint)};
 	uORB::Subscription _steering_command_sub{ORB_ID(steering_command)};
 	uORB::Subscription _load_lamp_command_sub{ORB_ID(load_lamp_command)};
 

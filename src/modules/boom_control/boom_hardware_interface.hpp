@@ -38,7 +38,7 @@
 #include <uORB/Publication.hpp>
 #include <uORB/Subscription.hpp>
 #include <uORB/SubscriptionMultiArray.hpp>
-#include <uORB/topics/hbridge_command.h>
+#include <uORB/topics/hbridge_setpoint.h>
 #include <uORB/topics/hbridge_status.h>
 #include <uORB/topics/limit_sensor.h>
 #include <uORB/topics/sensor_mag_encoder.h>
@@ -79,9 +79,9 @@ public:
 	};
 
 	/**
-	 * @brief H-bridge command structure
+	 * @brief H-bridge setpoint structure
 	 */
-	struct HbridgeCommand {
+	struct HbridgeSetpoint {
 		float duty_cycle;         // -1 to 1
 		bool enable;             // Enable motor
 		uint8_t mode;            // Control mode
@@ -118,7 +118,7 @@ public:
 	 * @param command Command to send
 	 * @return True if command sent successfully
 	 */
-	bool send_command(const HbridgeCommand &command);
+	bool send_command(const HbridgeSetpoint &command);
 
 	/**
 	 * @brief Update H-bridge status
@@ -160,7 +160,7 @@ public:
 	 * @brief Get last command sent
 	 * @return Last H-bridge command
 	 */
-	HbridgeCommand get_last_command() const { return _last_command; }
+	HbridgeSetpoint get_last_command() const { return _last_command; }
 
 	/**
 	 * @brief Update hardware interface parameters from parameter system
@@ -190,7 +190,7 @@ private:
 
 	// State tracking
 	SensorData _last_sensor_data{};
-	HbridgeCommand _last_command{};
+	HbridgeSetpoint _last_command{};
 	HbridgeStatus _last_status{};
 	hrt_abstime _last_sensor_time{0};
 	hrt_abstime _last_encoder_update{0};
@@ -277,7 +277,7 @@ private:
 	 * @param current Current motor current
 	 * @return Limited command
 	 */
-	HbridgeCommand apply_current_limit(const HbridgeCommand &command, float current) const;
+	HbridgeSetpoint apply_current_limit(const HbridgeSetpoint &command, float current) const;
 
 	/**
 	 * @brief Check if timestamp is still valid

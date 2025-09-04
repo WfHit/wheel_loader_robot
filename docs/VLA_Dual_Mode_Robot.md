@@ -12,7 +12,7 @@ This implementation extends the existing wheel loader robot to support dual oper
 ### New Components
 
 #### Message Definitions
-- `VlaCommand.msg`: Interface for VLA bucket position and pose outputs
+- `VlaTrajectorySetpoint.msg`: Interface for VLA bucket position and pose outputs
 - `OperationModeCommand.msg`: Mode switching control between manual and auto
 
 #### Extended State Machine

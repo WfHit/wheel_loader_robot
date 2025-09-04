@@ -296,10 +296,10 @@ bool BucketHardwareInterface::select_limit_sensor_instances(int& load_instance, 
 	return load_found && dump_found;
 }
 
-bool BucketHardwareInterface::send_hbridge_command(const HbridgeCommand& command)
+bool BucketHardwareInterface::send_hbridge_setpoint(const HbridgeSetpoint& command)
 {
 	// Start with the command as-is
-	HbridgeCommand limited_command = command;
+	HbridgeSetpoint limited_command = command;
 
 	// Check limit switches and block movement if necessary
 	if (limited_command.enable && fabsf(limited_command.duty_cycle) > 0.1f) {
@@ -311,7 +311,7 @@ bool BucketHardwareInterface::send_hbridge_command(const HbridgeCommand& command
 		}
 	}
 
-	hbridge_command_s cmd{};
+	hbridge_setpoint_s cmd{};
 	cmd.timestamp = hrt_absolute_time();
 	cmd.instance = _motor_index;
 	cmd.duty_cycle = math::constrain(limited_command.duty_cycle, -1.0f, 1.0f);
@@ -322,11 +322,11 @@ bool BucketHardwareInterface::send_hbridge_command(const HbridgeCommand& command
 
 void BucketHardwareInterface::emergency_stop()
 {
-	HbridgeCommand stop_cmd{};
+	HbridgeSetpoint stop_cmd{};
 	stop_cmd.duty_cycle = 0.0f;
 	stop_cmd.enable = false;
 
-	send_hbridge_command(stop_cmd);
+	send_hbridge_setpoint(stop_cmd);
 
 	PX4_WARN("Bucket hbridge emergency stop");
 }
@@ -372,10 +372,10 @@ bool BucketHardwareInterface::perform_self_test()
 	}
 
 	// Test 4: Send test command (zero output)
-	HbridgeCommand test_cmd{};
+	HbridgeSetpoint test_cmd{};
 	test_cmd.duty_cycle = 0.0f;
 	test_cmd.enable = true;
-	if (!send_hbridge_command(test_cmd)) {
+	if (!send_hbridge_setpoint(test_cmd)) {
 		PX4_ERR("Self-test failed: Motor command");
 		return false;
 	}

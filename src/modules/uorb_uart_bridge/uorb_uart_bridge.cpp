@@ -247,18 +247,18 @@ void UorbUartBridge::processOutgoingMessages()
 		}
 	}
 
-	// Process boom command (X7+ -> NXT rear)
-	boom_command_s boom_command;
-	if (_boom_command_sub.update(&boom_command)) {
+	// Process boom trajectory setpoint (X7+ -> NXT rear)
+	boom_trajectory_setpoint_s boom_trajectory_setpoint;
+	if (_boom_trajectory_setpoint_sub.update(&boom_trajectory_setpoint)) {
 		distributed_uorb::UartFrame frame;
 		frame.header.sync = distributed_uorb::UART_SYNC_PATTERN;
-		frame.header.msg_id = static_cast<uint8_t>(distributed_uorb::UartMessageId::BOOM_COMMAND);
+		frame.header.msg_id = static_cast<uint8_t>(distributed_uorb::UartMessageId::BOOM_TRAJECTORY_SETPOINT);
 		frame.header.board_id = distributed_uorb::BOARD_ID_X7_PLUS;
-		frame.header.length = sizeof(boom_command);
+		frame.header.length = sizeof(boom_trajectory_setpoint);
 		frame.header.sequence = _tx_sequence++;
 		frame.header.timestamp = hrt_absolute_time();
 
-		memcpy(frame.payload, &boom_command, sizeof(boom_command));
+		memcpy(frame.payload, &boom_trajectory_setpoint, sizeof(boom_trajectory_setpoint));
 
 		if (_uart_transport->sendFrame(frame) >= 0) {
 			_stats.tx_messages++;
@@ -269,18 +269,18 @@ void UorbUartBridge::processOutgoingMessages()
 		}
 	}
 
-	// Process bucket command (X7+ -> NXT front)
-	bucket_command_s bucket_command;
-	if (_bucket_command_sub.update(&bucket_command)) {
+	// Process bucket trajectory setpoint (X7+ -> NXT front)
+	bucket_trajectory_setpoint_s bucket_trajectory_setpoint;
+	if (_bucket_trajectory_setpoint_sub.update(&bucket_trajectory_setpoint)) {
 		distributed_uorb::UartFrame frame;
 		frame.header.sync = distributed_uorb::UART_SYNC_PATTERN;
-		frame.header.msg_id = static_cast<uint8_t>(distributed_uorb::UartMessageId::BUCKET_COMMAND);
+		frame.header.msg_id = static_cast<uint8_t>(distributed_uorb::UartMessageId::BUCKET_TRAJECTORY_SETPOINT);
 		frame.header.board_id = distributed_uorb::BOARD_ID_X7_PLUS;
-		frame.header.length = sizeof(bucket_command);
+		frame.header.length = sizeof(bucket_trajectory_setpoint);
 		frame.header.sequence = _tx_sequence++;
 		frame.header.timestamp = hrt_absolute_time();
 
-		memcpy(frame.payload, &bucket_command, sizeof(bucket_command));
+		memcpy(frame.payload, &bucket_trajectory_setpoint, sizeof(bucket_trajectory_setpoint));
 
 		if (_uart_transport->sendFrame(frame) >= 0) {
 			_stats.tx_messages++;

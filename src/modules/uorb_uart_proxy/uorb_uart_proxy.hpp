@@ -45,9 +45,9 @@
 #include <uORB/topics/limit_sensor.h>
 #include <uORB/topics/slip_estimation.h>
 #include <uORB/topics/traction_control.h>
-#include <uORB/topics/boom_command.h>
+#include <uORB/topics/boom_trajectory_setpoint.h>
 #include <uORB/topics/boom_status.h>
-#include <uORB/topics/bucket_command.h>
+#include <uORB/topics/bucket_trajectory_setpoint.h>
 #include <uORB/topics/bucket_status.h>
 #include <uORB/topics/steering_command.h>
 #include <uORB/topics/steering_status.h>
@@ -145,8 +145,8 @@ private:
 	uORB::Publication<actuator_outputs_s> _actuator_outputs_pub{ORB_ID(actuator_outputs)};
 	uORB::Publication<vehicle_status_s> _vehicle_status_pub{ORB_ID(vehicle_status)};
 	uORB::Publication<traction_control_s> _traction_control_pub{ORB_ID(traction_control)};
-	uORB::Publication<boom_command_s> _boom_command_pub{ORB_ID(boom_command)};
-	uORB::Publication<bucket_command_s> _bucket_command_pub{ORB_ID(bucket_command)};
+	uORB::Publication<boom_trajectory_setpoint_s> _boom_trajectory_setpoint_pub{ORB_ID(boom_trajectory_setpoint)};
+	uORB::Publication<bucket_trajectory_setpoint_s> _bucket_trajectory_setpoint_pub{ORB_ID(bucket_trajectory_setpoint)};
 	uORB::Publication<steering_command_s> _steering_command_pub{ORB_ID(steering_command)};
 	uORB::Publication<load_lamp_command_s> _load_lamp_command_pub{ORB_ID(load_lamp_command)};
 

@@ -6,7 +6,7 @@
 #include "topic_definitions.hpp"
 #include <uORB/topics/wheel_loader_command.h>
 #include <uORB/topics/wheel_encoder.h>
-#include <uORB/topics/bucket_command.h>
+#include <uORB/topics/bucket_trajectory_setpoint.h>
 #include <uORB/topics/bucket_status.h>
 #include <uORB/topics/boom_status.h>
 #include <uORB/topics/traction_control_status.h>
@@ -22,8 +22,8 @@ static const TopicMapping topic_mappings[] = {
     {TOPIC_TRACTION_CTRL_FRONT, "traction_ctrl_front",
      sizeof(traction_control_status_s), true, false, 1, "wl/traction/front"},
 
-    {TOPIC_BUCKET_CMD, "bucket_cmd",
-     sizeof(bucket_command_s), true, false, 1, "wl/cmd/bucket"},
+    {TOPIC_BUCKET_CMD, "bucket_trajectory_setpoint",
+     sizeof(bucket_trajectory_setpoint_s), true, false, 1, "wl/cmd/bucket"},
 
     // Commands from X7+ to Rear NXT
     {TOPIC_WHEEL_LOADER_CMD_REAR, "wheel_loader_cmd_rear",

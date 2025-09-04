@@ -49,15 +49,15 @@ bool BoomHardwareInterface::initialize(int encoder_instance, int motor_instance)
 	update_parameters();
 
 	// Initialize H-bridge command publisher
-	hbridge_command_s initial_cmd{};
+	hbridge_setpoint_s initial_cmd{};
 	initial_cmd.timestamp = hrt_absolute_time();
 	initial_cmd.duty_cycle = 0.0f;
 	initial_cmd.enable = false;
 
-	_hbridge_command_pub = orb_advertise(ORB_ID(hbridge_command), &initial_cmd);
+	_hbridge_command_pub = orb_advertise(ORB_ID(hbridge_setpoint), &initial_cmd);
 
 	if (_hbridge_command_pub == nullptr) {
-		PX4_ERR("Failed to advertise hbridge_command");
+		PX4_ERR("Failed to advertise hbridge_setpoint");
 		return false;
 	}
 
@@ -87,14 +87,14 @@ bool BoomHardwareInterface::update_sensors(SensorData &data)
 	return all_sensors_updated;
 }
 
-bool BoomHardwareInterface::send_command(const HbridgeCommand &command)
+bool BoomHardwareInterface::send_command(const HbridgeSetpoint &command)
 {
 	if (!_initialized || _hbridge_command_pub == nullptr) {
 		return false;
 	}
 
 	// Apply current limiting if status is available (current not available in hbridge_status_s)
-	HbridgeCommand limited_command = command;
+	HbridgeSetpoint limited_command = command;
 
 	// Check limit switches and block movement if necessary
 	if (limited_command.enable && fabsf(limited_command.duty_cycle) > 0.1f) {
@@ -107,13 +107,13 @@ bool BoomHardwareInterface::send_command(const HbridgeCommand &command)
 	}
 
 	// Prepare uORB message
-	hbridge_command_s cmd_msg{};
+	hbridge_setpoint_s cmd_msg{};
 	cmd_msg.timestamp = hrt_absolute_time();
 	cmd_msg.duty_cycle = math::constrain(limited_command.duty_cycle, -1.0f, 1.0f);
 	cmd_msg.enable = limited_command.enable;
 
 	// Publish command
-	int ret = orb_publish(ORB_ID(hbridge_command), _hbridge_command_pub, &cmd_msg);
+	int ret = orb_publish(ORB_ID(hbridge_setpoint), _hbridge_command_pub, &cmd_msg);
 
 	if (ret == PX4_OK) {
 		_last_command = limited_command;
@@ -160,7 +160,7 @@ bool BoomHardwareInterface::update_status(HbridgeStatus &status)
 
 void BoomHardwareInterface::emergency_stop()
 {
-	HbridgeCommand stop_cmd{};
+	HbridgeSetpoint stop_cmd{};
 	stop_cmd.duty_cycle = 0.0f;
 	stop_cmd.enable = false;
 	stop_cmd.mode = 0;
@@ -292,9 +292,9 @@ bool BoomHardwareInterface::is_timestamp_valid(hrt_abstime timestamp, hrt_abstim
 	return (now - timestamp) <= timeout_us;
 }
 
-BoomHardwareInterface::HbridgeCommand BoomHardwareInterface::apply_current_limit(const HbridgeCommand &command, float current) const
+BoomHardwareInterface::HbridgeSetpoint BoomHardwareInterface::apply_current_limit(const HbridgeSetpoint &command, float current) const
 {
-	HbridgeCommand limited_command = command;
+	HbridgeSetpoint limited_command = command;
 	float current_limit = _param_current_limit.get();
 	float duty_max = _param_duty_max.get();
 

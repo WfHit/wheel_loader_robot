@@ -162,7 +162,7 @@ private:
 	uORB::Subscription parameter_update_sub{ORB_ID(parameter_update)};
 	uORB::Subscription vehicle_status_sub{ORB_ID(vehicle_status)};
 	uORB::Subscription vehicle_local_position_sub{ORB_ID(vehicle_local_position)};
-	uORB::Subscription vla_command_sub{ORB_ID(vla_command)};
+	uORB::Subscription vla_trajectory_setpoint_sub{ORB_ID(vla_trajectory_setpoint)};
 
 	// uORB publications
 	uORB::Publication<chassis_trajectory_setpoint_s> chassis_setpoint_pub{ORB_ID(chassis_trajectory_setpoint)};
@@ -182,7 +182,7 @@ private:
 	manual_control_setpoint_s manual_control{};
 	vehicle_status_s vehicle_status{};
 	vehicle_local_position_s vehicle_position{};
-	vla_command_s vla_command{};
+	vla_trajectory_setpoint_s vla_trajectory_setpoint{};
 
 	// Mode switching
 	bool mode_switch_pending{false};
@@ -196,7 +196,7 @@ private:
 	bool system_armed{false};
 	bool position_valid{false};
 	bool manual_control_valid{false};
-	bool vla_command_valid{false};
+	bool vla_trajectory_setpoint_valid{false};
 
 	// Performance counters
 	perf_counter_t loop_perf{nullptr};

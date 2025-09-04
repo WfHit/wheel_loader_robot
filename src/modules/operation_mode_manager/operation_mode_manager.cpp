@@ -132,9 +132,9 @@ void OperationModeManager::update_subscriptions()
 	}
 
 	// Update VLA command
-	if (vla_command_sub.updated()) {
-		vla_command_sub.copy(&vla_command);
-		vla_command_valid = (hrt_absolute_time() - vla_command.timestamp) < 1000000; // 1s timeout
+	if (vla_trajectory_setpoint_sub.updated()) {
+		vla_trajectory_setpoint_sub.copy(&vla_trajectory_setpoint);
+		vla_trajectory_setpoint_valid = (hrt_absolute_time() - vla_trajectory_setpoint.timestamp) < 1000000; // 1s timeout
 	}
 }
 
@@ -177,8 +177,8 @@ void OperationModeManager::check_mode_switching()
 		}
 	}
 
-	// Check for VLA command override
-	if (vla_command_valid && vla_command.mode_request != 0) {
+	// Check for VLA trajectory setpoint override
+	if (vla_trajectory_setpoint_valid && vla_trajectory_setpoint.control_mode != vla_trajectory_setpoint_s::MODE_STOP) {
 		new_requested_mode = OperationMode::VLA;
 	}
 
@@ -277,7 +277,7 @@ void OperationModeManager::publish_trajectory_setpoints()
 	status.system_armed = system_armed;
 	status.position_valid = position_valid;
 	status.manual_control_valid = manual_control_valid;
-	status.vla_command_valid = vla_command_valid;
+	status.vla_trajectory_setpoint_valid = vla_trajectory_setpoint_valid;
 	status.timestamp = hrt_absolute_time();
 
 	mode_status_pub.publish(status);
@@ -301,12 +301,12 @@ void OperationModeManager::handle_emergency()
 			PX4_WARN("Emergency: Manual control lost");
 		}
 
-		// Check for VLA command timeout in VLA mode
-		if (current_operation_mode == OperationMode::VLA && !vla_command_valid) {
+		// Check for VLA trajectory setpoint timeout in VLA mode
+		if (current_operation_mode == OperationMode::VLA && !vla_trajectory_setpoint_valid) {
 			hrt_abstime timeout = static_cast<hrt_abstime>(param_emergency_timeout.get() * 1e6f);
-			if ((hrt_absolute_time() - vla_command.timestamp) > timeout) {
+			if ((hrt_absolute_time() - vla_trajectory_setpoint.timestamp) > timeout) {
 				emergency_detected = true;
-				PX4_WARN("Emergency: VLA command timeout");
+				PX4_WARN("Emergency: VLA trajectory setpoint timeout");
 			}
 		}
 
@@ -363,7 +363,7 @@ bool OperationModeManager::check_safety_conditions()
 	case OperationMode::MANUAL:
 		return manual_control_valid;
 	case OperationMode::VLA:
-		return vla_command_valid;
+		return vla_trajectory_setpoint_valid;
 	case OperationMode::EMERGENCY:
 		return true; // Always allow emergency mode
 	default:
@@ -391,7 +391,7 @@ int OperationModeManager::print_status()
 	PX4_INFO("  System Armed: %s", system_armed ? "YES" : "NO");
 	PX4_INFO("  Position Valid: %s", position_valid ? "YES" : "NO");
 	PX4_INFO("  Manual Control Valid: %s", manual_control_valid ? "YES" : "NO");
-	PX4_INFO("  VLA Command Valid: %s", vla_command_valid ? "YES" : "NO");
+	PX4_INFO("  VLA Trajectory Setpoint Valid: %s", vla_trajectory_setpoint_valid ? "YES" : "NO");
 
 	// Print mode-specific status
 	if (current_mode != nullptr) {

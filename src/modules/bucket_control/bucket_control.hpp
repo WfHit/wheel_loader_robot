@@ -43,7 +43,7 @@
 // uORB includes
 #include <uORB/Publication.hpp>
 #include <uORB/Subscription.hpp>
-#include <uORB/topics/bucket_command.h>
+#include <uORB/topics/bucket_trajectory_setpoint.h>
 #include <uORB/topics/bucket_status.h>
 #include <uORB/topics/parameter_update.h>
 
@@ -117,7 +117,7 @@ private:
 	BucketStateManager* _state_manager{nullptr};
 
 	// uORB interface
-	uORB::Subscription _bucket_command_sub{ORB_ID(bucket_command)};
+	uORB::Subscription _bucket_trajectory_setpoint_sub{ORB_ID(bucket_trajectory_setpoint)};
 	uORB::Subscription _parameter_update_sub{ORB_ID(parameter_update)};
 	uORB::Publication<bucket_status_s> _bucket_status_pub{ORB_ID(bucket_status)};
 

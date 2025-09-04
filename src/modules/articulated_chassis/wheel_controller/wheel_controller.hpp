@@ -45,7 +45,7 @@
 #include <uORB/PublicationMulti.hpp>
 #include <uORB/Subscription.hpp>
 #include <uORB/SubscriptionMultiArray.hpp>
-#include <uORB/topics/hbridge_command.h>
+#include <uORB/topics/hbridge_setpoint.h>
 #include <uORB/topics/hbridge_status.h>
 #include <uORB/topics/parameter_update.h>
 #include <uORB/topics/sensor_quad_encoder.h>
@@ -114,7 +114,7 @@ private:
 	uORB::SubscriptionMultiArray<hbridge_status_s> _hbridge_status_sub{ORB_ID::hbridge_status};
 
 	// uORB publications
-	uORB::PublicationMulti<hbridge_command_s> _motor_cmd_pub{ORB_ID(hbridge_command)};
+	uORB::PublicationMulti<hbridge_setpoint_s> _motor_cmd_pub{ORB_ID(hbridge_setpoint)};
 
 	// Control system
 	PID _speed_controller;

@@ -157,62 +157,56 @@ void BoomControl::update_sensors()
 
 void BoomControl::process_commands()
 {
-	boom_command_s command;
+	boom_trajectory_setpoint_s trajectory_setpoint;
 
-	if (_boom_command_sub.update(&command)) {
+	if (_boom_trajectory_setpoint_sub.update(&trajectory_setpoint)) {
 		_last_command_time = hrt_absolute_time();
 
 		// Handle emergency stop
-		if (command.emergency_stop) {
+		if (trajectory_setpoint.emergency_stop) {
 			handle_emergency_stop();
+			return;
+		}
+
+		// Check if trajectory is valid and enabled
+		if (!trajectory_setpoint.valid || !trajectory_setpoint.enable_trajectory) {
+			// If trajectory is not valid or disabled, hold current position
+			if (trajectory_setpoint.hold_position) {
+				_motion_controller.set_mode(BoomMotionController::ControlMode::POSITION);
+				_motion_controller.set_target_position(_current_boom_angle, 0.5f); // Conservative velocity
+			}
 			return;
 		}
 
 		// Check if system is operational
 		if (!_state_manager.is_operational()) {
-			PX4_WARN("System not operational, ignoring command");
+			PX4_WARN("System not operational, ignoring trajectory setpoint");
 			return;
 		}
 
-		// Process based on control mode
-		switch (command.control_mode) {
-		case 0: // Position control
+		// Validate angle command bounds
+		if (!std::isfinite(trajectory_setpoint.angle) ||
+		    fabsf(trajectory_setpoint.angle) > M_PI_F) {
+			PX4_WARN("Invalid angle setpoint: %.2f rad", (double)trajectory_setpoint.angle);
+			return;
+		}
 
-			// Validate position command bounds
-			if (!std::isfinite(command.lift_angle_cmd) ||
-			    fabsf(command.lift_angle_cmd) > M_PI_F) {
-				PX4_WARN("Invalid position command: %.2f rad", (double)command.lift_angle_cmd);
-				break;
-			}
+		// Validate velocity bounds
+		float max_velocity = trajectory_setpoint.max_velocity;
+		if (!std::isfinite(max_velocity) || max_velocity <= 0.0f || max_velocity > 5.0f) {
+			max_velocity = 1.0f; // Default safe velocity
+		}
 
-			_target_boom_angle = command.lift_angle_cmd;
-			_motion_controller.set_mode(BoomMotionController::ControlMode::POSITION);
-			_motion_controller.set_target_position(_target_boom_angle, command.max_lift_velocity);
-			_state_manager.request_transition(BoomStateManager::OperationalState::MOVING);
-			break;
+		// Set target position with trajectory constraints
+		_target_boom_angle = trajectory_setpoint.angle;
+		_motion_controller.set_mode(BoomMotionController::ControlMode::POSITION);
+		_motion_controller.set_target_position(_target_boom_angle, max_velocity);
+		_state_manager.request_transition(BoomStateManager::OperationalState::MOVING);
 
-		case 1: // Velocity control
-
-			// Validate velocity command bounds
-			if (!std::isfinite(command.lift_velocity_cmd) ||
-			    fabsf(command.lift_velocity_cmd) > 5.0f) { // 5 rad/s max
-				PX4_WARN("Invalid velocity command: %.2f rad/s", (double)command.lift_velocity_cmd);
-				break;
-			}
-
-			_motion_controller.set_mode(BoomMotionController::ControlMode::VELOCITY);
-			_motion_controller.set_target_velocity(command.lift_velocity_cmd);
-			_state_manager.request_transition(BoomStateManager::OperationalState::MOVING);
-			break;
-
-		case 2: // Manual control
-			_motion_controller.set_mode(BoomMotionController::ControlMode::MANUAL);
-			// Direct duty cycle control would be handled here
-			break;
-
-		default:
-			PX4_WARN("Unknown control mode: %d", command.control_mode);
-			break;
+		// Optionally use angular velocity and acceleration if the motion controller supports it
+		if (std::isfinite(trajectory_setpoint.angular_velocity)) {
+			// Advanced controllers could use this for feedforward control
+			// _motion_controller.set_feedforward_velocity(trajectory_setpoint.angular_velocity);
 		}
 	}
 
@@ -269,7 +263,7 @@ void BoomControl::execute_control()
 
 	// Skip control if not operational
 	if (!_state_manager.is_operational()) {
-		BoomHardwareInterface::HbridgeCommand cmd{};
+		BoomHardwareInterface::HbridgeSetpoint cmd{};
 		cmd.duty_cycle = 0.0f;
 		cmd.enable = false;
 		_hardware_interface.send_command(cmd);
@@ -295,7 +289,7 @@ void BoomControl::execute_control()
 			      );
 
 	// Send to H-bridge
-	BoomHardwareInterface::HbridgeCommand hbridge_cmd{};
+	BoomHardwareInterface::HbridgeSetpoint hbridge_cmd{};
 	hbridge_cmd.duty_cycle = control_output.duty_cycle;
 	hbridge_cmd.enable = (state_info.state != BoomStateManager::OperationalState::ERROR);
 	hbridge_cmd.mode = 0; // PWM mode

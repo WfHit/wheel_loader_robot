@@ -15,8 +15,8 @@ This document outlines the comprehensive message flow between the X7+ main board
 | `actuator_outputs` (rear) | NXT Rear | Rear axle + boom actuator commands | ✅ Implemented |
 | `vehicle_status` | Both NXT boards | System status information | ✅ Implemented |
 | `traction_control` | Both NXT boards | Traction control commands from centralized algorithm | ✅ Implemented |
-| `boom_command` | NXT Rear | Boom electric motor control commands (velocity) | ✅ Implemented |
-| `bucket_command` | NXT Front | Bucket electric motor control commands (angle) | ✅ Implemented |
+| `boom_trajectory_setpoint` | NXT Rear | Boom electric motor trajectory commands | ✅ Implemented |
+| `bucket_trajectory_setpoint` | NXT Front | Bucket electric motor trajectory and control commands | ✅ Implemented |
 | `steering_command` | NXT Rear | Steering control commands (ST2135 servo) | ✅ Implemented |
 | `heartbeat` | Both NXT boards | Keep-alive and connectivity monitoring | ✅ Implemented |
 
@@ -48,7 +48,7 @@ This document outlines the comprehensive message flow between the X7+ main board
   - Bucket angle controller with encoder position tracking and boom compensation
   - Slip estimation using encoder vs. local EKF speed comparison
 
-### Rear NXT Board  
+### Rear NXT Board
 - **H-Bridge Device 2** (2 channels):
   - Channel 1: Rear axle drive motor
   - Channel 2: Boom electric motor control (velocity-based)
@@ -97,11 +97,11 @@ This document outlines the comprehensive message flow between the X7+ main board
 ### Bridge (X7+ → NXT)
 - ✅ `WHEEL_LOADER_SETPOINT` - Processed and forwarded to both boards (contains speed and steering commands)
 - ✅ `ACTUATOR_OUTPUTS_FRONT` - Filtered to front board only
-- ✅ `ACTUATOR_OUTPUTS_REAR` - Filtered to rear board only  
+- ✅ `ACTUATOR_OUTPUTS_REAR` - Filtered to rear board only
 - ✅ `VEHICLE_STATUS` - Broadcast to both boards
 - ✅ `TRACTION_CONTROL` - Broadcast to both boards for local motor control
-- ✅ `BOOM_COMMAND` - Sent to rear board only (boom electric motor control)
-- ✅ `BUCKET_COMMAND` - Sent to front board only (bucket electric motor control)
+- ✅ `BOOM_TRAJECTORY_SETPOINT` - Sent to rear board only (boom electric motor trajectory control)
+- ✅ `BUCKET_TRAJECTORY_SETPOINT` - Sent to front board only (bucket electric motor trajectory control)
 - ✅ `STEERING_COMMAND` - Sent to rear board only (steering servo)
 - ✅ `HEARTBEAT` - Periodic keep-alive
 

@@ -202,32 +202,32 @@ void UorbUartProxy::processIncomingMessages()
 			break;
 		}
 
-		case distributed_uorb::UartMessageId::BOOM_COMMAND: {
+		case distributed_uorb::UartMessageId::BOOM_TRAJECTORY_SETPOINT: {
 			// Only process if this is the rear board (boom control)
-			if (_board_id == distributed_uorb::BOARD_ID_NXT_REAR && frame.header.length == sizeof(boom_command_s)) {
-				boom_command_s boom_command;
-				memcpy(&boom_command, frame.payload, sizeof(boom_command));
-				_boom_command_pub.publish(boom_command);
+			if (_board_id == distributed_uorb::BOARD_ID_NXT_REAR && frame.header.length == sizeof(boom_trajectory_setpoint_s)) {
+				boom_trajectory_setpoint_s boom_trajectory_setpoint;
+				memcpy(&boom_trajectory_setpoint, frame.payload, sizeof(boom_trajectory_setpoint));
+				_boom_trajectory_setpoint_pub.publish(boom_trajectory_setpoint);
 			} else if (_board_id != distributed_uorb::BOARD_ID_NXT_REAR) {
 				// Ignore messages not intended for this board
 			} else {
 				_stats.rx_errors++;
-				PX4_WARN("Invalid boom command length: %d", frame.header.length);
+				PX4_WARN("Invalid boom trajectory setpoint length: %d", frame.header.length);
 			}
 			break;
 		}
 
-		case distributed_uorb::UartMessageId::BUCKET_COMMAND: {
+		case distributed_uorb::UartMessageId::BUCKET_TRAJECTORY_SETPOINT: {
 			// Only process if this is the front board (bucket control)
-			if (_board_id == distributed_uorb::BOARD_ID_NXT_FRONT && frame.header.length == sizeof(bucket_command_s)) {
-				bucket_command_s bucket_command;
-				memcpy(&bucket_command, frame.payload, sizeof(bucket_command));
-				_bucket_command_pub.publish(bucket_command);
+			if (_board_id == distributed_uorb::BOARD_ID_NXT_FRONT && frame.header.length == sizeof(bucket_trajectory_setpoint_s)) {
+				bucket_trajectory_setpoint_s bucket_trajectory_setpoint;
+				memcpy(&bucket_trajectory_setpoint, frame.payload, sizeof(bucket_trajectory_setpoint));
+				_bucket_trajectory_setpoint_pub.publish(bucket_trajectory_setpoint);
 			} else if (_board_id != distributed_uorb::BOARD_ID_NXT_FRONT) {
 				// Ignore messages not intended for this board
 			} else {
 				_stats.rx_errors++;
-				PX4_WARN("Invalid bucket command length: %d", frame.header.length);
+				PX4_WARN("Invalid bucket trajectory setpoint length: %d", frame.header.length);
 			}
 			break;
 		}

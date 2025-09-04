@@ -42,7 +42,7 @@
 #include <lib/mathlib/mathlib.h>
 #include <lib/perf/perf_counter.h>
 #include <uORB/topics/parameter_update.h>
-#include <uORB/topics/hbridge_command.h>
+#include <uORB/topics/hbridge_setpoint.h>
 #include <uORB/topics/hbridge_status.h>
 #include <uORB/topics/limit_sensor.h>
 #include <board_config.h>
@@ -65,7 +65,7 @@ HBridge::HBridge(uint8_t instance) :
 	ScheduledWorkItem(MODULE_NAME, px4::wq_configurations::hp_default),
 	_instance(instance),
 	_parameter_update_sub(ORB_ID(parameter_update)),
-	_command_sub(ORB_ID::hbridge_command),
+	_command_sub(ORB_ID::hbridge_setpoint),
 	_limit_sensor_sub(ORB_ID::limit_sensor),
 	_loop_perf(perf_alloc(PC_ELAPSED, MODULE_NAME": cycle")),
 	_command_perf(perf_alloc(PC_ELAPSED, MODULE_NAME": command"))
@@ -296,7 +296,7 @@ void HBridge::process_commands()
 		return;
 	}
 
-	hbridge_command_s cmd;
+	hbridge_setpoint_s cmd;
 	if (_command_sub[_instance].updated() &&
 		_command_sub[_instance].copy(&cmd)) {
 		// Process duty cycle command for this instance
@@ -701,7 +701,7 @@ Multi-instance H-Bridge motor driver for wheel loader operations.
 
 Each instance controls one H-bridge channel with PWM speed control and GPIO
 direction control. Instance 0 acts as the manager and controls the shared
-enable pin. Each instance subscribes to hbridge_command messages with matching
+enable pin. Each instance subscribes to hbridge_setpoint messages with matching
 instance numbers for independent control.
 
 The driver integrates with limit sensors to prevent motion in restricted
@@ -713,7 +713,7 @@ PWM output uses direct duty cycle control (0.0 to 1.0 range).
 ### Implementation
 - Supports 2 instances (0 and 1) for dual H-bridge channels
 - Instance 0 is the manager and controls shared enable pin
-- Each instance subscribes to hbridge_command with same instance number
+- Each instance subscribes to hbridge_setpoint with same instance number
 - Multi-instance status publishing with limit sensor states
 - PWM output with configurable direction reversal
 - Safety integration with limit sensors

@@ -43,9 +43,9 @@ enum class UartMessageId : uint8_t {
 	TRACTION_CONTROL = 0x52,
 
 	// Hydraulic control commands (X7+ → NXT)
-	BOOM_COMMAND = 0x60,
+	BOOM_TRAJECTORY_SETPOINT = 0x60,
 	BOOM_STATUS = 0x61,
-	BUCKET_COMMAND = 0x62,
+	BUCKET_TRAJECTORY_SETPOINT = 0x62,
 	BUCKET_STATUS = 0x63,
 
 	// Steering control (X7+ → NXT)

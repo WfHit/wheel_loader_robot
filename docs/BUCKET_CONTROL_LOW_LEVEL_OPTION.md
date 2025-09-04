@@ -6,7 +6,7 @@ If you need explicit instance control (like assigning motor 0 to instance 0, mot
 
 ```cpp
 // Replace PublicationMulti with low-level handle
-// uORB::PublicationMulti<hbridge_command_s> _hbridge_command_pub{ORB_ID(hbridge_command)};
+// uORB::PublicationMulti<hbridge_setpoint_s> _hbridge_command_pub{ORB_ID(hbridge_setpoint)};
 orb_advert_t _hbridge_command_adv{nullptr};
 ```
 
@@ -15,7 +15,7 @@ orb_advert_t _hbridge_command_adv{nullptr};
 ```cpp
 void BucketControl::setMotorCommand(float command)
 {
-    hbridge_command_s cmd{};
+    hbridge_setpoint_s cmd{};
     cmd.timestamp = hrt_absolute_time();
     cmd.instance = _motor_index;
     cmd.duty_cycle = command;
@@ -24,7 +24,7 @@ void BucketControl::setMotorCommand(float command)
     if (_hbridge_command_adv == nullptr) {
         // Try to get the specific instance we want
         int desired_instance = _motor_index;
-        _hbridge_command_adv = orb_advertise_multi(ORB_ID(hbridge_command), &cmd, &desired_instance);
+        _hbridge_command_adv = orb_advertise_multi(ORB_ID(hbridge_setpoint), &cmd, &desired_instance);
 
         if (_hbridge_command_adv != nullptr) {
             PX4_INFO("Bucket motor %d got uORB instance %d", _motor_index, desired_instance);
@@ -36,7 +36,7 @@ void BucketControl::setMotorCommand(float command)
             }
         }
     } else {
-        orb_publish(ORB_ID(hbridge_command), _hbridge_command_adv, &cmd);
+        orb_publish(ORB_ID(hbridge_setpoint), _hbridge_command_adv, &cmd);
     }
 }
 ```

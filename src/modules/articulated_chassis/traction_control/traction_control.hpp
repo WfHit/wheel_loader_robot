@@ -61,7 +61,7 @@
 #include <uORB/PublicationMulti.hpp>
 #include <uORB/topics/wheel_setpoint.h>
 #include <uORB/topics/steering_setpoint.h>
-#include <uORB/topics/hbridge_command.h>
+#include <uORB/topics/hbridge_setpoint.h>
 
 using namespace matrix;
 

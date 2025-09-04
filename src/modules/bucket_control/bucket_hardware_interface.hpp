@@ -42,7 +42,7 @@
 #include <uORB/SubscriptionMultiArray.hpp>
 #include <uORB/Publication.hpp>
 #include <uORB/PublicationMulti.hpp>
-#include <uORB/topics/hbridge_command.h>
+#include <uORB/topics/hbridge_setpoint.h>
 #include <uORB/topics/hbridge_status.h>
 #include <uORB/topics/sensor_quad_encoder.h>
 #include <uORB/topics/sensor_mag_encoder.h>
@@ -78,9 +78,9 @@ public:
 	};
 
 	/**
-	 * @brief Hbridge command structure
+	 * @brief Hbridge setpoint structure
 	 */
-	struct HbridgeCommand {
+	struct HbridgeSetpoint {
 		float duty_cycle;             // -1.0 to 1.0
 		bool enable;                  // Enable motor
 		uint8_t control_mode;         // Control mode flag
@@ -108,7 +108,7 @@ public:
 	 * @param command Hbridge command to send
 	 * @return True if command sent successfully
 	 */
-	bool send_hbridge_command(const HbridgeCommand& command);
+	bool send_hbridge_setpoint(const HbridgeSetpoint& command);
 
 	/**
 	 * @brief Perform hardware self-test
@@ -183,7 +183,7 @@ private:
 	uORB::Subscription _mag_encoder_sub{ORB_ID(sensor_mag_encoder)};
 
 	// uORB publications
-	uORB::PublicationMulti<hbridge_command_s> _hbridge_command_pub{ORB_ID(hbridge_command)};
+	uORB::PublicationMulti<hbridge_setpoint_s> _hbridge_command_pub{ORB_ID(hbridge_setpoint)};
 	uORB::Publication<quad_encoder_reset_s> _encoder_reset_pub{ORB_ID(quad_encoder_reset)};
 
 	// Timeout constants

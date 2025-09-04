@@ -169,8 +169,8 @@ void BucketControl::update_sensor_data()
 
 void BucketControl::process_commands()
 {
-	bucket_command_s command;
-	bool new_command = _bucket_command_sub.update(&command);
+	bucket_trajectory_setpoint_s setpoint;
+	bool new_command = _bucket_trajectory_setpoint_sub.update(&setpoint);
 
 	if (!new_command) {
 		return;
@@ -181,8 +181,14 @@ void BucketControl::process_commands()
 	// Process command based on current state
 	auto state_info = _state_manager->get_state_info();
 
+	// Handle emergency stop first
+	if (setpoint.emergency_stop || setpoint.control_mode == bucket_trajectory_setpoint_s::MODE_EMERGENCY_STOP) {
+		_state_manager->trigger_emergency_stop("Command emergency stop");
+		return;
+	}
+
 	// Handle calibration command regardless of state
-	if (command.control_mode == bucket_command_s::MODE_CALIBRATE) {
+	if (setpoint.control_mode == bucket_trajectory_setpoint_s::MODE_CALIBRATE) {
 		_state_manager->start_calibration();
 		return;
 	}
@@ -195,10 +201,10 @@ void BucketControl::process_commands()
 	}
 
 	// Handle different command types
-	switch (command.control_mode) {
-		case bucket_command_s::MODE_POSITION:
+	switch (setpoint.control_mode) {
+		case bucket_trajectory_setpoint_s::MODE_POSITION:
 			// Absolute bucket angle command (chassis-relative)
-			_target_bucket_angle_chassis = command.target_angle;
+			_target_bucket_angle_chassis = setpoint.target_angle;
 
 			// Transition to active state
 			_state_manager->request_state_transition(
@@ -210,9 +216,9 @@ void BucketControl::process_commands()
 				 (double)math::degrees(_target_bucket_angle_chassis));
 			break;
 
-		case bucket_command_s::MODE_DIRECT:
+		case bucket_trajectory_setpoint_s::MODE_DIRECT:
 			// Direct actuator position command
-			_commanded_actuator_position = command.target_angle;
+			_commanded_actuator_position = setpoint.actuator_position;
 
 			_state_manager->request_state_transition(
 				BucketStateManager::OperationalState::ACTIVE,
@@ -222,7 +228,29 @@ void BucketControl::process_commands()
 			PX4_DEBUG("Direct position command: %.1f mm", (double)_commanded_actuator_position);
 			break;
 
-		case bucket_command_s::MODE_STOP:
+		case bucket_trajectory_setpoint_s::MODE_TRAJECTORY:
+			// World frame trajectory following
+			if (setpoint.valid && setpoint.enable_trajectory) {
+				// Use the target_angle for chassis-relative control while maintaining trajectory semantics
+				_target_bucket_angle_chassis = setpoint.target_angle;
+
+				_state_manager->request_state_transition(
+					BucketStateManager::OperationalState::ACTIVE,
+					"Trajectory command received"
+				);
+
+				PX4_DEBUG("Trajectory position command: %.2f°",
+					 (double)math::degrees(_target_bucket_angle_chassis));
+			} else if (setpoint.hold_position) {
+				// Hold current position
+				_state_manager->request_state_transition(
+					BucketStateManager::OperationalState::READY,
+					"Hold position requested"
+				);
+			}
+			break;
+
+		case bucket_trajectory_setpoint_s::MODE_STOP:
 			// Stop command - transition to ready
 			_state_manager->request_state_transition(
 				BucketStateManager::OperationalState::READY,
@@ -230,13 +258,8 @@ void BucketControl::process_commands()
 			);
 			break;
 
-		case bucket_command_s::MODE_EMERGENCY_STOP:
-			// Emergency stop
-			_state_manager->trigger_emergency_stop("Command emergency stop");
-			break;
-
 		default:
-			PX4_WARN("Unknown control mode: %d", command.control_mode);
+			PX4_WARN("Unknown control mode: %d", setpoint.control_mode);
 			break;
 	}
 }
@@ -434,10 +457,10 @@ bool BucketControl::determine_target_position(
 void BucketControl::send_zero_command()
 {
 	// Send zero command if no valid target
-	BucketHardwareInterface::HbridgeCommand hbridge_cmd{};
+	BucketHardwareInterface::HbridgeSetpoint hbridge_cmd{};
 	hbridge_cmd.duty_cycle = 0.0f;
 	hbridge_cmd.enable = false;
-	_hardware_interface->send_hbridge_command(hbridge_cmd);
+	_hardware_interface->send_hbridge_setpoint(hbridge_cmd);
 }
 
 void BucketControl::execute_motion_control(
@@ -461,11 +484,11 @@ void BucketControl::execute_motion_control(
 	);
 
 	// Send command to hardware
-	BucketHardwareInterface::HbridgeCommand hbridge_cmd{};
+	BucketHardwareInterface::HbridgeSetpoint hbridge_cmd{};
 	hbridge_cmd.duty_cycle = control_output.duty_cycle;
 	hbridge_cmd.enable = !control_output.safety_stop;
 
-	_hardware_interface->send_hbridge_command(hbridge_cmd);
+	_hardware_interface->send_hbridge_setpoint(hbridge_cmd);
 }
 
 // Static methods for module management

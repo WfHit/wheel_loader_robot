@@ -253,7 +253,7 @@ void WheelController::run_speed_controller()
 
 void WheelController::publish_motor_command()
 {
-	hbridge_command_s cmd{};
+	hbridge_setpoint_s cmd{};
 	cmd.timestamp = hrt_absolute_time();
 	cmd.instance = static_cast<uint8_t>(_param_motor_channel.get());
 	cmd.duty_cycle = _state.pwm_output;
@@ -539,7 +539,7 @@ int WheelController::custom_command(int argc, char *argv[])
 		return 0;
 	}
 
-	// PID tuning commands  
+	// PID tuning commands
 	if (strcmp(command, "tune_p") == 0) {
 		PX4_INFO("PID tuning command received (requires instance access)");
 		// TODO: Implement instance-based PID tuning

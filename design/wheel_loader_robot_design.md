@@ -74,8 +74,8 @@ Hardware → Subsystem Status → WheelLoaderRobot → WheelLoaderStatus → Ext
 
 #### Output Messages
 - `wheel_speeds_setpoint[2]` - Commands to front/rear wheel controllers
-- `boom_command` - Commands to boom controller
-- `bucket_command` - Commands to bucket controller
+- `boom_trajectory_setpoint` - Trajectory commands to boom controller
+- `bucket_trajectory_setpoint` - Trajectory commands to bucket controller
 - `steering_command` - Commands to steering controller
 - `wheel_loader_status` - Overall system status
 
