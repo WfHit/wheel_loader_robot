@@ -36,6 +36,8 @@
 #include "../operation_mode_base.hpp"
 #include "vla_trajectory_decomposer.hpp"
 
+using namespace time_literals;
+
 namespace wheel_loader
 {
 

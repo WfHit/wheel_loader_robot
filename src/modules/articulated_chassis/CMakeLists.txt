@@ -35,6 +35,6 @@
 # Each module is now properly structured with its own CMakeLists.txt
 
 # Add all chassis control modules as subdirectories
-add_subdirectory(wheel_controller)
+add_subdirectory(drivetrain_controller)
 add_subdirectory(steering_controller)
 add_subdirectory(traction_control)

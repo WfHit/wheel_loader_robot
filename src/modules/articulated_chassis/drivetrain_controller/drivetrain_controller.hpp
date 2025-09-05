@@ -49,12 +49,13 @@
 #include <uORB/topics/hbridge_status.h>
 #include <uORB/topics/parameter_update.h>
 #include <uORB/topics/sensor_quad_encoder.h>
-#include <uORB/topics/wheel_setpoint.h>
+#include <uORB/topics/drivetrain_setpoint.h>
+#include <uORB/topics/drivetrain_status.h>
 
 using namespace time_literals;
 
 /**
- * @brief Individual wheel controller for articulated wheel loader
+ * @brief Individual drivetrain controller for articulated wheel loader
  *
  * Implements closed-loop speed control using quadrature encoder feedback
  * and DRV8701 H-bridge motor driver interface.
@@ -63,14 +64,14 @@ using namespace time_literals;
  * - PID speed control with configurable gains
  * - Low-pass filtering for noise reduction
  * - Safety monitoring and emergency stop
- * - Instance-based multi-wheel support
+ * - Instance-based multi-axle support
  * - Performance monitoring
  */
-class WheelController : public ModuleBase<WheelController>, public ModuleParams, public px4::ScheduledWorkItem
+class DrivetrainController : public ModuleBase<DrivetrainController>, public ModuleParams, public px4::ScheduledWorkItem
 {
 public:
-	WheelController();
-	~WheelController() override;
+	DrivetrainController();
+	~DrivetrainController() override;
 
 	/** @see ModuleBase */
 	static int task_spawn(int argc, char *argv[]);
@@ -107,7 +108,7 @@ private:
 
 	// uORB subscriptions
 	uORB::Subscription _param_update_sub{ORB_ID(parameter_update)};
-	uORB::Subscription _wheel_setpoint_sub{ORB_ID(wheel_setpoint), 0}; // Will be updated in init()
+	uORB::Subscription _drivetrain_setpoint_sub{ORB_ID(drivetrain_setpoint), 0}; // Will be updated in init()
 
 	// Instance-specific subscriptions - initialized in init()
 	uORB::SubscriptionMultiArray<sensor_quad_encoder_s> _encoder_sub{ORB_ID::sensor_quad_encoder};
@@ -115,6 +116,7 @@ private:
 
 	// uORB publications
 	uORB::PublicationMulti<hbridge_setpoint_s> _motor_cmd_pub{ORB_ID(hbridge_setpoint)};
+	uORB::PublicationMulti<drivetrain_status_s> _drivetrain_status_pub{ORB_ID(drivetrain_status)};
 
 	// Control system
 	PID _speed_controller;
@@ -138,15 +140,15 @@ private:
 
 	// Module parameters (PX4 naming: ≤16 chars)
 	DEFINE_PARAMETERS(
-		(ParamInt<px4::params::WC_ENC_ID>) _param_encoder_id,
-		(ParamInt<px4::params::WC_MOTOR_CH>) _param_motor_channel,
-		(ParamFloat<px4::params::WC_P>) _param_speed_p,
-		(ParamFloat<px4::params::WC_I>) _param_speed_i,
-		(ParamFloat<px4::params::WC_D>) _param_speed_d,
-		(ParamFloat<px4::params::WC_I_MAX>) _param_integrator_max,
-		(ParamFloat<px4::params::WC_MAX_SPD>) _param_max_speed,
-		(ParamFloat<px4::params::WC_FILT_HZ>) _param_filter_freq,
-		(ParamInt<px4::params::WC_FRONT>) _param_is_front_wheel,
-		(ParamFloat<px4::params::WC_TIMEOUT>) _param_setpoint_timeout
+		(ParamInt<px4::params::DTC_ENC_ID>) _param_encoder_id,
+		(ParamInt<px4::params::DTC_MOTOR_CH>) _param_motor_channel,
+		(ParamFloat<px4::params::DTC_P>) _param_speed_p,
+		(ParamFloat<px4::params::DTC_I>) _param_speed_i,
+		(ParamFloat<px4::params::DTC_D>) _param_speed_d,
+		(ParamFloat<px4::params::DTC_I_MAX>) _param_integrator_max,
+		(ParamFloat<px4::params::DTC_MAX_SPD>) _param_max_speed,
+		(ParamFloat<px4::params::DTC_FILT_HZ>) _param_filter_freq,
+		(ParamInt<px4::params::DTC_FRONT>) _param_is_front_wheel,
+		(ParamFloat<px4::params::DTC_TIMEOUT>) _param_setpoint_timeout
 	)
 };

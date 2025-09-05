@@ -1,12 +1,12 @@
-module_name: Wheel Controller
+module_name: Drivetrain Controller
 
 parameters:
-  - group: Wheel Controller
+  - group: Drivetrain Controller
     definitions:
-      WC_P:
+      DTC_P:
         description:
-          short: Wheel velocity P gain
-          long: Proportional gain for wheel speed PID controller
+          short: Drivetrain velocity P gain
+          long: Proportional gain for drivetrain speed PID controller
         type: float
         default: 1.0
         min: 0.0
@@ -14,10 +14,10 @@ parameters:
         decimal: 3
         unit: ""
 
-      WC_I:
+      DTC_I:
         description:
-          short: Wheel velocity I gain
-          long: Integral gain for wheel speed PID controller
+          short: Drivetrain velocity I gain
+          long: Integral gain for drivetrain speed PID controller
         type: float
         default: 0.1
         min: 0.0
@@ -25,10 +25,10 @@ parameters:
         decimal: 3
         unit: ""
 
-      WC_D:
+      DTC_D:
         description:
-          short: Wheel velocity D gain
-          long: Derivative gain for wheel speed PID controller
+          short: Drivetrain velocity D gain
+          long: Derivative gain for drivetrain speed PID controller
         type: float
         default: 0.01
         min: 0.0
@@ -36,10 +36,10 @@ parameters:
         decimal: 3
         unit: ""
 
-      WC_I_MAX:
+      DTC_I_MAX:
         description:
-          short: Wheel velocity I max
-          long: Maximum integral term for wheel speed PID controller
+          short: Drivetrain velocity I max
+          long: Maximum integral term for drivetrain speed PID controller
         type: float
         default: 10.0
         min: 0.0
@@ -47,10 +47,10 @@ parameters:
         decimal: 1
         unit: ""
 
-      WC_MAX_SPD:
+      DTC_MAX_SPD:
         description:
-          short: Maximum wheel speed
-          long: Maximum allowed wheel speed in rad/s
+          short: Maximum drivetrain speed
+          long: Maximum allowed drivetrain speed in rad/s
         type: float
         default: 20.0
         min: 1.0
@@ -58,7 +58,7 @@ parameters:
         decimal: 1
         unit: rad/s
 
-      WC_FILT_HZ:
+      DTC_FILT_HZ:
         description:
           short: Speed filter frequency
           long: Low-pass filter cutoff frequency for speed measurements
@@ -69,34 +69,34 @@ parameters:
         decimal: 1
         unit: Hz
 
-      WC_ENC_ID:
+      DTC_ENC_ID:
         description:
           short: Encoder device ID
-          long: Quad encoder device ID for this wheel
+          long: Quad encoder device ID for this drivetrain
         type: int32
         default: 0
         min: 0
         max: 255
 
-      WC_MOTOR_CH:
+      DTC_MOTOR_CH:
         description:
           short: Motor channel
-          long: H-bridge motor channel number for this wheel
+          long: H-bridge motor channel number for this drivetrain
         type: int32
         default: 0
         min: 0
         max: 7
 
-      WC_FRONT:
+      DTC_FRONT:
         description:
-          short: Front wheel flag
-          long: Set to 1 for front wheel, 0 for rear wheel
+          short: Front drivetrain flag
+          long: Set to 1 for front drivetrain, 0 for rear drivetrain
         type: int32
         default: 1
         min: 0
         max: 1
 
-      WC_TIMEOUT:
+      DTC_TIMEOUT:
         description:
           short: Setpoint timeout
           long: Timeout for speed setpoints in seconds

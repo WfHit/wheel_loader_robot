@@ -73,6 +73,9 @@ set(msg_files
 	DifferentialVelocitySetpoint.msg
 	DistanceSensor.msg
 	DistanceSensorModeChangeRequest.msg
+	DrivetrainEncoders.msg
+	DrivetrainSetpoint.msg
+	DrivetrainStatus.msg
 	Ekf2Timestamps.msg
 	EscReport.msg
 	EscStatus.msg
@@ -221,6 +224,7 @@ set(msg_files
 	SensorsStatusImu.msg
 	SensorUwb.msg
 	SensorAirflow.msg
+	SteeringSetpoint.msg
 	SystemPower.msg
 	TakeoffStatus.msg
 	TaskStackInfo.msg
@@ -250,7 +254,6 @@ set(msg_files
 	VehicleTorqueSetpoint.msg
 	VelocityLimits.msg
 	VlaTrajectorySetpoint.msg
-	WheelEncoders.msg
 	Wind.msg
 	YawEstimatorStatus.msg
 	versioned/ActuatorMotors.msg

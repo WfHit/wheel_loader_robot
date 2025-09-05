@@ -32,16 +32,16 @@
  ****************************************************************************/
 
 /**
- * @file wheel_controller_main.cpp
+ * @file drivetrain_controller_main.cpp
  *
- * Wheel controller for articulated wheel loader
+ * Drivetrain controller for articulated wheel loader
  *
  * @author PX4 Development Team
  */
 
-#include "wheel_controller.hpp"
+#include "drivetrain_controller.hpp"
 
-extern "C" __EXPORT int wheel_controller_main(int argc, char *argv[])
+extern "C" __EXPORT int drivetrain_controller_main(int argc, char *argv[])
 {
-	return WheelController::main(argc, argv);
+	return DrivetrainController::main(argc, argv);
 }

@@ -7,6 +7,9 @@
 
 namespace distributed_uorb {
 
+// Constants
+static constexpr int MAX_SUBSCRIBERS = 3;
+
 // Topic IDs for distributed uORB
 enum TopicId : uint16_t {
 	// Commands from X7+ to NXT boards

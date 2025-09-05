@@ -73,7 +73,7 @@ int UartTransport::sendFrame(const UartFrame &frame)
 	}
 
 	// Calculate total frame size
-	size_t frame_size = sizeof(frame.header) + frame.header.length + sizeof(frame.checksum);
+	size_t frame_size = sizeof(frame.header) + frame.header.length + sizeof(frame.crc);
 
 	// Send frame
 	ssize_t bytes_sent = px4_write(_fd, &frame, frame_size);
@@ -153,7 +153,7 @@ int UartTransport::parseRxBuffer(UartFrame &frame)
 	UartFrameHeader *header = reinterpret_cast<UartFrameHeader *>(_rx_buffer);
 
 	// Validate header
-	if (header->sync1 != UART_SYNC1 || header->sync2 != UART_SYNC2) {
+	if (header->sync != UART_SYNC_PATTERN) {
 		// Invalid sync, remove first byte and try again
 		memmove(_rx_buffer, &_rx_buffer[1], _rx_buffer_pos - 1);
 		_rx_buffer_pos--;
@@ -161,7 +161,7 @@ int UartTransport::parseRxBuffer(UartFrame &frame)
 	}
 
 	// Check payload length
-	if (header->length > UART_MAX_PAYLOAD_SIZE) {
+	if (header->length > MAX_PAYLOAD_SIZE) {
 		PX4_WARN("Invalid payload length: %u", header->length);
 		// Skip this frame
 		memmove(_rx_buffer, &_rx_buffer[1], _rx_buffer_pos - 1);
@@ -199,7 +199,7 @@ int UartTransport::parseRxBuffer(UartFrame &frame)
 int UartTransport::findSyncPattern()
 {
 	for (size_t i = 0; i < _rx_buffer_pos - 1; i++) {
-		if (_rx_buffer[i] == UART_SYNC1 && _rx_buffer[i + 1] == UART_SYNC2) {
+		if (_rx_buffer[i] == SYNC_BYTE_1 && _rx_buffer[i + 1] == SYNC_BYTE_2) {
 			return i;
 		}
 	}
@@ -213,10 +213,11 @@ bool UartTransport::validateFrame(const UartFrame &frame)
 	uint16_t calculated_crc = calculateCRC16(reinterpret_cast<const uint8_t *>(&frame.header),
 						 sizeof(frame.header) + frame.header.length);
 
-	// Get received checksum
+	// Get received checksum (avoid alignment issues)
 	const uint8_t *frame_bytes = reinterpret_cast<const uint8_t *>(&frame);
 	size_t checksum_offset = sizeof(frame.header) + frame.header.length;
-	uint16_t received_crc = *reinterpret_cast<const uint16_t *>(&frame_bytes[checksum_offset]);
+	uint16_t received_crc;
+	memcpy(&received_crc, &frame_bytes[checksum_offset], sizeof(uint16_t));
 
 	return calculated_crc == received_crc;
 }

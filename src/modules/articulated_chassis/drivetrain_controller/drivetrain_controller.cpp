@@ -31,13 +31,13 @@
  *
  ****************************************************************************/
 
-#include "wheel_controller.hpp"
+#include "drivetrain_controller.hpp"
 
 #include <cinttypes>
 #include <px4_platform_common/getopt.h>
 #include <px4_platform_common/log.h>
 
-WheelController::WheelController() :
+DrivetrainController::DrivetrainController() :
 	ModuleBase(),
 	ModuleParams(nullptr),
 	ScheduledWorkItem(MODULE_NAME, px4::wq_configurations::hp_default),
@@ -46,13 +46,13 @@ WheelController::WheelController() :
 {
 }
 
-WheelController::~WheelController()
+DrivetrainController::~DrivetrainController()
 {
 	perf_free(_loop_perf);
 	perf_free(_control_perf);
 }
 
-bool WheelController::init()
+bool DrivetrainController::init()
 {
 	// Update parameters first to get instance information
 	updateParams();
@@ -74,10 +74,10 @@ bool WheelController::init()
 	// Subscribe to required topics
 	// Determine which wheel setpoint instance to subscribe to
 	uint8_t wheel_instance = (_param_is_front_wheel.get() == 1) ? 0 : 1; // Front=0, Rear=1
-	_wheel_setpoint_sub = uORB::Subscription{ORB_ID(wheel_setpoint), wheel_instance};
+	_drivetrain_setpoint_sub = uORB::Subscription{ORB_ID(drivetrain_setpoint), wheel_instance};
 
-	if (!_wheel_setpoint_sub.subscribe()) {
-		PX4_ERR("Failed to subscribe to wheel_setpoint instance %d", wheel_instance);
+	if (!_drivetrain_setpoint_sub.subscribe()) {
+		PX4_ERR("Failed to subscribe to drivetrain_setpoint instance %d", wheel_instance);
 		return false;
 	}
 
@@ -133,7 +133,7 @@ bool WheelController::init()
 	return true;
 }
 
-void WheelController::Run()
+void DrivetrainController::Run()
 {
 	if (should_exit()) {
 		ScheduleClear();
@@ -180,11 +180,11 @@ void WheelController::Run()
 	perf_end(_loop_perf);
 }
 
-bool WheelController::update_speed_setpoint()
+bool DrivetrainController::update_speed_setpoint()
 {
-	wheel_setpoint_s setpoint;
+	drivetrain_setpoint_s setpoint;
 
-	if (_wheel_setpoint_sub.update(&setpoint)) {
+	if (_drivetrain_setpoint_sub.update(&setpoint)) {
 		// Check if this wheel controller should respond to this setpoint
 		// (based on instance ID or wheel identification)
 
@@ -206,7 +206,7 @@ bool WheelController::update_speed_setpoint()
 	}
 
 	return is_setpoint_valid();
-}void WheelController::update_encoder_feedback()
+}void DrivetrainController::update_encoder_feedback()
 {
 	sensor_quad_encoder_s encoder;
 	uint8_t encoder_instance = static_cast<uint8_t>(_param_encoder_id.get());
@@ -233,7 +233,7 @@ bool WheelController::update_speed_setpoint()
 	}
 }
 
-void WheelController::run_speed_controller()
+void DrivetrainController::run_speed_controller()
 {
 	// Calculate speed error
 	float speed_error = _state.setpoint_rad_s - _state.speed_rad_s;
@@ -251,7 +251,7 @@ void WheelController::run_speed_controller()
 	}
 }
 
-void WheelController::publish_motor_command()
+void DrivetrainController::publish_motor_command()
 {
 	hbridge_setpoint_s cmd{};
 	cmd.timestamp = hrt_absolute_time();
@@ -263,7 +263,7 @@ void WheelController::publish_motor_command()
 	_motor_cmd_pub.publish(cmd);
 }
 
-void WheelController::update_hbridge_status()
+void DrivetrainController::update_hbridge_status()
 {
 	hbridge_status_s status;
 	uint8_t motor_channel = static_cast<uint8_t>(_param_motor_channel.get());
@@ -292,7 +292,7 @@ void WheelController::update_hbridge_status()
 	}
 }
 
-void WheelController::check_safety_conditions()
+void DrivetrainController::check_safety_conditions()
 {
 	const uint64_t now = hrt_absolute_time();
 	bool previous_emergency_state = _state.emergency_stop;
@@ -328,7 +328,7 @@ void WheelController::check_safety_conditions()
 	}
 }
 
-void WheelController::parameters_update()
+void DrivetrainController::parameters_update()
 {
 	updateParams();
 
@@ -354,18 +354,18 @@ void WheelController::parameters_update()
 	}
 }
 
-float WheelController::constrain_pwm(float value) const
+float DrivetrainController::constrain_pwm(float value) const
 {
 	return math::constrain(value, MIN_PWM_VALUE, MAX_PWM_VALUE);
 }
 
-bool WheelController::is_setpoint_valid() const
+bool DrivetrainController::is_setpoint_valid() const
 {
 	const uint64_t timeout_us = static_cast<uint64_t>(_param_setpoint_timeout.get() * 1e6f);
 	return (hrt_absolute_time() - _state.last_setpoint_us) < timeout_us;
 }
 
-int WheelController::print_status()
+int DrivetrainController::print_status()
 {
 	PX4_INFO("=== Wheel Controller Status ===");
 	PX4_INFO("Configuration:");
@@ -410,9 +410,9 @@ int WheelController::print_status()
 	return 0;
 }
 
-int WheelController::task_spawn(int argc, char *argv[])
+int DrivetrainController::task_spawn(int argc, char *argv[])
 {
-	WheelController *instance = new WheelController();
+	DrivetrainController *instance = new DrivetrainController();
 
 	if (instance == nullptr) {
 		PX4_ERR("alloc failed");
@@ -430,7 +430,7 @@ int WheelController::task_spawn(int argc, char *argv[])
 	return PX4_OK;
 }
 
-int WheelController::print_usage(const char *reason)
+int DrivetrainController::print_usage(const char *reason)
 {
 	if (reason) {
 		PX4_WARN("%s\n", reason);
@@ -491,7 +491,7 @@ $ wheel_controller tune_d 0.05
 	return 0;
 }
 
-int WheelController::custom_command(int argc, char *argv[])
+int DrivetrainController::custom_command(int argc, char *argv[])
 {
 	if (argc < 1) {
 		return print_usage("missing command");

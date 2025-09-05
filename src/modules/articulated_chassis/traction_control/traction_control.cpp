@@ -77,7 +77,7 @@ void TractionControl::Run()
 
     // Update all state information
     update_vehicle_state();
-    update_motor_feedback();
+    update_drivetrain_feedback();
 
     // Check if traction control should be active
     vehicle_control_mode_s control_mode;
@@ -119,8 +119,8 @@ void TractionControl::Run()
         handle_excessive_slip();
     }
 
-    // Publish commands to wheel and steering controllers
-    publish_wheel_commands();
+    // Publish commands to drivetrain and steering controllers
+    publish_drivetrain_commands();
     publish_steering_command();
 
     _last_update = hrt_absolute_time();
@@ -162,19 +162,50 @@ void TractionControl::update_vehicle_state()
     }
 }
 
-void TractionControl::update_motor_feedback()
+void TractionControl::update_drivetrain_feedback()
 {
-    // Get motor speeds from encoders
-    actuator_motors_s motors;
-    if (_actuator_motors_sub.copy(&motors)) {
-        // Convert RPM to rad/s
-        _front_axle.motor_speed = motors.rpm[0] * (2.0f * M_PI_F / 60.0f);
-        _rear_axle.motor_speed = motors.rpm[1] * (2.0f * M_PI_F / 60.0f);
+    // Get drivetrain status from drivetrain controllers
+    // Front drivetrain (instance 0) and rear drivetrain (instance 1)
 
-        // Convert to wheel speed
-        float gear_ratio = _param_gear_ratio.get();
-        _front_axle.wheel_speed = _front_axle.motor_speed / gear_ratio;
-        _rear_axle.wheel_speed = _rear_axle.motor_speed / gear_ratio;
+    drivetrain_status_s front_status{}, rear_status{};
+    bool front_updated = false, rear_updated = false;    // Check all drivetrain status instances to find front and rear axles
+    for (uint8_t i = 0; i < _drivetrain_status_sub.size(); i++) {
+        drivetrain_status_s status;
+        if (_drivetrain_status_sub[i].updated() && _drivetrain_status_sub[i].copy(&status)) {
+            if (status.is_front_wheel && !front_updated) {
+                front_status = status;
+                front_updated = true;
+            } else if (!status.is_front_wheel && !rear_updated) {
+                rear_status = status;
+                rear_updated = true;
+            }
+        }
+    }
+
+    // Update front axle data
+    if (front_updated) {
+        // Convert RPM to rad/s
+        _front_axle.motor_speed = front_status.current_speed_rpm * (2.0f * M_PI_F / 60.0f);
+
+        // For wheel speed, use encoder-based speed if available, otherwise current speed
+        if (front_status.encoder_healthy) {
+            _front_axle.wheel_speed = front_status.encoder_speed_rpm * (2.0f * M_PI_F / 60.0f);
+        } else {
+            _front_axle.wheel_speed = _front_axle.motor_speed;
+        }
+    }
+
+    // Update rear axle data
+    if (rear_updated) {
+        // Convert RPM to rad/s
+        _rear_axle.motor_speed = rear_status.current_speed_rpm * (2.0f * M_PI_F / 60.0f);
+
+        // For wheel speed, use encoder-based speed if available, otherwise current speed
+        if (rear_status.encoder_healthy) {
+            _rear_axle.wheel_speed = rear_status.encoder_speed_rpm * (2.0f * M_PI_F / 60.0f);
+        } else {
+            _rear_axle.wheel_speed = _rear_axle.motor_speed;
+        }
     }
 }
 
@@ -435,37 +466,35 @@ void TractionControl::handle_excessive_slip()
     }
 }
 
-void TractionControl::publish_wheel_commands()
+void TractionControl::publish_drivetrain_commands()
 {
-    // Publish wheel setpoints for front and rear wheels
+    // Publish drivetrain setpoints for front and rear axles
 
-    // Front wheel setpoint
-    wheel_setpoint_s front_setpoint{};
+    // Front drivetrain setpoint
+    drivetrain_setpoint_s front_setpoint{};
     front_setpoint.timestamp = hrt_absolute_time();
     front_setpoint.wheel_speed_rad_s = _front_velocity_cmd / _param_wheel_radius.get(); // Convert m/s to rad/s
     front_setpoint.wheel_acceleration_rad_s2 = 2.0f; // Default acceleration limit
     front_setpoint.wheel_torque_nm = _front_force_cmd * _param_wheel_radius.get(); // Convert force to torque
-    front_setpoint.control_mode = wheel_setpoint_s::MODE_SPEED_CONTROL;
+    front_setpoint.control_mode = drivetrain_setpoint_s::MODE_SPEED_CONTROL;
     front_setpoint.enable_traction_control = _traction_control_active;
     front_setpoint.emergency_stop = false;
-    front_setpoint.speed_limit_rad_s = _param_max_speed.get();
     front_setpoint.torque_limit_nm = _param_max_force.get() * _param_wheel_radius.get();
 
-    // Rear wheel setpoint
-    wheel_setpoint_s rear_setpoint{};
+    // Rear drivetrain setpoint
+    drivetrain_setpoint_s rear_setpoint{};
     rear_setpoint.timestamp = hrt_absolute_time();
     rear_setpoint.wheel_speed_rad_s = _rear_velocity_cmd / _param_wheel_radius.get(); // Convert m/s to rad/s
     rear_setpoint.wheel_acceleration_rad_s2 = 2.0f; // Default acceleration limit
     rear_setpoint.wheel_torque_nm = _rear_force_cmd * _param_wheel_radius.get(); // Convert force to torque
-    rear_setpoint.control_mode = wheel_setpoint_s::MODE_SPEED_CONTROL;
+    rear_setpoint.control_mode = drivetrain_setpoint_s::MODE_SPEED_CONTROL;
     rear_setpoint.enable_traction_control = _traction_control_active;
     rear_setpoint.emergency_stop = false;
-    rear_setpoint.speed_limit_rad_s = _param_max_speed.get();
     rear_setpoint.torque_limit_nm = _param_max_force.get() * _param_wheel_radius.get();
 
     // Publish setpoints
-    _wheel_setpoint_front_pub.publish(front_setpoint);
-    _wheel_setpoint_rear_pub.publish(rear_setpoint);
+    _drivetrain_setpoint_front_pub.publish(front_setpoint);
+    _drivetrain_setpoint_rear_pub.publish(rear_setpoint);
 }
 
 void TractionControl::publish_steering_command()
