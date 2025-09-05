@@ -150,7 +150,7 @@ private:
     // uORB subscriptions - Electric Actuator Systems
     uORB::Subscription _boom_status_sub{ORB_ID(boom_status)};
     uORB::Subscription _bucket_status_sub{ORB_ID(bucket_status)};
-    uORB::Subscription _wheel_loader_status_sub{ORB_ID(wheel_loader_status)};
+    // uORB::Subscription _wheel_loader_status_sub{ORB_ID(wheel_loader_status)};
 
     // uORB subscriptions - Sensor data
     uORB::Subscription _imu_sub{ORB_ID(sensor_accel)};

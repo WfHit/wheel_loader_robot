@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- *   Copyright (c) 2024 PX4 Development Team. All rights reserved.
+ *   Copyright (c) 2025 PX4 Development Team. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -31,546 +31,683 @@
  *
  ****************************************************************************/
 
-#include "uorb_uart_proxy.hpp"
+/**
+ * @file uorb_uart_proxy.cpp
+ * @author PX4 Development Team
+ *
+ * uORB UART Proxy implementation for NXT boards
+ * Redesigned using ST3215 servo patterns for robust UART communication
+ */
 
+#include "uorb_uart_proxy.hpp"
 #include <px4_platform_common/log.h>
 #include <px4_platform_common/getopt.h>
-#include <px4_platform_common/cli.h>
+#include <lib/mathlib/mathlib.h>
 #include <drivers/drv_hrt.h>
+#include <cstring>
+#include <errno.h>
+#include <sys/ioctl.h>
+#include <unistd.h>
 
-UorbUartProxy::UorbUartProxy() :
-	ModuleBase(MODULE_NAME),
+UorbUartProxy::UorbUartProxy(const char *serial_port) :
 	ModuleParams(nullptr),
-	ScheduledWorkItem(MODULE_NAME, px4::wq_configurations::hp_default),
-	_last_heartbeat_time(0),
-	_last_statistics_time(0),
-	_last_main_board_heartbeat(0),
-	_tx_sequence(0),
-	_board_id(0)
+	ScheduledWorkItem(MODULE_NAME, px4::serial_port_to_wq(serial_port)),
+	_loop_perf(perf_alloc(PC_ELAPSED, MODULE_NAME": loop")),
+	_comms_error_perf(perf_alloc(PC_COUNT, MODULE_NAME": comm_err")),
+	_packet_count_perf(perf_alloc(PC_COUNT, MODULE_NAME": packets")),
+	_tx_bytes_perf(perf_alloc(PC_COUNT, MODULE_NAME": tx_bytes")),
+	_rx_bytes_perf(perf_alloc(PC_COUNT, MODULE_NAME": rx_bytes"))
 {
-	// Initialize statistics
-	memset(&_stats, 0, sizeof(_stats));
+	strncpy(_port_name, serial_port, sizeof(_port_name) - 1);
+	_port_name[sizeof(_port_name) - 1] = '\0';
 }
 
 UorbUartProxy::~UorbUartProxy()
 {
-	// Stop work queue
-	ScheduledWorkItem::deinit();
+	if (_uart >= 0) {
+		::close(_uart);
+		_uart = -1;
+	}
+
+	perf_free(_loop_perf);
+	perf_free(_comms_error_perf);
+	perf_free(_packet_count_perf);
+	perf_free(_tx_bytes_perf);
+	perf_free(_rx_bytes_perf);
 }
 
 bool UorbUartProxy::init()
 {
-	// Update parameters
-	updateParams();
-
-	// Determine board ID from parameter
-	_board_id = getBoardId();
-
-	// Get UART parameters
-	const char *device_path = _param_uart_dev.get();
-	int32_t baudrate = _param_uart_baud.get();
-
-	// Check if proxy is enabled
-	int32_t enable;
-	param_get(param_find("UART_PROXY_EN"), &enable);
-	if (!enable) {
-		PX4_INFO("UART proxy disabled by parameter");
-		return false;
-	}
-
-	// Initialize UART transport
-	if (_uart_transport.init(device_path, (speed_t)baudrate) < 0) {
-		PX4_ERR("Failed to initialize UART transport on %s at %d baud", device_path, baudrate);
-		return false;
-	}
-
-	PX4_INFO("UART proxy initialized on %s at %d baud (Board ID: %d)", device_path, baudrate, _board_id);
-
 	// Start work queue
-	ScheduledWorkItem::ScheduleNow();
+	ScheduleOnInterval(SCHEDULE_INTERVAL);
+
+	PX4_INFO("uORB UART proxy started on %s", _port_name);
+	return true;
+}
+
+bool UorbUartProxy::configure_port()
+{
+	// Close existing connection if open
+	if (_uart >= 0) {
+		::close(_uart);
+		_uart = -1;
+	}
+
+	// Check if enabled
+	if (_param_enable.get() == 0) {
+		PX4_DEBUG("uORB UART proxy disabled by parameter");
+		return false;
+	}
+
+	// Get port from parameter
+	int32_t port_param = _param_port.get();
+	const char *device_path;
+	switch (port_param) {
+		case 1: device_path = "/dev/ttyS1"; break;
+		case 2: device_path = "/dev/ttyS2"; break;
+		case 3: device_path = "/dev/ttyS3"; break;
+		case 4: device_path = "/dev/ttyS4"; break;
+		default: 
+			PX4_ERR("Invalid port parameter: %d", port_param);
+			return false;
+	}
+
+	strncpy(_port_name, device_path, sizeof(_port_name) - 1);
+	_port_name[sizeof(_port_name) - 1] = '\0';
+
+	// Open serial port
+	PX4_INFO("Opening serial port %s...", _port_name);
+	_uart = ::open(_port_name, O_RDWR | O_NOCTTY | O_NONBLOCK);
+
+	if (_uart < 0) {
+		PX4_ERR("Failed to open %s: %s", _port_name, strerror(errno));
+		return false;
+	}
+
+	PX4_INFO("Serial port opened successfully (fd=%d)", _uart);
+
+	// Configure port settings (same as bridge/ST3215)
+	struct termios uart_config;
+
+	if (tcgetattr(_uart, &uart_config) != 0) {
+		PX4_ERR("Error getting serial port attributes: %s", strerror(errno));
+		::close(_uart);
+		_uart = -1;
+		return false;
+	}
+
+	// Get baudrate parameter
+	int32_t baudrate = _param_baudrate.get();
+	if (baudrate <= 0) {
+		baudrate = 921600;  // Default for uORB proxy
+	}
+
+	PX4_INFO("Configuring baudrate: %d", baudrate);
+
+	speed_t speed;
+	switch (baudrate) {
+	case 9600:    speed = B9600; break;
+	case 19200:   speed = B19200; break;
+	case 38400:   speed = B38400; break;
+	case 57600:   speed = B57600; break;
+	case 115200:  speed = B115200; break;
+	case 230400:  speed = B230400; break;
+	case 460800:  speed = B460800; break;
+	case 921600:  speed = B921600; break;
+	case 1000000: speed = B1000000; break;
+	default:
+		PX4_WARN("Unsupported baudrate: %d, using 921600", baudrate);
+		speed = B921600;
+		break;
+	}
+
+	cfsetospeed(&uart_config, speed);
+	cfsetispeed(&uart_config, speed);
+
+	// Configure port settings (8N1, no flow control)
+	uart_config.c_cflag &= ~PARENB;  // No parity
+	uart_config.c_cflag &= ~CSTOPB;  // One stop bit
+	uart_config.c_cflag &= ~CSIZE;   // Clear size bits
+	uart_config.c_cflag |= CS8;      // 8 data bits
+	uart_config.c_cflag &= ~CRTSCTS; // No hardware flow control
+	uart_config.c_cflag |= CREAD | CLOCAL; // Enable reading and ignore modem control lines
+
+	uart_config.c_lflag &= ~ICANON;  // Non-canonical mode
+	uart_config.c_lflag &= ~ECHO;    // No echo
+	uart_config.c_lflag &= ~ECHOE;   // No echo erase
+	uart_config.c_lflag &= ~ECHONL;  // No echo newline
+	uart_config.c_lflag &= ~ISIG;    // No signal processing
+
+	uart_config.c_iflag &= ~(IXON | IXOFF | IXANY); // No software flow control
+	uart_config.c_iflag &= ~(IGNBRK | BRKINT | PARMRK | ISTRIP | INLCR | IGNCR | ICRNL);
+
+	uart_config.c_oflag &= ~OPOST;   // No output processing
+	uart_config.c_oflag &= ~ONLCR;   // No CR to NL translation
+
+	// Set timeouts for blocking reads
+	uart_config.c_cc[VTIME] = 1;     // Wait for up to 0.1s (1 decisecond)
+	uart_config.c_cc[VMIN] = 0;      // No minimum number of characters
+
+	if (tcsetattr(_uart, TCSANOW, &uart_config) != 0) {
+		PX4_ERR("Error setting serial port attributes: %s", strerror(errno));
+		::close(_uart);
+		_uart = -1;
+		return false;
+	}
+
+	// Clear any existing data
+	tcflush(_uart, TCIOFLUSH);
 
 	return true;
 }
 
 void UorbUartProxy::Run()
 {
-	if (!_uart_transport.isReady()) {
+	if (should_exit()) {
+		ScheduleClear();
 		return;
 	}
 
-	hrt_abstime now = hrt_absolute_time();
+	perf_begin(_loop_perf);
 
-	// Process incoming messages (X7+ -> this NXT board)
-	processIncomingMessages();
+	// Update parameters
+	updateParams();
 
-	// Process outgoing messages (this NXT board -> X7+)
-	processOutgoingMessages();
+	// Configure serial port if not already configured
+	if (_uart < 0) {
+		if (!configure_port()) {
+			PX4_DEBUG("Failed to configure serial port, will retry later");
+			perf_end(_loop_perf);
+			return;
+		}
+	}
+
+	// Process incoming messages (X7+ → NXT)
+	process_incoming_messages();
+
+	// Process outgoing messages (NXT → X7+)
+	process_outgoing_messages();
 
 	// Send periodic heartbeat
-	if (now - _last_heartbeat_time > HEARTBEAT_INTERVAL_US) {
-		sendHeartbeat();
+	hrt_abstime now = hrt_absolute_time();
+	if (now - _last_heartbeat_time > HEARTBEAT_INTERVAL) {
+		send_heartbeat();
 		_last_heartbeat_time = now;
 	}
 
-	// Print statistics periodically
-	if (now - _last_statistics_time > STATISTICS_INTERVAL_US) {
-		printStatistics();
-		_last_statistics_time = now;
+	// Check connection timeout
+	if (_connection_ok && (now - _last_update_time > CONNECTION_TIMEOUT)) {
+		PX4_WARN("Connection timeout - no data received in %llu ms", (now - _last_update_time) / 1000);
+		_connection_ok = false;
+		_consecutive_errors = 0;
 	}
 
-	// Schedule next run
-	ScheduleDelayed(MAIN_LOOP_INTERVAL_US);
+	perf_end(_loop_perf);
 }
 
-void UorbUartProxy::processIncomingMessages()
+bool UorbUartProxy::send_packet(const uint8_t *data, size_t length)
 {
-	distributed_uorb::UartFrame frame;
-	while (_uart_transport.receiveFrame(frame) > 0) {
-		_stats.rx_messages++;
-		_stats.rx_bytes += sizeof(frame.header) + frame.header.length + sizeof(frame.crc);
+	if (_uart < 0 || !data || length == 0) {
+		return false;
+	}
 
-		// Update main board heartbeat tracking
-		if (frame.header.board_id == distributed_uorb::BOARD_ID_X7_PLUS) {
-			_last_main_board_heartbeat = hrt_absolute_time();
+	// Clear input buffer before sending to avoid stale data
+	tcflush(_uart, TCIFLUSH);
+
+	// Send the packet
+	ssize_t bytes_written = ::write(_uart, data, length);
+	if (bytes_written != (ssize_t)length) {
+		perf_count(_comms_error_perf);
+		return false;
+	}
+
+	// Wait for transmission to complete
+	tcdrain(_uart);
+	perf_count(_tx_bytes_perf);
+	perf_add(_tx_bytes_perf, length);
+	return true;
+}
+
+bool UorbUartProxy::receive_packet(uint8_t *buffer, size_t buffer_size, uint32_t timeout_ms)
+{
+	if (_uart < 0 || !buffer || buffer_size == 0) {
+		return false;
+	}
+
+	hrt_abstime start_time = hrt_absolute_time();
+	size_t bytes_received = 0;
+
+	// First, read at least the header (sync1, sync2, msg_id, length, sequence)
+	const size_t header_size = 6;
+
+	while (bytes_received < header_size && bytes_received < buffer_size) {
+		// Check for timeout
+		if (hrt_elapsed_time(&start_time) > timeout_ms * 1000) {
+			return false;
 		}
 
-		// Process based on message type
-		switch (static_cast<distributed_uorb::UartMessageId>(frame.header.msg_id)) {
-		case distributed_uorb::UartMessageId::WHEEL_LOADER_SETPOINT: {
-			if (frame.header.length == sizeof(wheel_loader_setpoint_s)) {
-				wheel_loader_setpoint_s setpoint;
-				memcpy(&setpoint, frame.payload, sizeof(setpoint));
-				_wheel_loader_setpoint_pub.publish(setpoint);
-			} else {
-				_stats.rx_errors++;
-				PX4_WARN("Invalid wheel loader setpoint length: %d", frame.header.length);
-			}
+		ssize_t bytes_read = ::read(_uart, buffer + bytes_received, buffer_size - bytes_received);
+		if (bytes_read > 0) {
+			bytes_received += bytes_read;
+		} else if (bytes_read < 0 && errno != EAGAIN && errno != EWOULDBLOCK) {
+			return false;
+		}
+
+		// Small delay to prevent CPU spinning
+		usleep(500);
+	}
+
+	// Check if we have valid header
+	if (bytes_received < header_size) {
+		return false;
+	}
+
+	// Validate sync bytes
+	if (buffer[0] != UART_SYNC_BYTE1 || buffer[1] != UART_SYNC_BYTE2) {
+		return false;
+	}
+
+	// Parse packet length from header
+	uint8_t payload_length = buffer[3];
+
+	// Calculate total expected packet size
+	size_t total_expected = header_size + payload_length + 1;
+
+	if (total_expected > buffer_size) {
+		return false;
+	}
+
+	// Read remaining bytes (payload + checksum)
+	while (bytes_received < total_expected && bytes_received < buffer_size) {
+		if (hrt_elapsed_time(&start_time) > timeout_ms * 1000) {
 			break;
 		}
 
-		case distributed_uorb::UartMessageId::ACTUATOR_OUTPUTS_FRONT: {
-			// Only process if this is the front board
-			if (_board_id == distributed_uorb::BOARD_ID_NXT_FRONT && frame.header.length == sizeof(actuator_outputs_s)) {
-				actuator_outputs_s outputs;
-				memcpy(&outputs, frame.payload, sizeof(outputs));
-				_actuator_outputs_pub.publish(outputs);
-			} else if (_board_id != distributed_uorb::BOARD_ID_NXT_FRONT) {
-				// Ignore messages not intended for this board
-			} else {
-				_stats.rx_errors++;
-				PX4_WARN("Invalid front actuator outputs length: %d", frame.header.length);
-			}
-			break;
+		ssize_t bytes_read = ::read(_uart, buffer + bytes_received, buffer_size - bytes_received);
+		if (bytes_read > 0) {
+			bytes_received += bytes_read;
+		} else if (bytes_read < 0 && errno != EAGAIN && errno != EWOULDBLOCK) {
+			return false;
 		}
+		usleep(500);
+	}
 
-		case distributed_uorb::UartMessageId::ACTUATOR_OUTPUTS_REAR: {
-			// Only process if this is the rear board
-			if (_board_id == distributed_uorb::BOARD_ID_NXT_REAR && frame.header.length == sizeof(actuator_outputs_s)) {
-				actuator_outputs_s outputs;
-				memcpy(&outputs, frame.payload, sizeof(outputs));
-				_actuator_outputs_pub.publish(outputs);
-			} else if (_board_id != distributed_uorb::BOARD_ID_NXT_REAR) {
-				// Ignore messages not intended for this board
-			} else {
-				_stats.rx_errors++;
-				PX4_WARN("Invalid rear actuator outputs length: %d", frame.header.length);
-			}
-			break;
-		}
+	// Check if we got complete packet
+	if (bytes_received < total_expected) {
+		return false;
+	}
 
-		case distributed_uorb::UartMessageId::VEHICLE_STATUS: {
-			if (frame.header.length == sizeof(vehicle_status_s)) {
-				vehicle_status_s status;
-				memcpy(&status, frame.payload, sizeof(status));
-				_vehicle_status_pub.publish(status);
-			} else {
-				_stats.rx_errors++;
-				PX4_WARN("Invalid vehicle status length: %d", frame.header.length);
-			}
-			break;
-		}
+	// Verify checksum
+	uint8_t calculated_checksum = calculate_checksum(buffer, total_expected - 1);
+	uint8_t received_checksum = buffer[total_expected - 1];
 
-		case distributed_uorb::UartMessageId::TRACTION_CONTROL: {
-			if (frame.header.length == sizeof(traction_control_s)) {
-				traction_control_s traction_control;
-				memcpy(&traction_control, frame.payload, sizeof(traction_control));
-				_traction_control_pub.publish(traction_control);
-			} else {
-				_stats.rx_errors++;
-				PX4_WARN("Invalid traction control length: %d", frame.header.length);
-			}
-			break;
-		}
-
-		case distributed_uorb::UartMessageId::BOOM_TRAJECTORY_SETPOINT: {
-			// Only process if this is the rear board (boom control)
-			if (_board_id == distributed_uorb::BOARD_ID_NXT_REAR && frame.header.length == sizeof(boom_trajectory_setpoint_s)) {
-				boom_trajectory_setpoint_s boom_trajectory_setpoint;
-				memcpy(&boom_trajectory_setpoint, frame.payload, sizeof(boom_trajectory_setpoint));
-				_boom_trajectory_setpoint_pub.publish(boom_trajectory_setpoint);
-			} else if (_board_id != distributed_uorb::BOARD_ID_NXT_REAR) {
-				// Ignore messages not intended for this board
-			} else {
-				_stats.rx_errors++;
-				PX4_WARN("Invalid boom trajectory setpoint length: %d", frame.header.length);
-			}
-			break;
-		}
-
-		case distributed_uorb::UartMessageId::BUCKET_TRAJECTORY_SETPOINT: {
-			// Only process if this is the front board (bucket control)
-			if (_board_id == distributed_uorb::BOARD_ID_NXT_FRONT && frame.header.length == sizeof(bucket_trajectory_setpoint_s)) {
-				bucket_trajectory_setpoint_s bucket_trajectory_setpoint;
-				memcpy(&bucket_trajectory_setpoint, frame.payload, sizeof(bucket_trajectory_setpoint));
-				_bucket_trajectory_setpoint_pub.publish(bucket_trajectory_setpoint);
-			} else if (_board_id != distributed_uorb::BOARD_ID_NXT_FRONT) {
-				// Ignore messages not intended for this board
-			} else {
-				_stats.rx_errors++;
-				PX4_WARN("Invalid bucket trajectory setpoint length: %d", frame.header.length);
-			}
-			break;
-		}
-
-		case distributed_uorb::UartMessageId::STEERING_COMMAND: {
-			// Only process if this is the rear board (steering control)
-			if (_board_id == distributed_uorb::BOARD_ID_NXT_REAR && frame.header.length == sizeof(steering_command_s)) {
-				steering_command_s steering_command;
-				memcpy(&steering_command, frame.payload, sizeof(steering_command));
-				_steering_command_pub.publish(steering_command);
-			} else if (_board_id != distributed_uorb::BOARD_ID_NXT_REAR) {
-				// Ignore messages not intended for this board
-			} else {
-				_stats.rx_errors++;
-				PX4_WARN("Invalid steering command length: %d", frame.header.length);
-			}
-			break;
-		}
-
-		case distributed_uorb::UartMessageId::HEARTBEAT: {
-			// Heartbeat received from main board - already tracked above
-			break;
-		}
-
-		case distributed_uorb::UartMessageId::LOAD_LAMP_COMMAND: {
-			// Only process if this is the rear board (load lamp control)
-			if (_board_id == distributed_uorb::BOARD_ID_NXT_REAR && frame.header.length == sizeof(load_lamp_command_s)) {
-				load_lamp_command_s load_lamp_command;
-				memcpy(&load_lamp_command, frame.payload, sizeof(load_lamp_command));
-				_load_lamp_command_pub.publish(load_lamp_command);
-			} else if (_board_id != distributed_uorb::BOARD_ID_NXT_REAR) {
-				// Ignore messages not intended for this board
-			} else {
-				_stats.rx_errors++;
-				PX4_WARN("Invalid load lamp command length: %d", frame.header.length);
-			}
-			break;
-		}
-
-		default:
-			_stats.rx_errors++;
-			PX4_WARN("Unknown message ID: %d", frame.header.msg_id);
-			break;
-		}
+	if (calculated_checksum == received_checksum) {
+		perf_count(_rx_bytes_perf);
+		perf_add(_rx_bytes_perf, bytes_received);
+		return true;
+	} else {
+		perf_count(_comms_error_perf);
+		return false;
 	}
 }
 
-void UorbUartProxy::processOutgoingMessages()
+uint8_t UorbUartProxy::calculate_checksum(const uint8_t *data, size_t length)
 {
-	// Send limit sensor data (bucket limit - front board only)
-	if (_board_id == distributed_uorb::BOARD_ID_NXT_FRONT) {
-		limit_sensor_s limit_data;
-		if (_limit_sensor_sub.update(&limit_data)) {
-			distributed_uorb::UartFrame frame;
-			frame.header.sync = distributed_uorb::UART_SYNC_PATTERN;
-			frame.header.msg_id = static_cast<uint8_t>(distributed_uorb::UartMessageId::LIMIT_SENSOR_BUCKET);
-			frame.header.board_id = _board_id;
-			frame.header.length = sizeof(limit_data);
-			frame.header.sequence = _tx_sequence++;
-			frame.header.timestamp = hrt_absolute_time();
+	uint8_t sum = 0;
+	for (size_t i = 0; i < length; i++) {
+		sum += data[i];
+	}
+	return ~sum;
+}
 
-			memcpy(frame.payload, &limit_data, sizeof(limit_data));
+void UorbUartProxy::process_incoming_messages()
+{
+	if (_uart < 0) {
+		return;
+	}
 
-			if (_uart_transport.sendFrame(frame) >= 0) {
-				_stats.tx_messages++;
-				_stats.tx_bytes += sizeof(frame.header) + frame.header.length + sizeof(frame.crc);
-			} else {
-				_stats.tx_errors++;
-				PX4_WARN("Failed to send limit sensor data");
-			}
+	uint8_t buffer[512];
+	
+	// Try to receive messages (non-blocking)
+	while (receive_packet(buffer, sizeof(buffer), 5)) { // 5ms timeout per packet
+		handle_received_frame(buffer, sizeof(buffer));
+		_last_update_time = hrt_absolute_time();
+		_connection_ok = true;
+		_consecutive_errors = 0;
+		perf_count(_packet_count_perf);
+	}
+}
+
+void UorbUartProxy::process_outgoing_messages()
+{
+	if (_uart < 0) {
+		return;
+	}
+
+	// Determine which instance this proxy represents based on board type
+	int32_t board_type = _param_board_type.get(); // 0=front, 1=rear
+
+	// Process HBridge status messages
+	hbridge_status_s hbridge_status;
+	if (_hbridge_status_sub_0.update(&hbridge_status)) {
+		UartPacket packet;
+		packet.sync1 = UART_SYNC_BYTE1;
+		packet.sync2 = UART_SYNC_BYTE2;
+		packet.msg_id = static_cast<uint8_t>(MessageId::HBRIDGE_STATUS);
+		packet.length = sizeof(hbridge_status) + 1; // +1 for instance
+		packet.sequence = _tx_sequence++;
+
+		// Instance-based on board type: front=0,1 rear=2,3
+		uint8_t instance = (board_type == 0) ? 0 : 2;
+		packet.payload[0] = instance;
+		memcpy(&packet.payload[1], &hbridge_status, sizeof(hbridge_status));
+
+		size_t packet_size = 6 + packet.length + 1;
+		uint8_t checksum = calculate_checksum(reinterpret_cast<uint8_t*>(&packet), packet_size - 1);
+		packet.payload[packet.length] = checksum;
+
+		if (send_packet(reinterpret_cast<uint8_t*>(&packet), packet_size)) {
+			perf_count(_packet_count_perf);
 		}
 	}
 
-	// Send slip estimation data
-	slip_estimation_s slip_data;
-	if (_slip_estimation_sub.update(&slip_data)) {
-		distributed_uorb::UartFrame frame;
-		frame.header.sync = distributed_uorb::UART_SYNC_PATTERN;
+	if (_hbridge_status_sub_1.update(&hbridge_status)) {
+		UartPacket packet;
+		packet.sync1 = UART_SYNC_BYTE1;
+		packet.sync2 = UART_SYNC_BYTE2;
+		packet.msg_id = static_cast<uint8_t>(MessageId::HBRIDGE_STATUS);
+		packet.length = sizeof(hbridge_status) + 1;
+		packet.sequence = _tx_sequence++;
 
-		// Use appropriate message ID based on board type
-		if (_board_id == distributed_uorb::BOARD_ID_NXT_FRONT) {
-			frame.header.msg_id = static_cast<uint8_t>(distributed_uorb::UartMessageId::SLIP_ESTIMATION_FRONT);
-		} else {
-			frame.header.msg_id = static_cast<uint8_t>(distributed_uorb::UartMessageId::SLIP_ESTIMATION_REAR);
-		}
+		uint8_t instance = (board_type == 0) ? 1 : 3;
+		packet.payload[0] = instance;
+		memcpy(&packet.payload[1], &hbridge_status, sizeof(hbridge_status));
 
-		frame.header.board_id = _board_id;
-		frame.header.length = sizeof(slip_data);
-		frame.header.sequence = _tx_sequence++;
-		frame.header.timestamp = hrt_absolute_time();
+		size_t packet_size = 6 + packet.length + 1;
+		uint8_t checksum = calculate_checksum(reinterpret_cast<uint8_t*>(&packet), packet_size - 1);
+		packet.payload[packet.length] = checksum;
 
-		memcpy(frame.payload, &slip_data, sizeof(slip_data));
-
-		if (_uart_transport.sendFrame(frame) >= 0) {
-			_stats.tx_messages++;
-			_stats.tx_bytes += sizeof(frame.header) + frame.header.length + sizeof(frame.crc);
-		} else {
-			_stats.tx_errors++;
-			PX4_WARN("Failed to send slip estimation data");
+		if (send_packet(reinterpret_cast<uint8_t*>(&packet), packet_size)) {
+			perf_count(_packet_count_perf);
 		}
 	}
 
-	// Send boom status (rear board only)
-	if (_board_id == distributed_uorb::BOARD_ID_NXT_REAR) {
+	// Process sensor quad encoder messages
+	sensor_quad_encoder_s encoder;
+	if (_sensor_quad_encoder_sub_0.update(&encoder)) {
+		UartPacket packet;
+		packet.sync1 = UART_SYNC_BYTE1;
+		packet.sync2 = UART_SYNC_BYTE2;
+		packet.msg_id = static_cast<uint8_t>(MessageId::SENSOR_QUAD_ENCODER);
+		packet.length = sizeof(encoder) + 1;
+		packet.sequence = _tx_sequence++;
+
+		uint8_t instance = (board_type == 0) ? 0 : 2;
+		packet.payload[0] = instance;
+		memcpy(&packet.payload[1], &encoder, sizeof(encoder));
+
+		size_t packet_size = 6 + packet.length + 1;
+		uint8_t checksum = calculate_checksum(reinterpret_cast<uint8_t*>(&packet), packet_size - 1);
+		packet.payload[packet.length] = checksum;
+
+		if (send_packet(reinterpret_cast<uint8_t*>(&packet), packet_size)) {
+			perf_count(_packet_count_perf);
+		}
+	}
+
+	if (_sensor_quad_encoder_sub_1.update(&encoder)) {
+		UartPacket packet;
+		packet.sync1 = UART_SYNC_BYTE1;
+		packet.sync2 = UART_SYNC_BYTE2;
+		packet.msg_id = static_cast<uint8_t>(MessageId::SENSOR_QUAD_ENCODER);
+		packet.length = sizeof(encoder) + 1;
+		packet.sequence = _tx_sequence++;
+
+		uint8_t instance = (board_type == 0) ? 1 : 3;
+		packet.payload[0] = instance;
+		memcpy(&packet.payload[1], &encoder, sizeof(encoder));
+
+		size_t packet_size = 6 + packet.length + 1;
+		uint8_t checksum = calculate_checksum(reinterpret_cast<uint8_t*>(&packet), packet_size - 1);
+		packet.payload[packet.length] = checksum;
+
+		if (send_packet(reinterpret_cast<uint8_t*>(&packet), packet_size)) {
+			perf_count(_packet_count_perf);
+		}
+	}
+
+	// Process other status messages based on board type
+	if (board_type == 1) { // Rear board handles boom/bucket
 		boom_status_s boom_status;
 		if (_boom_status_sub.update(&boom_status)) {
-			distributed_uorb::UartFrame frame;
-			frame.header.sync = distributed_uorb::UART_SYNC_PATTERN;
-			frame.header.msg_id = static_cast<uint8_t>(distributed_uorb::UartMessageId::BOOM_STATUS);
-			frame.header.board_id = _board_id;
-			frame.header.length = sizeof(boom_status);
-			frame.header.sequence = _tx_sequence++;
-			frame.header.timestamp = hrt_absolute_time();
+			UartPacket packet;
+			packet.sync1 = UART_SYNC_BYTE1;
+			packet.sync2 = UART_SYNC_BYTE2;
+			packet.msg_id = static_cast<uint8_t>(MessageId::BOOM_STATUS);
+			packet.length = sizeof(boom_status);
+			packet.sequence = _tx_sequence++;
 
-			memcpy(frame.payload, &boom_status, sizeof(boom_status));
+			memcpy(packet.payload, &boom_status, sizeof(boom_status));
 
-			if (_uart_transport.sendFrame(frame) >= 0) {
-				_stats.tx_messages++;
-				_stats.tx_bytes += sizeof(frame.header) + frame.header.length + sizeof(frame.crc);
-			} else {
-				_stats.tx_errors++;
-				PX4_WARN("Failed to send boom status");
+			size_t packet_size = 6 + packet.length + 1;
+			uint8_t checksum = calculate_checksum(reinterpret_cast<uint8_t*>(&packet), packet_size - 1);
+			packet.payload[packet.length] = checksum;
+
+			if (send_packet(reinterpret_cast<uint8_t*>(&packet), packet_size)) {
+				perf_count(_packet_count_perf);
 			}
 		}
-	}
 
-	// Send bucket status (front board only)
-	if (_board_id == distributed_uorb::BOARD_ID_NXT_FRONT) {
 		bucket_status_s bucket_status;
 		if (_bucket_status_sub.update(&bucket_status)) {
-			distributed_uorb::UartFrame frame;
-			frame.header.sync = distributed_uorb::UART_SYNC_PATTERN;
-			frame.header.msg_id = static_cast<uint8_t>(distributed_uorb::UartMessageId::BUCKET_STATUS);
-			frame.header.board_id = _board_id;
-			frame.header.length = sizeof(bucket_status);
-			frame.header.sequence = _tx_sequence++;
-			frame.header.timestamp = hrt_absolute_time();
+			UartPacket packet;
+			packet.sync1 = UART_SYNC_BYTE1;
+			packet.sync2 = UART_SYNC_BYTE2;
+			packet.msg_id = static_cast<uint8_t>(MessageId::BUCKET_STATUS);
+			packet.length = sizeof(bucket_status);
+			packet.sequence = _tx_sequence++;
 
-			memcpy(frame.payload, &bucket_status, sizeof(bucket_status));
+			memcpy(packet.payload, &bucket_status, sizeof(bucket_status));
 
-			if (_uart_transport.sendFrame(frame) >= 0) {
-				_stats.tx_messages++;
-				_stats.tx_bytes += sizeof(frame.header) + frame.header.length + sizeof(frame.crc);
-			} else {
-				_stats.tx_errors++;
-				PX4_WARN("Failed to send bucket status");
+			size_t packet_size = 6 + packet.length + 1;
+			uint8_t checksum = calculate_checksum(reinterpret_cast<uint8_t*>(&packet), packet_size - 1);
+			packet.payload[packet.length] = checksum;
+
+			if (send_packet(reinterpret_cast<uint8_t*>(&packet), packet_size)) {
+				perf_count(_packet_count_perf);
 			}
 		}
 	}
 
-	// Send steering status (rear board only)
-	if (_board_id == distributed_uorb::BOARD_ID_NXT_REAR) {
+	if (board_type == 0) { // Front board handles steering
 		steering_status_s steering_status;
 		if (_steering_status_sub.update(&steering_status)) {
-			distributed_uorb::UartFrame frame;
-			frame.header.sync = distributed_uorb::UART_SYNC_PATTERN;
-			frame.header.msg_id = static_cast<uint8_t>(distributed_uorb::UartMessageId::STEERING_STATUS);
-			frame.header.board_id = _board_id;
-			frame.header.length = sizeof(steering_status);
-			frame.header.sequence = _tx_sequence++;
-			frame.header.timestamp = hrt_absolute_time();
+			UartPacket packet;
+			packet.sync1 = UART_SYNC_BYTE1;
+			packet.sync2 = UART_SYNC_BYTE2;
+			packet.msg_id = static_cast<uint8_t>(MessageId::STEERING_STATUS);
+			packet.length = sizeof(steering_status);
+			packet.sequence = _tx_sequence++;
 
-			memcpy(frame.payload, &steering_status, sizeof(steering_status));
+			memcpy(packet.payload, &steering_status, sizeof(steering_status));
 
-			if (_uart_transport.sendFrame(frame) >= 0) {
-				_stats.tx_messages++;
-				_stats.tx_bytes += sizeof(frame.header) + frame.header.length + sizeof(frame.crc);
-			} else {
-				_stats.tx_errors++;
-				PX4_WARN("Failed to send steering status");
+			size_t packet_size = 6 + packet.length + 1;
+			uint8_t checksum = calculate_checksum(reinterpret_cast<uint8_t*>(&packet), packet_size - 1);
+			packet.payload[packet.length] = checksum;
+
+			if (send_packet(reinterpret_cast<uint8_t*>(&packet), packet_size)) {
+				perf_count(_packet_count_perf);
 			}
 		}
 	}
 
-	// Send HBridge status (multi-instance, NXT → X7+)
-	hbridge_status_s hbridge_status;
+	// Process slip estimation (both boards)
+	slip_estimation_s slip_estimation;
+	if (_slip_estimation_sub.update(&slip_estimation)) {
+		UartPacket packet;
+		packet.sync1 = UART_SYNC_BYTE1;
+		packet.sync2 = UART_SYNC_BYTE2;
+		packet.msg_id = (board_type == 0) ? static_cast<uint8_t>(MessageId::SLIP_ESTIMATION_FRONT) : 
+						static_cast<uint8_t>(MessageId::SLIP_ESTIMATION_REAR);
+		packet.length = sizeof(slip_estimation);
+		packet.sequence = _tx_sequence++;
 
-	// Send HBridge status instance 0
-	if (_hbridge_status_sub_0.update(&hbridge_status)) {
-		distributed_uorb::UartFrame frame;
-		frame.header.sync = distributed_uorb::UART_SYNC_PATTERN;
+		memcpy(packet.payload, &slip_estimation, sizeof(slip_estimation));
 
-		// Use appropriate message ID based on board type and instance
-		if (_board_id == distributed_uorb::BOARD_ID_NXT_FRONT) {
-			frame.header.msg_id = static_cast<uint8_t>(distributed_uorb::UartMessageId::HBRIDGE_STATUS_FRONT_0);
-		} else {
-			frame.header.msg_id = static_cast<uint8_t>(distributed_uorb::UartMessageId::HBRIDGE_STATUS_REAR_0);
-		}
+		size_t packet_size = 6 + packet.length + 1;
+		uint8_t checksum = calculate_checksum(reinterpret_cast<uint8_t*>(&packet), packet_size - 1);
+		packet.payload[packet.length] = checksum;
 
-		frame.header.board_id = _board_id;
-		frame.header.length = sizeof(hbridge_status);
-		frame.header.sequence = _tx_sequence++;
-		frame.header.timestamp = hrt_absolute_time();
-
-		memcpy(frame.payload, &hbridge_status, sizeof(hbridge_status));
-
-		if (_uart_transport.sendFrame(frame) >= 0) {
-			_stats.tx_messages++;
-			_stats.tx_bytes += sizeof(frame.header) + frame.header.length + sizeof(frame.crc);
-		} else {
-			_stats.tx_errors++;
-			PX4_WARN("Failed to send HBridge status instance 0");
-		}
-	}
-
-	// Send HBridge status instance 1
-	if (_hbridge_status_sub_1.update(&hbridge_status)) {
-		distributed_uorb::UartFrame frame;
-		frame.header.sync = distributed_uorb::UART_SYNC_PATTERN;
-
-		// Use appropriate message ID based on board type and instance
-		if (_board_id == distributed_uorb::BOARD_ID_NXT_FRONT) {
-			frame.header.msg_id = static_cast<uint8_t>(distributed_uorb::UartMessageId::HBRIDGE_STATUS_FRONT_1);
-		} else {
-			frame.header.msg_id = static_cast<uint8_t>(distributed_uorb::UartMessageId::HBRIDGE_STATUS_REAR_1);
-		}
-
-		frame.header.board_id = _board_id;
-		frame.header.length = sizeof(hbridge_status);
-		frame.header.sequence = _tx_sequence++;
-		frame.header.timestamp = hrt_absolute_time();
-
-		memcpy(frame.payload, &hbridge_status, sizeof(hbridge_status));
-
-		if (_uart_transport.sendFrame(frame) >= 0) {
-			_stats.tx_messages++;
-			_stats.tx_bytes += sizeof(frame.header) + frame.header.length + sizeof(frame.crc);
-		} else {
-			_stats.tx_errors++;
-			PX4_WARN("Failed to send HBridge status instance 1");
-		}
-	}
-
-	// Send sensor quad encoder data (multi-instance, NXT → X7+)
-	sensor_quad_encoder_s sensor_data;
-
-	// Send sensor quad encoder instance 0
-	if (_sensor_quad_encoder_sub_0.update(&sensor_data)) {
-		distributed_uorb::UartFrame frame;
-		frame.header.sync = distributed_uorb::UART_SYNC_PATTERN;
-
-		// Use appropriate message ID based on board type
-		if (_board_id == distributed_uorb::BOARD_ID_NXT_FRONT) {
-			frame.header.msg_id = static_cast<uint8_t>(distributed_uorb::UartMessageId::SENSOR_QUAD_ENCODER_FRONT);
-		} else {
-			frame.header.msg_id = static_cast<uint8_t>(distributed_uorb::UartMessageId::SENSOR_QUAD_ENCODER_REAR);
-		}
-
-		frame.header.board_id = _board_id;
-		frame.header.length = sizeof(sensor_data);
-		frame.header.sequence = _tx_sequence++;
-		frame.header.timestamp = hrt_absolute_time();
-
-		memcpy(frame.payload, &sensor_data, sizeof(sensor_data));
-
-		if (_uart_transport.sendFrame(frame) >= 0) {
-			_stats.tx_messages++;
-			_stats.tx_bytes += sizeof(frame.header) + frame.header.length + sizeof(frame.crc);
-		} else {
-			_stats.tx_errors++;
-			PX4_WARN("Failed to send sensor quad encoder instance 0");
-		}
-	}
-
-	// Send sensor quad encoder instance 1
-	if (_sensor_quad_encoder_sub_1.update(&sensor_data)) {
-		distributed_uorb::UartFrame frame;
-		frame.header.sync = distributed_uorb::UART_SYNC_PATTERN;
-
-		// Use appropriate message ID based on board type
-		if (_board_id == distributed_uorb::BOARD_ID_NXT_FRONT) {
-			frame.header.msg_id = static_cast<uint8_t>(distributed_uorb::UartMessageId::SENSOR_QUAD_ENCODER_FRONT);
-		} else {
-			frame.header.msg_id = static_cast<uint8_t>(distributed_uorb::UartMessageId::SENSOR_QUAD_ENCODER_REAR);
-		}
-
-		frame.header.board_id = _board_id;
-		frame.header.length = sizeof(sensor_data);
-		frame.header.sequence = _tx_sequence++;
-		frame.header.timestamp = hrt_absolute_time();
-
-		memcpy(frame.payload, &sensor_data, sizeof(sensor_data));
-
-		if (_uart_transport.sendFrame(frame) >= 0) {
-			_stats.tx_messages++;
-			_stats.tx_bytes += sizeof(frame.header) + frame.header.length + sizeof(frame.crc);
-		} else {
-			_stats.tx_errors++;
-			PX4_WARN("Failed to send sensor quad encoder instance 1");
+		if (send_packet(reinterpret_cast<uint8_t*>(&packet), packet_size)) {
+			perf_count(_packet_count_perf);
 		}
 	}
 }
 
-void UorbUartProxy::sendHeartbeat()
+void UorbUartProxy::handle_received_frame(const uint8_t *data, size_t length)
 {
-	distributed_uorb::UartFrame frame;
-	frame.header.sync = distributed_uorb::UART_SYNC_PATTERN;
-	frame.header.msg_id = static_cast<uint8_t>(distributed_uorb::UartMessageId::HEARTBEAT);
-	frame.header.board_id = _board_id;
-	frame.header.length = 0;
-	frame.header.sequence = _tx_sequence++;
-	frame.header.timestamp = hrt_absolute_time();
-
-	if (_uart_transport.sendFrame(frame) >= 0) {
-		_stats.tx_messages++;
-		_stats.tx_bytes += sizeof(frame.header) + sizeof(frame.crc);
-	} else {
-		_stats.tx_errors++;
+	if (!data || length < 7) { // Minimum packet size
+		return;
 	}
-}
 
-void UorbUartProxy::printStatistics()
-{
-	hrt_abstime now = hrt_absolute_time();
-	bool main_board_online = (now - _last_main_board_heartbeat) < HEARTBEAT_TIMEOUT_US;
+	uint8_t msg_id = data[2];
+	uint8_t payload_length = data[3];
+	uint16_t sequence = (data[5] << 8) | data[4];
 
-	const char *board_name = (_board_id == distributed_uorb::BOARD_ID_NXT_FRONT) ? "FRONT" : "REAR";
+	// Check for duplicate packets
+	if (sequence == _last_rx_sequence) {
+		return;
+	}
+	_last_rx_sequence = sequence;
 
-	PX4_INFO("UART Proxy [%s] Stats - TX: %lu msgs, %lu bytes, %lu errors | RX: %lu msgs, %lu bytes, %lu errors",
-		 board_name, _stats.tx_messages, _stats.tx_bytes, _stats.tx_errors,
-		 _stats.rx_messages, _stats.rx_bytes, _stats.rx_errors);
+	const uint8_t *payload = &data[6];
 
-	PX4_INFO("Main Board Status: %s", main_board_online ? "ONLINE" : "OFFLINE");
-}
-
-uint8_t UorbUartProxy::getBoardId()
-{
 	int32_t board_type = _param_board_type.get();
 
-	switch (board_type) {
-	case 0:
-		return distributed_uorb::BOARD_ID_NXT_FRONT;
-	case 1:
-		return distributed_uorb::BOARD_ID_NXT_REAR;
-	default:
-		PX4_WARN("Invalid board type %d, defaulting to front", board_type);
-		return distributed_uorb::BOARD_ID_NXT_FRONT;
+	switch (static_cast<MessageId>(msg_id)) {
+		case MessageId::ACTUATOR_OUTPUTS_FRONT: {
+			if (payload_length == sizeof(actuator_outputs_s) && board_type == 0) {
+				actuator_outputs_s actuator_outputs;
+				memcpy(&actuator_outputs, payload, sizeof(actuator_outputs));
+				_actuator_outputs_front_pub.publish(actuator_outputs);
+			}
+			break;
+		}
+		case MessageId::ACTUATOR_OUTPUTS_REAR: {
+			if (payload_length == sizeof(actuator_outputs_s) && board_type == 1) {
+				actuator_outputs_s actuator_outputs;
+				memcpy(&actuator_outputs, payload, sizeof(actuator_outputs));
+				_actuator_outputs_rear_pub.publish(actuator_outputs);
+			}
+			break;
+		}
+		case MessageId::VEHICLE_STATUS: {
+			if (payload_length == sizeof(vehicle_status_s)) {
+				vehicle_status_s vehicle_status;
+				memcpy(&vehicle_status, payload, sizeof(vehicle_status));
+				_vehicle_status_pub.publish(vehicle_status);
+			}
+			break;
+		}
+		case MessageId::BOOM_TRAJECTORY_SETPOINT: {
+			if (payload_length == sizeof(boom_trajectory_setpoint_s) && board_type == 1) {
+				boom_trajectory_setpoint_s boom_setpoint;
+				memcpy(&boom_setpoint, payload, sizeof(boom_setpoint));
+				_boom_trajectory_setpoint_pub.publish(boom_setpoint);
+			}
+			break;
+		}
+		case MessageId::BUCKET_TRAJECTORY_SETPOINT: {
+			if (payload_length == sizeof(bucket_trajectory_setpoint_s) && board_type == 1) {
+				bucket_trajectory_setpoint_s bucket_setpoint;
+				memcpy(&bucket_setpoint, payload, sizeof(bucket_setpoint));
+				_bucket_trajectory_setpoint_pub.publish(bucket_setpoint);
+			}
+			break;
+		}
+		case MessageId::STEERING_COMMAND: {
+			if (payload_length == sizeof(steering_command_s) && board_type == 0) {
+				steering_command_s steering_command;
+				memcpy(&steering_command, payload, sizeof(steering_command));
+				_steering_command_pub.publish(steering_command);
+			}
+			break;
+		}
+		default:
+			break;
 	}
+}
+
+void UorbUartProxy::send_heartbeat()
+{
+	if (_uart < 0) {
+		return;
+	}
+
+	UartPacket packet;
+	packet.sync1 = UART_SYNC_BYTE1;
+	packet.sync2 = UART_SYNC_BYTE2;
+	packet.msg_id = static_cast<uint8_t>(MessageId::HEARTBEAT);
+	packet.length = 0;  // No payload for heartbeat
+	packet.sequence = _tx_sequence++;
+
+	size_t packet_size = 6 + 1; // header + checksum (no payload)
+	uint8_t checksum = calculate_checksum(reinterpret_cast<uint8_t*>(&packet), packet_size - 1);
+	packet.payload[0] = checksum;
+
+	send_packet(reinterpret_cast<uint8_t*>(&packet), packet_size);
+}
+
+int UorbUartProxy::print_status()
+{
+	PX4_INFO("uORB UART Proxy Status:");
+	PX4_INFO("  Port: %s", _port_name);
+	PX4_INFO("  UART FD: %d", _uart);
+	PX4_INFO("  Board Type: %s", _param_board_type.get() == 0 ? "FRONT" : "REAR");
+	PX4_INFO("  Connection: %s", _connection_ok ? "OK" : "TIMEOUT");
+	PX4_INFO("  TX Sequence: %u", _tx_sequence);
+	PX4_INFO("  Last RX Sequence: %u", _last_rx_sequence);
+	PX4_INFO("  Consecutive Errors: %d", _consecutive_errors);
+	
+	if (_last_update_time > 0) {
+		PX4_INFO("  Last Update: %llu ms ago", (hrt_absolute_time() - _last_update_time) / 1000);
+	} else {
+		PX4_INFO("  Last Update: Never");
+	}
+
+	// Print performance counters
+	perf_print_counter(_loop_perf);
+	perf_print_counter(_comms_error_perf);
+	perf_print_counter(_packet_count_perf);
+	perf_print_counter(_tx_bytes_perf);
+	perf_print_counter(_rx_bytes_perf);
+
+	return 0;
 }
 
 int UorbUartProxy::task_spawn(int argc, char *argv[])
 {
-	UorbUartProxy *instance = new UorbUartProxy();
+	const char *serial_port = "/dev/ttyS1";
+
+	// Parse command line arguments
+	int myoptind = 1;
+	int ch;
+	const char *myoptarg = nullptr;
+
+	while ((ch = px4_getopt(argc, argv, "d:", &myoptind, &myoptarg)) != EOF) {
+		switch (ch) {
+		case 'd':
+			serial_port = myoptarg;
+			break;
+		case '?':
+			return print_usage("unrecognized flag");
+		default:
+			PX4_WARN("unrecognized flag");
+			return -1;
+		}
+	}
+
+	UorbUartProxy *instance = new UorbUartProxy(serial_port);
 
 	if (instance) {
 		_object.store(instance);
@@ -591,35 +728,8 @@ int UorbUartProxy::task_spawn(int argc, char *argv[])
 	return PX4_ERROR;
 }
 
-int UorbUartProxy::print_status()
-{
-	PX4_INFO("UART Proxy Module Status");
-
-	if (_uart_transport) {
-		PX4_INFO("UART transport initialized");
-		PX4_INFO("Board ID: %d", _board_id);
-	} else {
-		PX4_INFO("UART transport not initialized");
-		return PX4_OK;
-	}
-
-	// Print current statistics
-	const_cast<UorbUartProxy*>(this)->printStatistics();
-
-	return PX4_OK;
-}
-
 int UorbUartProxy::custom_command(int argc, char *argv[])
 {
-	if (!is_running()) {
-		PX4_ERR("not running");
-		return PX4_ERROR;
-	}
-
-	if (!strcmp(argv[0], "status")) {
-		return get_instance()->print_status();
-	}
-
 	return print_usage("unknown command");
 }
 
@@ -632,14 +742,16 @@ int UorbUartProxy::print_usage(const char *reason)
 	PRINT_MODULE_DESCRIPTION(
 		R"DESCR_STR(
 ### Description
-uORB UART Proxy module for distributed uORB messaging over UART.
+uORB UART Proxy module for NXT boards.
 
 This module runs on NXT-Dual controller boards and provides transparent
 uORB messaging to/from the X7+ main board via UART. It receives commands
 from the main board and sends back status information.
 
+Redesigned using ST3215 servo patterns for robust UART communication.
+
 ### Examples
-Start the proxy:
+Start the proxy (front board):
 $ uorb_uart_proxy start
 
 Check status:

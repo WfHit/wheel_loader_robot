@@ -1,0 +1,10 @@
+menuconfig DRIVERS_VLA_PROXY
+	bool "VLA Proxy driver"
+	default n
+	help
+	  Enable support for VLA (Vision-Language-Action) Proxy driver.
+
+	  This driver provides communication with VLA models via UART interface,
+	  allowing autonomous wheel loader bucket control with 6DOF trajectory
+	  commands. The driver sends robot status to the VLA model and receives
+	  trajectory setpoints for bucket positioning.

@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- *   Copyright (c) 2024 PX4 Development Team. All rights reserved.
+ *   Copyright (c) 2025 PX4 Development Team. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -31,18 +31,30 @@
  *
  ****************************************************************************/
 
+/**
+ * @file uorb_uart_proxy.hpp
+ * @author PX4 Development Team
+ *
+ * uORB UART Proxy module for NXT boards
+ * Provides transparent uORB messaging to/from the X7+ main board via UART
+ * Redesigned using ST3215 servo patterns for robust UART communication
+ */
+
 #pragma once
 
+#include <px4_platform_common/defines.h>
 #include <px4_platform_common/module.h>
 #include <px4_platform_common/module_params.h>
 #include <px4_platform_common/px4_work_queue/ScheduledWorkItem.hpp>
+#include <lib/perf/perf_counter.h>
 
-#include <uORB/Subscription.hpp>
 #include <uORB/Publication.hpp>
-#include <uORB/topics/wheel_loader_setpoint.h>
+#include <uORB/Subscription.hpp>
+#include <uORB/SubscriptionMultiArray.hpp>
+
 #include <uORB/topics/actuator_outputs.h>
 #include <uORB/topics/vehicle_status.h>
-#include <uORB/topics/limit_sensor.h>
+#include <uORB/topics/sensor_limit_switch.h>
 #include <uORB/topics/slip_estimation.h>
 #include <uORB/topics/traction_control.h>
 #include <uORB/topics/boom_trajectory_setpoint.h>
@@ -55,9 +67,11 @@
 #include <uORB/topics/load_lamp_command.h>
 #include <uORB/topics/sensor_quad_encoder.h>
 
-#include <lib/distributed_uorb/uart_transport/uart_transport.hpp>
-#include <lib/distributed_uorb/uart_protocol/uart_protocol.hpp>
-#include <lib/distributed_uorb/topic_registry/topic_registry.hpp>
+#include <poll.h>
+#include <termios.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/select.h>
 
 using namespace time_literals;
 
@@ -67,66 +81,61 @@ using namespace time_literals;
  * This module runs on NXT-Dual controller boards and provides transparent
  * uORB messaging to/from the X7+ main board via UART. It receives commands
  * from the main board and sends back status information.
+ * Redesigned using ST3215 servo patterns for robust UART communication.
  */
-class UorbUartProxy : public ModuleBase<UorbUartProxy>, public ModuleParams, public px4::ScheduledWorkItem
+class UorbUartProxy : public ModuleBase<UorbUartProxy>,
+		      public ModuleParams,
+		      public px4::ScheduledWorkItem
 {
 public:
-	UorbUartProxy();
+	UorbUartProxy(const char *serial_port = "/dev/ttyS1");
 	~UorbUartProxy();
 
-	/** @see ModuleBase */
 	static int task_spawn(int argc, char *argv[]);
-
-	/** @see ModuleBase */
 	static int custom_command(int argc, char *argv[]);
-
-	/** @see ModuleBase */
 	static int print_usage(const char *reason = nullptr);
 
 	bool init();
-
 	int print_status() override;
 
 private:
 	void Run() override;
 
-	/**
-	 * Process incoming messages from X7+ main board
-	 */
-	void processIncomingMessages();
+	// Serial communication (ST3215 pattern)
+	bool configure_port();
+	bool send_packet(const uint8_t *data, size_t length);
+	bool receive_packet(uint8_t *buffer, size_t buffer_size, uint32_t timeout_ms);
+	uint8_t calculate_checksum(const uint8_t *data, size_t length);
 
-	/**
-	 * Process outgoing messages to X7+ main board
-	 */
-	void processOutgoingMessages();
+	// Message processing
+	void process_incoming_messages();
+	void process_outgoing_messages();
+	void send_heartbeat();
+	void handle_received_frame(const uint8_t *data, size_t length);
 
-	/**
-	 * Send heartbeat message to main board
-	 */
-	void sendHeartbeat();
+	// Serial port (ST3215 pattern)
+	int _uart{-1};
+	char _port_name[32];
 
-	/**
-	 * Print module statistics
-	 */
-	void printStatistics();
+	// Communication state
+	bool _connection_ok{false};
+	hrt_abstime _last_update_time{0};
+	hrt_abstime _last_heartbeat_time{0};
+	int _consecutive_errors{0};
 
-	/**
-	 * Determine board ID based on parameter
-	 */
-	uint8_t getBoardId();
+	// Sequence numbers for packet tracking
+	uint16_t _tx_sequence{0};
+	uint16_t _last_rx_sequence{0};
 
-	// Module parameters
-	DEFINE_PARAMETERS(
-		(ParamString<px4::params::UART_PROXY_DEV>) _param_uart_dev,
-		(ParamInt<px4::params::UART_PROXY_BAUD>) _param_uart_baud,
-		(ParamInt<px4::params::UART_PROXY_TYPE>) _param_board_type
-	)
+	// Performance counters (ST3215 pattern)
+	perf_counter_t _loop_perf;
+	perf_counter_t _comms_error_perf;
+	perf_counter_t _packet_count_perf;
+	perf_counter_t _tx_bytes_perf;
+	perf_counter_t _rx_bytes_perf;
 
-	// UART transport
-	distributed_uorb::UartTransport _uart_transport;
-
-	// uORB subscriptions (outgoing to main board)
-	uORB::Subscription _limit_sensor_sub{ORB_ID(limit_sensor)};
+	// Subscriptions for outgoing topics (NXT → X7+)
+	uORB::Subscription _sensor_limit_switch_sub{ORB_ID(sensor_limit_switch)};
 	uORB::Subscription _slip_estimation_sub{ORB_ID(slip_estimation)};
 	uORB::Subscription _boom_status_sub{ORB_ID(boom_status)};
 	uORB::Subscription _bucket_status_sub{ORB_ID(bucket_status)};
@@ -140,9 +149,9 @@ private:
 	uORB::Subscription _sensor_quad_encoder_sub_0{ORB_ID(sensor_quad_encoder), 0};
 	uORB::Subscription _sensor_quad_encoder_sub_1{ORB_ID(sensor_quad_encoder), 1};
 
-	// uORB publications (incoming from main board)
-	uORB::Publication<wheel_loader_setpoint_s> _wheel_loader_setpoint_pub{ORB_ID(wheel_loader_setpoint)};
-	uORB::Publication<actuator_outputs_s> _actuator_outputs_pub{ORB_ID(actuator_outputs)};
+	// Publications for incoming topics (X7+ → NXT)
+	uORB::Publication<actuator_outputs_s> _actuator_outputs_front_pub{ORB_ID(actuator_outputs), 0};
+	uORB::Publication<actuator_outputs_s> _actuator_outputs_rear_pub{ORB_ID(actuator_outputs), 1};
 	uORB::Publication<vehicle_status_s> _vehicle_status_pub{ORB_ID(vehicle_status)};
 	uORB::Publication<traction_control_s> _traction_control_pub{ORB_ID(traction_control)};
 	uORB::Publication<boom_trajectory_setpoint_s> _boom_trajectory_setpoint_pub{ORB_ID(boom_trajectory_setpoint)};
@@ -150,33 +159,56 @@ private:
 	uORB::Publication<steering_command_s> _steering_command_pub{ORB_ID(steering_command)};
 	uORB::Publication<load_lamp_command_s> _load_lamp_command_pub{ORB_ID(load_lamp_command)};
 
-	// Communication statistics
-	struct {
-		uint32_t tx_messages;
-		uint32_t tx_bytes;
-		uint32_t tx_errors;
-		uint32_t rx_messages;
-		uint32_t rx_bytes;
-		uint32_t rx_errors;
-	} _stats;
+	// Protocol constants (same as bridge)
+	static constexpr uint8_t UART_SYNC_BYTE1 = 0xFF;
+	static constexpr uint8_t UART_SYNC_BYTE2 = 0xFE;
+	static constexpr uint8_t PROTOCOL_VERSION = 0x01;
 
-	// Timing
-	hrt_abstime _last_heartbeat_time;
-	hrt_abstime _last_statistics_time;
-	hrt_abstime _last_main_board_heartbeat;
+	// Message IDs (same as bridge)
+	enum class MessageId : uint8_t {
+		HEARTBEAT = 0x00,
+		ACTUATOR_OUTPUTS_FRONT = 0x01,
+		ACTUATOR_OUTPUTS_REAR = 0x02,
+		VEHICLE_STATUS = 0x03,
+		TRACTION_CONTROL = 0x04,
+		BOOM_TRAJECTORY_SETPOINT = 0x05,
+		BUCKET_TRAJECTORY_SETPOINT = 0x06,
+		STEERING_COMMAND = 0x07,
+		LOAD_LAMP_COMMAND = 0x08,
+		SENSOR_LIMIT_SWITCH = 0x10,
+		SLIP_ESTIMATION_FRONT = 0x11,
+		SLIP_ESTIMATION_REAR = 0x12,
+		BOOM_STATUS = 0x13,
+		BUCKET_STATUS = 0x14,
+		STEERING_STATUS = 0x15,
+		HBRIDGE_STATUS = 0x20,  // Base ID, instance in payload
+		SENSOR_QUAD_ENCODER = 0x30  // Base ID, instance in payload
+	};
 
-	// Sequence tracking
-	uint16_t _tx_sequence;
+	// Packet structure (same as bridge)
+	struct __attribute__((packed)) UartPacket {
+		uint8_t sync1;
+		uint8_t sync2;
+		uint8_t msg_id;
+		uint8_t length;
+		uint16_t sequence;
+		uint8_t payload[256];  // Variable length
+		// Checksum at end
+	};
 
-	// Configuration
-	uint8_t _board_id;
+	// Timing constants (ST3215 pattern)
+	static constexpr unsigned SCHEDULE_INTERVAL = 20_ms;
+	static constexpr uint32_t PACKET_TIMEOUT_MS = 50;
+	static constexpr uint32_t HEARTBEAT_INTERVAL = 1_s;
+	static constexpr uint32_t CONNECTION_TIMEOUT = 3_s;
 
-	// Timing constants
-	static constexpr uint32_t MAIN_LOOP_INTERVAL_US = 10_ms;
-	static constexpr uint32_t HEARTBEAT_INTERVAL_US = 1_s;
-	static constexpr uint32_t STATISTICS_INTERVAL_US = 10_s;
-	static constexpr uint32_t HEARTBEAT_TIMEOUT_US = 3_s;
-
-	// Module name
-	static constexpr const char *MODULE_NAME = "uorb_uart_proxy";
+	// Module parameters (ST3215 pattern)
+	DEFINE_PARAMETERS(
+		(ParamInt<px4::params::UART_PROXY_EN>) _param_enable,
+		(ParamInt<px4::params::UART_PROXY_BAUD>) _param_baudrate,
+		(ParamInt<px4::params::UART_PROXY_PORT>) _param_port,
+		(ParamInt<px4::params::UART_PROXY_TYPE>) _param_board_type  // 0=front, 1=rear
+	)
 };
+
+extern "C" __EXPORT int uorb_uart_proxy_main(int argc, char *argv[]);

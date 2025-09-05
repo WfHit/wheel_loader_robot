@@ -7,3 +7,86 @@ serial_config:
       baudrate_config_param:
         name: UART_BRIDGE_BAUD
         group: uORB UART Bridge
+
+parameters:
+    - group: uORB UART Bridge
+      definitions:
+        UART_BRIDGE_EN:
+            description:
+                short: uORB UART Bridge Enable
+                long: |
+                    Enable the uORB UART Bridge module for distributed uORB messaging.
+                    This module provides transparent uORB messaging over UART
+                    for distributed systems. It runs on the X7+ main board and
+                    forwards uORB messages to/from NXT controller boards.
+            type: int32
+            values:
+                0: Disabled
+                1: Enabled
+            default: 1
+
+        UART_BRIDGE_PORT:
+            description:
+                short: uORB UART Bridge Port
+                long: |
+                    Serial port selection for uORB UART Bridge.
+                    Specifies which UART port to use for communication with NXT boards.
+            type: int32
+            values:
+                1: ttyS1
+                2: ttyS2
+                3: ttyS3
+                4: ttyS4
+            min: 1
+            max: 4
+            default: 1
+            reboot_required: true
+
+        UART_BRIDGE_BAUD:
+            description:
+                short: uORB UART Bridge Baudrate
+                long: |
+                    Serial communication baudrate for uORB UART Bridge.
+                    Higher baudrates provide better performance but may be less reliable
+                    over longer cable distances.
+            type: int32
+            values:
+                9600: 9600 baud
+                19200: 19200 baud
+                38400: 38400 baud
+                57600: 57600 baud
+                115200: 115200 baud
+                230400: 230400 baud
+                460800: 460800 baud
+                921600: 921600 baud
+                1000000: 1000000 baud
+            min: 9600
+            max: 1000000
+            unit: bps
+            default: 921600
+            reboot_required: true
+
+        UART_BRIDGE_TO:
+            description:
+                short: uORB UART Bridge Timeout
+                long: |
+                    Communication timeout in milliseconds.
+                    If no response is received within this time, the communication
+                    is considered failed and will be retried.
+            type: int32
+            min: 10
+            max: 1000
+            unit: ms
+            default: 100
+
+        UART_BRIDGE_RETRY:
+            description:
+                short: uORB UART Bridge Retry Count
+                long: |
+                    Number of retries for failed communications.
+                    Higher values provide better reliability but may increase latency
+                    during communication failures.
+            type: int32
+            min: 1
+            max: 10
+            default: 3

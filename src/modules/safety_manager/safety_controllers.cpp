@@ -481,7 +481,7 @@ void SafetyConfigManager::print_configuration() const
     PX4_INFO("  Max Payload: %.0f kg", (double)_params.max_payload_kg);
 
     PX4_INFO("Timeouts:");
-    PX4_INFO("  Communication: %.1f s", (double)_params.communication_timeout_us / 1e6f);
+    PX4_INFO("  Communication: %.1f s", (double)_params.communication_timeout_us / 1e6);
 
     PX4_INFO("Risk Assessment:");
     PX4_INFO("  Risk Threshold: %.2f", (double)_params.risk_threshold);

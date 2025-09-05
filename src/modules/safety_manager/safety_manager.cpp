@@ -137,7 +137,7 @@ void SafetyManager::update_subscriptions()
 	_traction_control_sub.update();
 	_boom_status_sub.update();
 	_bucket_status_sub.update();
-	_wheel_loader_status_sub.update();
+	// _wheel_loader_status_sub.update();
 	_imu_sub.update();
 	_gyro_sub.update();
 	_vehicle_attitude_sub.update();
@@ -400,23 +400,23 @@ void SafetyManager::handle_safety_mode_commands()
 void SafetyManager::update_zeroing_mode()
 {
 	// Handle actuator zeroing mode - special safety considerations
-	if (_wheel_loader_status_sub.updated()) {
-		wheel_loader_status_s status = _wheel_loader_status_sub.get();
+	// if (_wheel_loader_status_sub.updated()) {
+	//	wheel_loader_status_s status = _wheel_loader_status_sub.get();
 
-		if (status.zeroing_mode_active) {
-			// Apply special safety constraints during zeroing
-			// This typically involves:
-			// - Reduced speed limits
-			// - Enhanced monitoring of limit sensors
-			// - Special fail-safe procedures for actuator protection
+	//	if (status.zeroing_mode_active) {
+	//		// Apply special safety constraints during zeroing
+	//		// This typically involves:
+	//		// - Reduced speed limits
+	//		// - Enhanced monitoring of limit sensors
+	//		// - Special fail-safe procedures for actuator protection
 
-			// Update safety permits for zeroing mode
-			_safety_permits.drive_permitted = false;  // No driving during zeroing
-			_safety_permits.high_speed_permitted = false;
-			_safety_permits.boom_operation_permitted = true;  // Allow boom movement for zeroing
-			_safety_permits.bucket_operation_permitted = true;  // Allow bucket movement for zeroing
-		}
-	}
+	//		// Update safety permits for zeroing mode
+	//		_safety_permits.drive_permitted = false;  // No driving during zeroing
+	//		_safety_permits.high_speed_permitted = false;
+	//		_safety_permits.boom_operation_permitted = true;  // Allow boom movement for zeroing
+	//		_safety_permits.bucket_operation_permitted = true;  // Allow bucket movement for zeroing
+	//	}
+	// }
 }
 
 void SafetyManager::update_hardware_enable()

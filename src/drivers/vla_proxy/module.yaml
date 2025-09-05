@@ -1,0 +1,79 @@
+module_name: VLA Proxy Driver
+serial_config:
+    - command: vla_proxy start -d ${SERIAL_DEV}
+      port_config_param:
+          name: VLA_CONFIG
+          group: Serial
+          description:
+              short: VLA Proxy serial port configuration
+              long: |
+                  Configure on which serial port to run VLA Proxy driver.
+                  This driver communicates with Vision-Language-Action models
+                  for autonomous wheel loader bucket control.
+          type: enum
+          values:
+              0: Disabled
+              6: UART 6
+              101: TELEM 1
+              102: TELEM 2
+              103: TELEM 3
+              201: GPS 1
+              202: GPS 2
+              401: UART 4
+              402: UART 7
+              403: UART 8
+              601: SERVO 1
+              602: SERVO 2
+          reboot_required: true
+parameters:
+    - group: VLA Proxy
+      definitions:
+          VLA_ENABLED:
+              description:
+                  short: Enable VLA Proxy
+                  long: Enable/disable the VLA Proxy driver
+              type: int32
+              min: 0
+              max: 1
+              default: 0
+          VLA_BAUDRATE:
+              description:
+                  short: VLA Proxy serial baudrate
+                  long: Baudrate for VLA model communication
+              type: int32
+              min: 9600
+              max: 1000000
+              default: 115200
+          VLA_STATUS_RATE:
+              description:
+                  short: Robot status transmission rate
+                  long: Rate at which robot status is sent to VLA model (Hz)
+              type: float
+              min: 1.0
+              max: 50.0
+              default: 20.0
+              decimal: 1
+              unit: Hz
+          VLA_TIMEOUT_MS:
+              description:
+                  short: VLA communication timeout
+                  long: |
+                      Timeout for VLA communication. If no waypoints are received
+                      for this duration, VLA is considered inactive.
+              type: int32
+              min: 100
+              max: 10000
+              default: 2000
+              unit: ms
+          VLA_DEBUG:
+              description:
+                  short: VLA debug level
+                  long: |
+                      Debug verbosity level for VLA driver.
+                      0: Minimal logging
+                      1: Normal logging with errors
+                      2: Verbose logging with all messages
+              type: int32
+              min: 0
+              max: 2
+              default: 0

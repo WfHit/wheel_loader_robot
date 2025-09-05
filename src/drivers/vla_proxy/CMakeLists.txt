@@ -1,6 +1,6 @@
 ############################################################################
 #
-#   Copyright (c) 2024 PX4 Development Team. All rights reserved.
+#   Copyright (c) 2025 PX4 Development Team. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -31,12 +31,15 @@
 #
 ############################################################################
 
+# VLA (Vision-Language-Action) Proxy Driver
 px4_add_module(
-	MODULE modules__uorb_uart_bridge
-	MAIN uorb_uart_bridge
+	MODULE drivers__vla_proxy
+	MAIN vla_proxy
 	STACK_MAIN 2048
 	SRCS
-		uorb_uart_bridge.cpp
+		vla_proxy.cpp
+	DEPENDS
+		px4_work_queue
 	MODULE_CONFIG
 		module.yaml
 )
