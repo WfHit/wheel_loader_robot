@@ -42,6 +42,15 @@ ChassisMPCController::ChassisMPCController()
     // Initialize control sequence with zeros
     control_sequence.setZero();
     predicted_states.setZero();
+
+    // Initialize MPC weights
+    Q(0) = 10.0f;  // x position weight
+    Q(1) = 10.0f;  // y position weight
+    Q(2) = 5.0f;   // heading weight
+    Q(3) = 1.0f;   // velocity weight
+
+    R(0) = 1.0f;   // acceleration weight
+    R(1) = 10.0f;  // steering weight
 }
 
 void ChassisMPCController::init(float wheelbase, float max_velocity, float max_steering)

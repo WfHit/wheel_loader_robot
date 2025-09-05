@@ -269,13 +269,26 @@ void ChassisTrajectoryFollower::apply_safety_constraints()
 
 void ChassisTrajectoryFollower::publish_control_commands()
 {
-	chassis_control_command_s cmd{};
-	cmd.velocity = velocity_command;
-	cmd.steering_angle = steering_command;
-	cmd.timestamp = hrt_absolute_time();
-	cmd.valid = !emergency_stop && current_setpoint.valid;
+	// Publish drivetrain setpoint
+	drivetrain_setpoint_s drivetrain_cmd{};
+	float wheel_radius = 0.5f; // Default wheel radius in meters, TODO: make parameter
+	drivetrain_cmd.speed_setpoint_rad_s = velocity_command / wheel_radius; // Convert m/s to rad/s
+	drivetrain_cmd.control_mode = drivetrain_setpoint_s::MODE_SPEED_CONTROL;
+	drivetrain_cmd.torque_limit_nm = 100.0f; // TODO: Make parameter
+	drivetrain_cmd.speed_limit_rad_s = 50.0f; // TODO: Make parameter
+	drivetrain_cmd.timestamp = hrt_absolute_time();
+	drivetrain_cmd.valid = !emergency_stop && current_setpoint.valid;
 
-	chassis_control_pub.publish(cmd);
+	drivetrain_setpoint_pub.publish(drivetrain_cmd);
+
+	// Publish steering setpoint
+	steering_setpoint_s steering_cmd{};
+	steering_cmd.steering_angle = steering_command;
+	steering_cmd.steering_rate = 0.0f; // TODO: Calculate from MPC
+	steering_cmd.timestamp = hrt_absolute_time();
+	steering_cmd.valid = !emergency_stop && current_setpoint.valid;
+
+	steering_setpoint_pub.publish(steering_cmd);
 }
 
 void ChassisTrajectoryFollower::reset_controllers()

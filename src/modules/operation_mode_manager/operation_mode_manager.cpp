@@ -44,6 +44,9 @@ OperationModeManager::OperationModeManager() :
 
 OperationModeManager::~OperationModeManager()
 {
+	delete manual_mode;
+	delete vla_mode;
+
 	perf_free(loop_perf);
 	perf_free(mode_switch_perf);
 }
@@ -55,8 +58,8 @@ bool OperationModeManager::init()
 	mode_switch_perf = perf_alloc(PC_ELAPSED, MODULE_NAME": mode_switch");
 
 	// Create operation modes
-	manual_mode = std::make_unique<ManualMode>();
-	vla_mode = std::make_unique<VlaMode>();
+	manual_mode = new ManualMode();
+	vla_mode = new VlaMode();
 
 	// Initialize all modes
 	if (!manual_mode->init() || !vla_mode->init()) {
@@ -221,10 +224,10 @@ bool OperationModeManager::switch_mode(OperationMode new_mode)
 	// Switch to new mode
 	switch (new_mode) {
 	case OperationMode::MANUAL:
-		current_mode = manual_mode.get();
+		current_mode = manual_mode;
 		break;
 	case OperationMode::VLA:
-		current_mode = vla_mode.get();
+		current_mode = vla_mode;
 		break;
 	case OperationMode::EMERGENCY:
 		current_mode = nullptr;
@@ -246,7 +249,15 @@ bool OperationModeManager::switch_mode(OperationMode new_mode)
 void OperationModeManager::update_current_mode()
 {
 	if (current_mode != nullptr) {
-		current_mode->update();
+		// Calculate delta time
+		hrt_abstime now = hrt_absolute_time();
+		float dt = (now - last_update_time) * 1e-6f; // Convert microseconds to seconds
+		last_update_time = now;
+
+		// Clamp dt to reasonable values
+		dt = math::constrain(dt, 0.001f, 0.1f);
+
+		current_mode->update(dt);
 	}
 }
 

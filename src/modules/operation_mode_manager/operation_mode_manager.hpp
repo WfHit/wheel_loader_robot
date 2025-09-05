@@ -42,6 +42,10 @@
 #include <uORB/topics/parameter_update.h>
 #include <uORB/topics/vehicle_status.h>
 #include <uORB/topics/vehicle_local_position.h>
+#include <uORB/topics/chassis_trajectory_setpoint.h>
+#include <uORB/topics/bucket_trajectory_setpoint.h>
+#include <uORB/topics/operation_mode_status.h>
+#include <uORB/topics/vla_trajectory_setpoint.h>
 #include <lib/matrix/matrix/math.hpp>
 #include <lib/perf/perf_counter.h>
 #include <lib/systemlib/err.h>
@@ -79,7 +83,7 @@ public:
 	OperationModeManager();
 	~OperationModeManager() override;
 
-	bool init() override;
+	bool init();
 
 	int print_status() override;
 
@@ -170,8 +174,8 @@ private:
 	uORB::Publication<operation_mode_status_s> mode_status_pub{ORB_ID(operation_mode_status)};
 
 	// Operation modes
-	std::unique_ptr<ManualMode> manual_mode{nullptr};
-	std::unique_ptr<VlaMode> vla_mode{nullptr};
+	ManualMode* manual_mode{nullptr};
+	VlaMode* vla_mode{nullptr};
 	OperationModeBase* current_mode{nullptr};
 
 	// Current operation mode
@@ -188,6 +192,7 @@ private:
 	bool mode_switch_pending{false};
 	hrt_abstime mode_switch_time{0};
 	hrt_abstime last_mode_switch{0};
+	hrt_abstime last_update_time{0};
 	static constexpr hrt_abstime MODE_SWITCH_DELAY = 500000; // 0.5 seconds
 	static constexpr hrt_abstime MIN_MODE_SWITCH_INTERVAL = 2000000; // 2 seconds
 
@@ -205,17 +210,17 @@ private:
 	// Parameters
 	DEFINE_PARAMETERS(
 		// Mode selection
-		(ParamInt<px4::params::OMM_DEFAULT_MODE>) param_default_mode,
-		(ParamInt<px4::params::OMM_MODE_SWITCH_CH>) param_mode_switch_channel,
-		(ParamFloat<px4::params::OMM_MODE_SWITCH_THRESH>) param_mode_switch_threshold,
+		(ParamInt<px4::params::OMM_DEF_MODE>) param_default_mode,
+		(ParamInt<px4::params::OMM_SW_CH>) param_mode_switch_channel,
+		(ParamFloat<px4::params::OMM_SW_THRESH>) param_mode_switch_threshold,
 
 		// Safety parameters
-		(ParamInt<px4::params::OMM_SAFETY_ENABLE>) param_safety_enable,
-		(ParamFloat<px4::params::OMM_EMERGENCY_TIMEOUT>) param_emergency_timeout,
-		(ParamFloat<px4::params::OMM_MIN_POSITION_ACCURACY>) param_min_position_accuracy,
+		(ParamInt<px4::params::OMM_SAFETY_EN>) param_safety_enable,
+		(ParamFloat<px4::params::OMM_EMRG_TO>) param_emergency_timeout,
+		(ParamFloat<px4::params::OMM_POS_ACC>) param_min_position_accuracy,
 
 		// System parameters
-		(ParamInt<px4::params::OMM_DEBUG_ENABLE>) param_debug_enable,
+		(ParamInt<px4::params::OMM_DEBUG_EN>) param_debug_enable,
 		(ParamFloat<px4::params::OMM_UPDATE_RATE>) param_update_rate
 	)
 };

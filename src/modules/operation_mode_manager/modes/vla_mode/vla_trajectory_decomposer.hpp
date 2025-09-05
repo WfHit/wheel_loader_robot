@@ -58,7 +58,7 @@ public:
 	/**
 	 * Initialize the decomposer with robot constraints
 	 */
-	void init(float max_reach, float coordination_factor);
+	void init(float max_reach, float coord_factor);
 
 	/**
 	 * Decompose VLA trajectory into chassis and bucket world trajectories

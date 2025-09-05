@@ -36,10 +36,10 @@
 
 using namespace wheel_loader;
 
-void VlaTrajectoryDecomposer::init(float max_reach, float coordination_factor)
+void VlaTrajectoryDecomposer::init(float reach_limit, float coord_factor)
 {
-	this->max_reach = max_reach;
-	this->coordination_factor = math::constrain(coordination_factor, 0.0f, 1.0f);
+	this->max_reach = reach_limit;
+	this->coordination_factor = math::constrain(coord_factor, 0.0f, 1.0f);
 }
 
 bool VlaTrajectoryDecomposer::decompose(const VlaTrajectoryPoint &vla_point,

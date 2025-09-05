@@ -42,7 +42,8 @@
 #include <uORB/topics/vehicle_local_position.h>
 #include <uORB/topics/chassis_trajectory_setpoint.h>
 #include <uORB/topics/bucket_trajectory_setpoint.h>
-#include <uORB/topics/chassis_control_command.h>
+#include <uORB/topics/drivetrain_setpoint.h>
+#include <uORB/topics/steering_setpoint.h>
 #include <lib/perf/perf_counter.h>
 
 #include "trajectory_types.hpp"
@@ -135,7 +136,8 @@ private:
 	uORB::Subscription bucket_trajectory_setpoint_sub{ORB_ID(bucket_trajectory_setpoint)}; // For coordination
 
 	// Publications
-	uORB::Publication<chassis_control_command_s> chassis_control_pub{ORB_ID(chassis_control_command)};
+	uORB::Publication<drivetrain_setpoint_s> drivetrain_setpoint_pub{ORB_ID(drivetrain_setpoint)};
+	uORB::Publication<steering_setpoint_s> steering_setpoint_pub{ORB_ID(steering_setpoint)};
 
 	// MPC Controller
 	ChassisMPCController mpc_controller;

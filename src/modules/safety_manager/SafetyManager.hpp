@@ -7,9 +7,8 @@
 #include <uORB/Subscription.hpp>
 #include <uORB/Publication.hpp>
 #include <lib/mathlib/mathlib.h>
-#include <matrix/matrix.hpp>
+#include <lib/matrix/matrix/math.hpp>
 #include <drivers/drv_hrt.h>
-#include <px4_platform_common/board_config.h>
 #include <nuttx/arch.h>
 #include <drivers/drv_adc.h>
 
@@ -17,12 +16,10 @@
 #include <uORB/topics/vehicle_status.h>
 #include <uORB/topics/failsafe_flags.h>
 #include <uORB/topics/actuator_armed.h>
-#include <uORB/topics/module_status.h>
-#include <uORB/topics/system_safety.h>
 #include <uORB/topics/vehicle_command.h>
 
 // uORB message includes - Chassis Control
-#include <uORB/topics/wheel_setpoint.h>
+#include <uORB/topics/drivetrain_setpoint.h>
 #include <uORB/topics/steering_setpoint.h>
 #include <uORB/topics/steering_status.h>
 #include <uORB/topics/traction_control.h>

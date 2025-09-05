@@ -138,8 +138,8 @@ private:
     float max_acceleration{2.0f};    // Maximum acceleration (m/s^2)
 
     // MPC weights
-    matrix::Vector<float, STATE_DIM> Q{10.0f, 10.0f, 5.0f, 1.0f};      // State weights
-    matrix::Vector<float, CONTROL_DIM> R{1.0f, 10.0f};                 // Control weights
+    matrix::Vector<float, STATE_DIM> Q;      // State weights
+    matrix::Vector<float, CONTROL_DIM> R;    // Control weights
 
     // MPC state
     matrix::Matrix<float, STATE_DIM, HORIZON_LENGTH> predicted_states{};
