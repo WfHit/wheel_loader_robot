@@ -8,6 +8,7 @@
 #include <drivers/drv_hrt.h>
 #include <cstring>
 #include <cstdlib>
+#include <inttypes.h>
 
 namespace safety_manager
 {
@@ -153,7 +154,7 @@ void SafetyActionExecutor::publish_safety_command(uint32_t command, float param1
 {
     // Note: This would need access to uORB publisher
     // Implementation would require publisher injection or global access
-    PX4_DEBUG("Publishing safety command: %u, param1=%.2f, param2=%.2f", command, param1, param2);
+    PX4_DEBUG("Publishing safety command: %u, param1=%.2f, param2=%.2f", command, (double)param1, (double)param2);
 }
 
 void SafetyActionExecutor::log_safety_action(const char* action)
@@ -307,7 +308,7 @@ bool HardwareEnableController::init(uint32_t gpio_enable)
     _config.enabled = false;
 
     // In real implementation, configure GPIO pin
-    PX4_INFO("Hardware enable controller initialized with GPIO %u", gpio_enable);
+    PX4_INFO("Hardware enable controller initialized with GPIO %lu", gpio_enable);
     return true;
 }
 
@@ -375,7 +376,7 @@ float HardwareEnableController::read_board_temperature() const
     if (current_time - last_read_time > 1000000) { // Update every 1 second
         // Simulate temperature based on system activity
         float base_temp = 25.0f; // Ambient temperature
-        float load_factor = _state.drive_enabled ? 0.3f : 0.1f; // Higher temp when active
+        float load_factor = _config.enabled ? 0.3f : 0.1f; // Higher temp when active
         float temp_variation = (float)(rand() % 10) / 10.0f - 0.5f; // ±0.5°C variation
 
         last_temperature = base_temp + (load_factor * 20.0f) + temp_variation;
@@ -410,20 +411,20 @@ void SafetyConfigManager::load_parameters()
 
     // Steering parameters
     param_get(param_find("SM_MAX_STEER_ANG"), &_params.max_steering_angle_rad);
-    if (_params.max_steering_angle_rad <= 0.0f || _params.max_steering_angle_rad > M_PI_2) {
+    if (_params.max_steering_angle_rad <= 0.0f || _params.max_steering_angle_rad > (float)M_PI_2) {
         _params.max_steering_angle_rad = 1.0f; // Default 1.0 radian (~57°)
         PX4_WARN("Using default max steering angle: %.1f rad", (double)_params.max_steering_angle_rad);
     }
 
     // Stability parameters
     param_get(param_find("SM_MAX_ROLL"), &_params.max_roll_angle_rad);
-    if (_params.max_roll_angle_rad <= 0.0f || _params.max_roll_angle_rad > M_PI_4) {
+    if (_params.max_roll_angle_rad <= 0.0f || _params.max_roll_angle_rad > (float)M_PI_4) {
         _params.max_roll_angle_rad = 0.3f; // Default 0.3 radian (~17°)
         PX4_WARN("Using default max roll angle: %.1f rad", (double)_params.max_roll_angle_rad);
     }
 
     param_get(param_find("SM_MAX_PITCH"), &_params.max_pitch_angle_rad);
-    if (_params.max_pitch_angle_rad <= 0.0f || _params.max_pitch_angle_rad > M_PI_4) {
+    if (_params.max_pitch_angle_rad <= 0.0f || _params.max_pitch_angle_rad > (float)M_PI_4) {
         _params.max_pitch_angle_rad = 0.3f; // Default 0.3 radian (~17°)
         PX4_WARN("Using default max pitch angle: %.1f rad", (double)_params.max_pitch_angle_rad);
     }

@@ -3,6 +3,7 @@
 #include "safety_types.hpp"
 #include <drivers/drv_hrt.h>
 #include <px4_platform_common/log.h>
+#include <mathlib/mathlib.h>
 
 namespace safety_manager
 {

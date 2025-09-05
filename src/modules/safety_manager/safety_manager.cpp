@@ -142,7 +142,6 @@ void SafetyManager::update_subscriptions()
 	_gyro_sub.update();
 	_vehicle_attitude_sub.update();
 	_vehicle_local_position_sub.update();
-	_load_aware_torque_sub.update();
 	_manual_control_sub.update();
 	_vehicle_command_sub.update();
 
@@ -263,13 +262,6 @@ void SafetyManager::update_load_monitor()
 		bucket_status_s bucket = _bucket_status_sub.get();
 		data.bucket_angle_rad = bucket.bucket_angle_rad;
 		data.bucket_load_kg = bucket.estimated_load_kg;
-	}
-
-	// Get load aware torque data
-	if (_load_aware_torque_sub.updated()) {
-		load_aware_torque_s torque = _load_aware_torque_sub.get();
-		data.total_payload_kg = torque.total_load_kg;
-		data.cg_offset_m = torque.cg_offset_m;
 	}
 
 	// Update thresholds from parameters

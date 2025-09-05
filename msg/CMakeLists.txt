@@ -136,7 +136,6 @@ set(msg_files
 	LandingTargetPose.msg
 	LaunchDetectionStatus.msg
 	LedControl.msg
-	LimitSensor.msg
 	LoadLampCommand.msg
 	LoggerStatus.msg
 	LogMessage.msg
@@ -215,6 +214,7 @@ set(msg_files
 	SensorGyroFft.msg
 	SensorGyroFifo.msg
 	SensorHygrometer.msg
+	SensorLimitSwitch.msg
 	SensorMag.msg
 	SensorMagEncoder.msg
 	SensorOpticalFlow.msg
@@ -259,6 +259,7 @@ set(msg_files
 	VehicleTorqueSetpoint.msg
 	VelocityLimits.msg
 	VlaTrajectorySetpoint.msg
+	WheelLoaderStatus.msg
 	Wind.msg
 	YawEstimatorStatus.msg
 	versioned/ActuatorMotors.msg

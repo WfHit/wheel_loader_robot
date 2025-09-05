@@ -80,7 +80,6 @@ The Safety Manager controls operational permits for:
 - `wheel_loader_status` - Wheel loader specific status
 - `boom_status` - Boom hydraulic system
 - `bucket_status` - Bucket hydraulic system
-- `load_aware_torque` - Chassis load distribution
 - `vehicle_attitude` - Vehicle orientation
 - `sensor_accel` - Acceleration data
 - `sensor_gyro` - Angular rate data

@@ -36,9 +36,6 @@
 #include <uORB/topics/sensor_accel.h>
 #include <uORB/topics/sensor_gyro.h>
 
-// uORB message includes - Environmental
-#include <uORB/topics/wheel_loader_status.h>
-
 // uORB message includes - Limit Sensors
 #include <uORB/topics/sensor_limit_switch.h>
 #include <uORB/topics/hbridge_status.h>
@@ -148,7 +145,7 @@ private:
     uORB::Subscription _drivetrain_setpoint_sub{ORB_ID(drivetrain_setpoint)};
     uORB::Subscription _steering_setpoint_sub{ORB_ID(steering_setpoint)};
     uORB::Subscription _steering_status_sub{ORB_ID(steering_status)};
-    uORB::Subscription _traction_control_sub{ORB_ID(traction_control)};
+    uORB::Subscription _traction_control_sub{ORB_ID(traction_status)};
 
     // uORB subscriptions - Electric Actuator Systems
     uORB::Subscription _boom_status_sub{ORB_ID(boom_status)};
@@ -160,18 +157,16 @@ private:
     uORB::Subscription _gyro_sub{ORB_ID(sensor_gyro)};
     uORB::Subscription _vehicle_attitude_sub{ORB_ID(vehicle_attitude)};
     uORB::Subscription _vehicle_local_position_sub{ORB_ID(vehicle_local_position)};
-    uORB::Subscription _load_aware_torque_sub{ORB_ID(load_aware_torque)};
 
     // uORB subscriptions - Limit sensors (up to 8 instances)
     uORB::Subscription _limit_sensor_sub[MAX_LIMIT_SENSORS]{};
 
     // uORB subscriptions - Control commands
     uORB::Subscription _manual_control_sub{ORB_ID(input_rc)};
-    uORB::Subscription _vehicle_command_sub{ORB_ID(vehicle_command)};
 
     // uORB publications - Safety outputs
     uORB::Publication<vehicle_command_s> _safety_command_pub{ORB_ID(vehicle_command)};
-    uORB::Publication<hbridge_system_s> _hbridge_system_pub{ORB_ID(hbridge_system)};
+    uORB::Publication<hbridge_status_s> _hbridge_system_pub{ORB_ID(hbridge_status)};
 
     // Performance monitoring
     perf_counter_t _loop_perf{perf_alloc(PC_ELAPSED, "safety_manager: cycle")};

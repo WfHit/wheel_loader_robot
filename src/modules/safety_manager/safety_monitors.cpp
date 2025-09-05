@@ -257,8 +257,6 @@ void CommunicationMonitor::update_module_status_time(uint64_t timestamp)
 
 void CommunicationMonitor::check_timeouts()
 {
-    uint64_t current_time = hrt_absolute_time();
-
     // Check manual control timeout
     if (is_timeout(_state.last_manual_command_time, _config.timeout_us)) {
         if (!_state.manual_control_timeout) {
