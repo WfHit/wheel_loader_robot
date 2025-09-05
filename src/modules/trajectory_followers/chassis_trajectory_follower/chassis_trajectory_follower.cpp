@@ -217,11 +217,11 @@ void ChassisTrajectoryFollower::run_mpc_controller(float dt)
 	mpc_output = mpc_controller.solve(vehicle_state, current_setpoint, dt);
 }
 
-void ChassisTrajectoryFollower::convert_mpc_to_commands(const Vector<float, 2> &mpc_output)
+void ChassisTrajectoryFollower::convert_mpc_to_commands(const Vector<float, 2> &control_output)
 {
 	// MPC output: [acceleration, steering_angle]
-	float acceleration_cmd = mpc_output(0);
-	float steering_angle_cmd = mpc_output(1);
+	float acceleration_cmd = control_output(0);
+	float steering_angle_cmd = control_output(1);
 
 	// Convert acceleration to velocity command (simple integration)
 	velocity_command = current_velocity + acceleration_cmd * 0.02f;  // 50Hz * 0.02s = dt
@@ -272,21 +272,22 @@ void ChassisTrajectoryFollower::publish_control_commands()
 	// Publish drivetrain setpoint
 	drivetrain_setpoint_s drivetrain_cmd{};
 	float wheel_radius = 0.5f; // Default wheel radius in meters, TODO: make parameter
-	drivetrain_cmd.speed_setpoint_rad_s = velocity_command / wheel_radius; // Convert m/s to rad/s
+	drivetrain_cmd.wheel_speed_rad_s = velocity_command / wheel_radius; // Convert m/s to rad/s
 	drivetrain_cmd.control_mode = drivetrain_setpoint_s::MODE_SPEED_CONTROL;
 	drivetrain_cmd.torque_limit_nm = 100.0f; // TODO: Make parameter
 	drivetrain_cmd.speed_limit_rad_s = 50.0f; // TODO: Make parameter
 	drivetrain_cmd.timestamp = hrt_absolute_time();
-	drivetrain_cmd.valid = !emergency_stop && current_setpoint.valid;
+	drivetrain_cmd.emergency_stop = emergency_stop || !current_setpoint.valid;
 
 	drivetrain_setpoint_pub.publish(drivetrain_cmd);
 
 	// Publish steering setpoint
 	steering_setpoint_s steering_cmd{};
-	steering_cmd.steering_angle = steering_command;
-	steering_cmd.steering_rate = 0.0f; // TODO: Calculate from MPC
+	steering_cmd.steering_angle_rad = steering_command;
+	steering_cmd.steering_rate_rad_s = 0.0f; // TODO: Calculate from MPC
 	steering_cmd.timestamp = hrt_absolute_time();
-	steering_cmd.valid = !emergency_stop && current_setpoint.valid;
+	steering_cmd.power_steering_enable = true;
+	steering_cmd.auto_centering_enable = true;
 
 	steering_setpoint_pub.publish(steering_cmd);
 }

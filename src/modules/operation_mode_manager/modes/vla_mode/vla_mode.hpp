@@ -33,6 +33,7 @@
 
 #pragma once
 
+#include <drivers/drv_hrt.h>
 #include "../operation_mode_base.hpp"
 #include "vla_trajectory_decomposer.hpp"
 

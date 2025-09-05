@@ -64,7 +64,7 @@ public:
     /**
      * Initialize MPC controller with vehicle parameters
      */
-    void init(float wheelbase, float max_velocity, float max_steering);
+    void init(float wheelbase_param, float max_velocity_param, float max_steering_param);
 
     /**
      * Update MPC weights for tuning
@@ -122,7 +122,7 @@ private:
      * Forward simulate trajectory
      */
     void forward_simulate(const matrix::Vector<float, STATE_DIM> &initial_state,
-                         const matrix::Matrix<float, CONTROL_DIM, HORIZON_LENGTH> &control_sequence);
+                         const matrix::Matrix<float, CONTROL_DIM, HORIZON_LENGTH> &control_input);
 
     /**
      * Calculate cost function

@@ -77,6 +77,7 @@ set(msg_files
 	DrivetrainSetpoint.msg
 	DrivetrainStatus.msg
 	Ekf2Timestamps.msg
+	EndEffectorTrajectorySetpoint.msg
 	EscReport.msg
 	EscStatus.msg
 	EstimatorAidSource1d.msg

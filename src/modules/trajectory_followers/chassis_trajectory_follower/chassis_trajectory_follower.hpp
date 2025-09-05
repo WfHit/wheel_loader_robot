@@ -33,6 +33,7 @@
 
 #pragma once
 
+#include <drivers/drv_hrt.h>
 #include <px4_platform_common/module.h>
 #include <px4_platform_common/module_params.h>
 #include <px4_platform_common/px4_work_queue/ScheduledWorkItem.hpp>
@@ -48,6 +49,8 @@
 
 #include "trajectory_types.hpp"
 #include "chassis_mpc_controller.hpp"
+
+using namespace time_literals;
 
 namespace wheel_loader
 {
@@ -98,7 +101,7 @@ private:
 	/**
 	 * Convert MPC output to actuator commands
 	 */
-	void convert_mpc_to_commands(const matrix::Vector<float, 2> &mpc_output);
+	void convert_mpc_to_commands(const matrix::Vector<float, 2> &control_output);
 
 	/**
 	 * Apply safety constraints and limits

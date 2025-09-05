@@ -33,6 +33,7 @@
 
 #include "operation_mode_manager.hpp"
 #include <px4_platform_common/getopt.h>
+#include <drivers/drv_hrt.h>
 
 using namespace wheel_loader;
 
@@ -270,12 +271,33 @@ void OperationModeManager::publish_trajectory_setpoints()
 
 		// Publish chassis setpoint
 		if (chassis_setpoint.valid) {
-			chassis_setpoint_pub.publish(chassis_setpoint);
+			chassis_trajectory_setpoint_s chassis_msg{};
+			chassis_msg.timestamp = hrt_absolute_time();
+			chassis_msg.x_position = chassis_setpoint.position(0);
+			chassis_msg.y_position = chassis_setpoint.position(1);
+			chassis_msg.yaw = chassis_setpoint.yaw;
+			chassis_msg.x_velocity = chassis_setpoint.velocity(0);
+			chassis_msg.y_velocity = chassis_setpoint.velocity(1);
+			chassis_msg.z_velocity = chassis_setpoint.velocity(2);
+			chassis_msg.yaw_rate = chassis_setpoint.yaw_rate;
+			chassis_msg.valid = chassis_setpoint.valid;
+
+			chassis_setpoint_pub.publish(chassis_msg);
 		}
 
 		// Publish bucket setpoint
 		if (bucket_setpoint.valid) {
-			bucket_setpoint_pub.publish(bucket_setpoint);
+			bucket_trajectory_setpoint_s bucket_msg{};
+			bucket_msg.timestamp = hrt_absolute_time();
+			// Convert bucket setpoint to message format
+			// Note: This conversion depends on the bucket control mode
+			bucket_msg.control_mode = 3; // World frame trajectory control mode
+			bucket_msg.x_position = bucket_setpoint.position(0);
+			bucket_msg.y_position = bucket_setpoint.position(1);
+			bucket_msg.z_position = bucket_setpoint.position(2);
+			// Add other fields as needed based on the message definition
+
+			bucket_setpoint_pub.publish(bucket_msg);
 		}
 	}
 
@@ -406,7 +428,7 @@ int OperationModeManager::print_status()
 
 	// Print mode-specific status
 	if (current_mode != nullptr) {
-		current_mode->print_status();
+		PX4_INFO("  Current mode is active: %s", current_mode->is_active() ? "YES" : "NO");
 	}
 
 	return 0;

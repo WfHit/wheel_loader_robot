@@ -53,12 +53,12 @@ ChassisMPCController::ChassisMPCController()
     R(1) = 10.0f;  // steering weight
 }
 
-void ChassisMPCController::init(float wheelbase, float max_velocity, float max_steering)
+void ChassisMPCController::init(float wheelbase_param, float max_velocity_param, float max_steering_param)
 {
-    this->wheelbase = wheelbase;
-    this->max_velocity = max_velocity;
-    this->max_steering = max_steering;
-    this->max_acceleration = max_velocity / 2.0f;  // Reasonable default
+    this->wheelbase = wheelbase_param;
+    this->max_velocity = max_velocity_param;
+    this->max_steering = max_steering_param;
+    this->max_acceleration = max_velocity_param / 2.0f;  // Reasonable default
 }
 
 void ChassisMPCController::set_weights(const Vector<float, STATE_DIM> &state_weights,
@@ -106,8 +106,7 @@ Vector<float, ChassisMPCController::STATE_DIM> ChassisMPCController::dynamics(
     // state = [x, y, theta, v]
     // control = [a, delta]
 
-    float x = state(0);
-    float y = state(1);
+    // Extract state variables (x, y not used in kinematics)
     float theta = state(2);
     float v = state(3);
     float a = control(0);
@@ -132,9 +131,9 @@ Vector<float, ChassisMPCController::CONTROL_DIM> ChassisMPCController::solve_mpc
 
     // Shift previous solution
     for (int i = 0; i < HORIZON_LENGTH - 1; ++i) {
-        best_control_sequence.setColumn(i, control_sequence.col(i + 1));
+        best_control_sequence.setCol(i, control_sequence.col(i + 1));
     }
-    best_control_sequence.setColumn(HORIZON_LENGTH - 1, previous_control);
+    best_control_sequence.setCol(HORIZON_LENGTH - 1, previous_control);
 
     float best_cost = INFINITY;
 
@@ -185,7 +184,7 @@ Vector<float, ChassisMPCController::CONTROL_DIM> ChassisMPCController::solve_mpc
         for (int i = 0; i < HORIZON_LENGTH; ++i) {
             Vector<float, CONTROL_DIM> control_i = best_control_sequence.col(i);
             apply_control_constraints(control_i);
-            best_control_sequence.setColumn(i, control_i);
+            best_control_sequence.setCol(i, control_i);
         }
     }
 
@@ -199,15 +198,15 @@ Vector<float, ChassisMPCController::CONTROL_DIM> ChassisMPCController::solve_mpc
 
 void ChassisMPCController::forward_simulate(
     const Vector<float, STATE_DIM> &initial_state,
-    const Matrix<float, CONTROL_DIM, HORIZON_LENGTH> &control_sequence)
+    const Matrix<float, CONTROL_DIM, HORIZON_LENGTH> &control_input)
 {
     Vector<float, STATE_DIM> state = initial_state;
-    predicted_states.setColumn(0, state);
+    predicted_states.setCol(0, state);
 
     for (int i = 0; i < HORIZON_LENGTH - 1; ++i) {
-        Vector<float, CONTROL_DIM> control = control_sequence.col(i);
+        Vector<float, CONTROL_DIM> control = control_input.col(i);
         state = dynamics(state, control, DT);
-        predicted_states.setColumn(i + 1, state);
+        predicted_states.setCol(i + 1, state);
     }
 }
 
