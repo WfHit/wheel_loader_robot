@@ -51,9 +51,10 @@
 #include <uORB/Subscription.hpp>
 #include <uORB/SubscriptionMultiArray.hpp>
 #include <uORB/topics/steering_setpoint.h>
+#include <uORB/topics/steering_status.h>
 #include <uORB/topics/robotic_servo_setpoint.h>
 #include <uORB/topics/robotic_servo_status.h>
-#include <uORB/topics/limit_sensor.h>
+#include <uORB/topics/sensor_limit_switch.h>
 #include <uORB/topics/parameter_update.h>
 
 /**
@@ -93,15 +94,17 @@ private:
 	void process_servo_feedback();
 	void process_limit_sensors();
 	void handle_abnormal_events();
+	void publish_steering_status();
 
 	// uORB subscriptions
 	uORB::Subscription _steering_setpoint_sub{ORB_ID(steering_setpoint)};
 	uORB::Subscription _servo_feedback_sub{ORB_ID(robotic_servo_status)};
-	uORB::SubscriptionMultiArray<limit_sensor_s> _limit_sensor_sub{ORB_ID::limit_sensor};
+	uORB::SubscriptionMultiArray<sensor_limit_switch_s> _limit_sensor_sub{ORB_ID::sensor_limit_switch};
 	uORB::Subscription _parameter_update_sub{ORB_ID(parameter_update)};
 
 	// uORB publications
 	uORB::Publication<robotic_servo_setpoint_s> _servo_command_pub{ORB_ID(robotic_servo_setpoint)};
+	uORB::Publication<steering_status_s> _steering_status_pub{ORB_ID(steering_status)};
 
 	// State variables
 	float _target_angle_rad{0.0f};      ///< Target steering angle from setpoint

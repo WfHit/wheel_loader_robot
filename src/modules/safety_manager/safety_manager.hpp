@@ -24,12 +24,11 @@
 #include <uORB/topics/drivetrain_setpoint.h>
 #include <uORB/topics/steering_setpoint.h>
 #include <uORB/topics/steering_status.h>
-#include <uORB/topics/traction_control.h>
+#include <uORB/topics/traction_status.h>
 
 // uORB message includes - Electric Actuator Systems
 #include <uORB/topics/boom_status.h>
 #include <uORB/topics/bucket_status.h>
-#include <uORB/topics/load_aware_torque.h>
 
 // uORB message includes - Sensors and Navigation
 #include <uORB/topics/vehicle_attitude.h>
@@ -41,8 +40,8 @@
 #include <uORB/topics/wheel_loader_status.h>
 
 // uORB message includes - Limit Sensors
-#include <uORB/topics/limit_sensor.h>
-#include <uORB/topics/hbridge_system.h>
+#include <uORB/topics/sensor_limit_switch.h>
+#include <uORB/topics/hbridge_status.h>
 #include <uORB/topics/input_rc.h>
 
 using namespace time_literals;

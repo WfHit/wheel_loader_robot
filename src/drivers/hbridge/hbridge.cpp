@@ -44,7 +44,7 @@
 #include <uORB/topics/parameter_update.h>
 #include <uORB/topics/hbridge_setpoint.h>
 #include <uORB/topics/hbridge_status.h>
-#include <uORB/topics/limit_sensor.h>
+#include <uORB/topics/sensor_limit_switch.h>
 #include <board_config.h>
 #include <drivers/hbridge/hbridge_config.h>
 
@@ -66,7 +66,7 @@ HBridge::HBridge(uint8_t instance) :
 	_instance(instance),
 	_parameter_update_sub(ORB_ID(parameter_update)),
 	_command_sub(ORB_ID::hbridge_setpoint),
-	_limit_sensor_sub(ORB_ID::limit_sensor),
+	_limit_sensor_sub(ORB_ID::sensor_limit_switch),
 	_loop_perf(perf_alloc(PC_ELAPSED, MODULE_NAME": cycle")),
 	_command_perf(perf_alloc(PC_ELAPSED, MODULE_NAME": command"))
 {
@@ -315,7 +315,7 @@ void HBridge::process_commands()
 
 void HBridge::process_limit_sensors()
 {
-	limit_sensor_s limit_msg;
+	sensor_limit_switch_s limit_msg;
 
 	// Check forward limit sensor for this instance
 	uint8_t forward_limit_id = get_fwd_limit();

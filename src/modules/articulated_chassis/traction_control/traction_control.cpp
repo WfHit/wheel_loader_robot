@@ -78,6 +78,7 @@ void TractionControl::Run()
     // Update all state information
     update_vehicle_state();
     update_drivetrain_feedback();
+    update_traction_setpoint();
 
     // Check if traction control should be active
     vehicle_control_mode_s control_mode;
@@ -205,6 +206,59 @@ void TractionControl::update_drivetrain_feedback()
             _rear_axle.wheel_speed = rear_status.encoder_speed_rpm * (2.0f * M_PI_F / 60.0f);
         } else {
             _rear_axle.wheel_speed = _rear_axle.motor_speed;
+        }
+    }
+}
+
+void TractionControl::update_traction_setpoint()
+{
+    // Get traction setpoint from chassis trajectory follower
+    if (_traction_setpoint_sub.copy(&_traction_setpoint)) {
+        // Extract desired motion commands
+        _desired_velocity = _traction_setpoint.desired_velocity_ms;
+        _desired_yaw_rate = _traction_setpoint.desired_yaw_rate_rad_s;
+
+        // Update control parameters based on traction setpoint
+        _control_params.target_slip_ratio = _traction_setpoint.max_slip_ratio * 0.5f; // Use 50% of max as target
+        _control_params.max_slip_ratio = _traction_setpoint.max_slip_ratio;
+
+        // Update force distribution based on torque bias
+        // torque_bias: -1.0=rear bias, 0.0=balanced, 1.0=front bias
+        _control_params.force_distribution = 0.5f + (_traction_setpoint.torque_bias * 0.3f); // 0.2-0.8 range
+
+        // Update surface-specific parameters
+        if (_traction_setpoint.surface_type != traction_setpoint_s::SURFACE_UNKNOWN) {
+            // Adjust friction estimate based on surface type
+            switch (_traction_setpoint.surface_type) {
+                case traction_setpoint_s::SURFACE_CONCRETE:
+                    _estimated_friction = 0.9f * _traction_setpoint.target_traction_coefficient;
+                    break;
+                case traction_setpoint_s::SURFACE_GRAVEL:
+                    _estimated_friction = 0.7f * _traction_setpoint.target_traction_coefficient;
+                    break;
+                case traction_setpoint_s::SURFACE_SAND:
+                    _estimated_friction = 0.5f * _traction_setpoint.target_traction_coefficient;
+                    break;
+                case traction_setpoint_s::SURFACE_MUD:
+                    _estimated_friction = 0.3f * _traction_setpoint.target_traction_coefficient;
+                    break;
+                case traction_setpoint_s::SURFACE_SNOW:
+                    _estimated_friction = 0.25f * _traction_setpoint.target_traction_coefficient;
+                    break;
+                case traction_setpoint_s::SURFACE_MIXED:
+                    _estimated_friction = 0.6f * _traction_setpoint.target_traction_coefficient;
+                    break;
+                default: // SURFACE_UNKNOWN
+                    _estimated_friction = 0.7f; // Default
+                    break;
+            }
+        }
+
+        // Update emergency stop state
+        if (_traction_setpoint.emergency_stop) {
+            _desired_velocity = 0.0f;
+            _desired_yaw_rate = 0.0f;
+            _desired_force = 0.0f;
         }
     }
 }

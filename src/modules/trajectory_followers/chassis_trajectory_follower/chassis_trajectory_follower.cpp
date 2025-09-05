@@ -269,17 +269,41 @@ void ChassisTrajectoryFollower::apply_safety_constraints()
 
 void ChassisTrajectoryFollower::publish_control_commands()
 {
-	// Publish drivetrain setpoint
-	drivetrain_setpoint_s drivetrain_cmd{};
-	float wheel_radius = 0.5f; // Default wheel radius in meters, TODO: make parameter
-	drivetrain_cmd.wheel_speed_rad_s = velocity_command / wheel_radius; // Convert m/s to rad/s
-	drivetrain_cmd.control_mode = drivetrain_setpoint_s::MODE_SPEED_CONTROL;
-	drivetrain_cmd.torque_limit_nm = 100.0f; // TODO: Make parameter
-	drivetrain_cmd.speed_limit_rad_s = 50.0f; // TODO: Make parameter
-	drivetrain_cmd.timestamp = hrt_absolute_time();
-	drivetrain_cmd.emergency_stop = emergency_stop || !current_setpoint.valid;
+	// Publish traction setpoint
+	traction_setpoint_s traction_cmd{};
+	traction_cmd.desired_velocity_ms = velocity_command;
+	traction_cmd.desired_acceleration_ms2 = mpc_output(0); // First element of MPC output
+	traction_cmd.desired_steering_angle_rad = steering_command;
+	traction_cmd.desired_yaw_rate_rad_s = 0.0f; // TODO: Calculate from MPC
 
-	drivetrain_setpoint_pub.publish(drivetrain_cmd);
+	// Traction control settings
+	traction_cmd.enable_traction_control = true;
+	traction_cmd.enable_slip_control = true;
+	traction_cmd.enable_stability_control = true;
+	traction_cmd.traction_mode = traction_setpoint_s::MODE_NORMAL; // TODO: Make parameter
+
+	// Force/torque distribution
+	traction_cmd.torque_bias = 0.0f; // Balanced distribution
+	traction_cmd.max_slip_ratio = 0.2f; // TODO: Make parameter
+	traction_cmd.target_traction_coefficient = 0.8f; // TODO: Make parameter
+
+	// Surface conditions (TODO: estimate or make parameter)
+	traction_cmd.surface_type = traction_setpoint_s::SURFACE_UNKNOWN;
+	traction_cmd.load_factor = 1.0f; // Nominal load
+	traction_cmd.aggressive_mode = false;
+
+	// Safety limits
+	traction_cmd.max_torque_nm = 1000.0f; // TODO: Make parameter
+	traction_cmd.max_velocity_ms = param_max_velocity.get();
+	traction_cmd.emergency_stop = emergency_stop || !current_setpoint.valid;
+
+	// Coordination
+	traction_cmd.coordination_active = (param_coordination_enabled.get() > 0.5f);
+	traction_cmd.coordination_factor = coordination_factor;
+
+	traction_cmd.timestamp = hrt_absolute_time();
+
+	traction_setpoint_pub.publish(traction_cmd);
 
 	// Publish steering setpoint
 	steering_setpoint_s steering_cmd{};

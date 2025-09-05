@@ -52,7 +52,7 @@
 #include <uORB/SubscriptionMultiArray.hpp>
 #include <uORB/topics/robotic_servo_setpoint.h>
 #include <uORB/topics/robotic_servo_status.h>
-#include <uORB/topics/limit_sensor.h>
+#include <uORB/topics/sensor_limit_switch.h>
 
 #include <poll.h>
 #include <termios.h>
@@ -127,7 +127,7 @@ private:
 	// uORB topics
 	uORB::Subscription _servo_command_sub{ORB_ID(robotic_servo_setpoint)};
 	uORB::Publication<robotic_servo_status_s> _servo_feedback_pub{ORB_ID(robotic_servo_status)};
-	uORB::SubscriptionMultiArray<limit_sensor_s, 4> _limit_sensor_sub{ORB_ID::limit_sensor};
+	uORB::SubscriptionMultiArray<sensor_limit_switch_s, 4> _limit_sensor_sub{ORB_ID::sensor_limit_switch};
 
 	// Performance counters
 	perf_counter_t _loop_perf;

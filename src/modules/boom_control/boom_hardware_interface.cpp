@@ -319,7 +319,7 @@ bool BoomHardwareInterface::select_limit_sensor_instances()
 		bool up_found = false, down_found = false;
 
 		for (uint8_t i = 0; i < _limit_sensor_sub.size(); i++) {
-			limit_sensor_s limit_msg;
+			sensor_limit_switch_s limit_msg;
 			if (_limit_sensor_sub[i].copy(&limit_msg)) {
 				// Check if this instance matches our up limit configuration
 				if (static_cast<int>(limit_msg.instance) == _limit_up_instance) {
@@ -414,7 +414,7 @@ bool BoomHardwareInterface::update_limit_switches(SensorData &data)
 
 	// Read up limit switch
 	if (_limit_up_selected >= 0) {
-		limit_sensor_s limit_up_msg;
+		sensor_limit_switch_s limit_up_msg;
 		if (_limit_sensor_sub[_limit_up_selected].copy(&limit_up_msg)) {
 			data.limit_up_active = limit_up_msg.state;
 			up_updated = true;
@@ -423,7 +423,7 @@ bool BoomHardwareInterface::update_limit_switches(SensorData &data)
 
 	// Read down limit switch
 	if (_limit_down_selected >= 0) {
-		limit_sensor_s limit_down_msg;
+		sensor_limit_switch_s limit_down_msg;
 		if (_limit_sensor_sub[_limit_down_selected].copy(&limit_down_msg)) {
 			data.limit_down_active = limit_down_msg.state;
 			down_updated = true;

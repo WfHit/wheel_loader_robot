@@ -4,8 +4,8 @@
 
 This repository contains a specialized control system for autonomous wheel loader robots, based on the PX4 autopilot platform. The system provides comprehensive control capabilities for heavy-duty wheel loader operations including:
 
-- **Boom and Bucket Control**: Precise hydraulic actuator control for boom kinematics and bucket operations
-- **Autonomous Navigation**: Advanced path planning and obstacle avoidance for construction environments  
+- **Boom and Bucket Control**: Precise electric actuator control for boom kinematics and bucket operations
+- **Autonomous Navigation**: Advanced path planning and obstacle avoidance for construction environments
 - **Load Management**: Intelligent load detection, pickup, and placement algorithms
 - **Safety Systems**: Multi-layered safety monitoring with emergency stop capabilities
 - **Dual-Mode Operation**: Support for both manual operator control and fully autonomous operation
@@ -86,8 +86,8 @@ The PX4 Autopilot project including all of its trademarks is hosted under [Drone
 
 This wheel loader control system supports the following hardware configurations:
 
-- **CUAV X7Plus-WL**: Wheel loader variant with enhanced I/O for hydraulic control
-- **HKUST NXT-Dual-WL-Front**: Front-mounted control unit for dual-controller setups  
+- **CUAV X7Plus-WL**: Wheel loader variant with enhanced I/O for electric actuator control
+- **HKUST NXT-Dual-WL-Front**: Front-mounted control unit for dual-controller setups
 - **HKUST NXT-Dual-WL-Rear**: Rear-mounted control unit for comprehensive vehicle control
 
 ### Building for Wheel Loader Targets
@@ -104,16 +104,16 @@ make hkust_nxt-dual-wl-rear_default
 ### Key Wheel Loader Modules
 
 - **Boom Control Module**: Advanced kinematic control for boom positioning
-- **Bucket Control Module**: Hydraulic control for bucket tilt and curl operations
+- **Bucket Control Module**: Electric actuator control for bucket tilt and curl operations
 - **Load Detection**: Weight and load distribution sensing
-- **Safety Monitor**: Continuous monitoring of hydraulic pressure, temperature, and system status
+- **Safety Monitor**: Continuous monitoring of electric motor status, temperature, and system health
 - **Autonomous Navigation**: GPS-based waypoint navigation with obstacle avoidance
 
 ### Documentation
 
 Additional wheel loader specific documentation can be found in:
 - [Boom Kinematics Design](docs/BOOM_KINEMATICS_DESIGN.md)
-- [Bucket Control Design](docs/BUCKET_KINEMATICS_DESIGN.md) 
+- [Bucket Control Design](docs/BUCKET_KINEMATICS_DESIGN.md)
 - [VLA Dual Mode Robot](docs/VLA_Dual_Mode_Robot.md)
 - [Wheel Loader Robot Design](design/wheel_loader_robot_design.md)
 

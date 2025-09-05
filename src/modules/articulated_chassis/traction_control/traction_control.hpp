@@ -52,7 +52,7 @@
 #include <uORB/topics/vehicle_angular_velocity.h>
 #include <uORB/topics/vehicle_acceleration.h>
 #include <uORB/topics/vehicle_control_mode.h>
-// #include <uORB/topics/chassis_control_command.h>  // TODO: Fix missing header
+#include <uORB/topics/traction_setpoint.h>
 #include <uORB/topics/vehicle_status.h>
 #include <uORB/topics/drivetrain_status.h>
 
@@ -113,6 +113,7 @@ private:
     // State estimation methods
     void update_vehicle_state();
     void update_drivetrain_feedback();
+    void update_traction_setpoint();
     void estimate_axle_slip();
     void estimate_ground_conditions();
 
@@ -149,6 +150,9 @@ private:
     AxleState _front_axle{};
     AxleState _rear_axle{};
     VehicleState _vehicle{};
+
+    // Current traction setpoint from trajectory follower
+    traction_setpoint_s _traction_setpoint{};
 
     // Control setpoints from trajectory follower
     float _desired_velocity{0.0f};     // Desired forward velocity (m/s)
@@ -193,7 +197,7 @@ private:
     uORB::Subscription _vehicle_angular_velocity_sub{ORB_ID(vehicle_angular_velocity)};
     uORB::Subscription _vehicle_acceleration_sub{ORB_ID(vehicle_acceleration)};
     uORB::Subscription _vehicle_control_mode_sub{ORB_ID(vehicle_control_mode)};
-    // uORB::Subscription _chassis_control_command_sub{ORB_ID(chassis_control_command)};  // TODO: Fix missing header
+    uORB::Subscription _traction_setpoint_sub{ORB_ID(traction_setpoint)};
     uORB::Subscription _vehicle_status_sub{ORB_ID(vehicle_status)};
     uORB::SubscriptionMultiArray<drivetrain_status_s> _drivetrain_status_sub{ORB_ID::drivetrain_status};
 

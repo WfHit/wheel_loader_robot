@@ -31,7 +31,11 @@ protected:
         safety_manager::set_fault(_current_faults, fault);
         _violation_count++;
         _last_fault_time = hrt_absolute_time();
-        PX4_WARN_THROTTLE(5000, "%s: Fault detected - %d", _name, static_cast<int>(fault));
+        static hrt_abstime last_warn = 0;
+        if (hrt_elapsed_time(&last_warn) > 5000000) { // 5 seconds
+            PX4_WARN("%s: Fault detected - %d", _name, static_cast<int>(fault));
+            last_warn = hrt_absolute_time();
+        }
     }
 
     void clear_fault(FaultType fault) {

@@ -31,7 +31,7 @@
  *
  ****************************************************************************/
 
-#include "LimitSensor.hpp"
+#include "limit_sensor.hpp"
 
 #include <fcntl.h>
 #include <math.h>
@@ -48,7 +48,7 @@
 #include <drivers/drv_hrt.h>
 #include <lib/perf/perf_counter.h>
 #include <parameters/param.h>
-#include <uORB/topics/limit_sensor.h>
+#include <uORB/topics/sensor_limit_switch.h>
 #include <uORB/topics/parameter_update.h>
 
 // External declaration of board configuration
@@ -206,16 +206,16 @@ bool LimitSensor::configure_switches()
 
 bool LimitSensor::init_publication()
 {
-    limit_sensor_s msg{};
+    sensor_limit_switch_s msg{};
     msg.timestamp = hrt_absolute_time();
     msg.instance = _instance;
     msg.function = _board_config->function;
 
     int instance_copy = _instance;
-    _pub_handle = orb_advertise_multi(ORB_ID(limit_sensor), &msg, &instance_copy);
+    _pub_handle = orb_advertise_multi(ORB_ID(sensor_limit_switch), &msg, &instance_copy);
 
     if (_pub_handle == nullptr) {
-        PX4_ERR("Failed to advertise limit_sensor");
+        PX4_ERR("Failed to advertise sensor_limit_switch");
         return false;
     }
 
@@ -363,7 +363,7 @@ void LimitSensor::publish_state()
         return;
     }
 
-    limit_sensor_s msg{};
+    sensor_limit_switch_s msg{};
     msg.timestamp = hrt_absolute_time();
     msg.instance = _instance;
     msg.function = _board_config->function;
@@ -375,7 +375,7 @@ void LimitSensor::publish_state()
     msg.activation_count = _sensor_state.activation_count;
     msg.last_activation_time = _sensor_state.last_activation_time;
 
-    orb_publish(ORB_ID(limit_sensor), _pub_handle, &msg);
+    orb_publish(ORB_ID(sensor_limit_switch), _pub_handle, &msg);
 }
 
 void LimitSensor::updateParams()

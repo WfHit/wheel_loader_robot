@@ -126,12 +126,20 @@ private:
 
 	// Parameters
 	DEFINE_PARAMETERS(
-		(ParamFloat<px4::params::EE_FOLLOW_RATE>) _param_follow_rate,
-		(ParamFloat<px4::params::EE_POSITION_TOL>) _param_position_tolerance,
-		(ParamFloat<px4::params::EE_MAX_BOOM_VEL>) _param_max_boom_velocity,
-		(ParamFloat<px4::params::EE_MAX_BUCKET_VEL>) _param_max_bucket_velocity,
-		(ParamFloat<px4::params::EE_SMOOTHING_FACTOR>) _param_smoothing_factor,
-		(ParamFloat<px4::params::EE_IK_TOL>) _param_ik_tolerance
+		// Motion limits
+		(ParamFloat<px4::params::EEF_MAX_VEL>) _param_max_velocity,
+		(ParamFloat<px4::params::EEF_MAX_ACCEL>) _param_max_acceleration,
+		(ParamFloat<px4::params::EEF_MAX_FORCE>) _param_max_force,
+		// Boom limits
+		(ParamFloat<px4::params::EEF_B_EXT_MIN>) _param_boom_extension_min,
+		(ParamFloat<px4::params::EEF_B_EXT_MAX>) _param_boom_extension_max,
+		(ParamFloat<px4::params::EEF_B_LIFT_MIN>) _param_boom_lift_min,
+		(ParamFloat<px4::params::EEF_B_MAX>) _param_boom_lift_max,
+		// Tilt limits
+		(ParamFloat<px4::params::EEF_TILT_MIN>) _param_tilt_min,
+		(ParamFloat<px4::params::EEF_TILT_MAX>) _param_tilt_max,
+		// Physical properties
+		(ParamFloat<px4::params::EEF_MASS>) _param_end_effector_mass
 	)
 
 	// Performance counters

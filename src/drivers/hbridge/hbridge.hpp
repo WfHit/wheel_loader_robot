@@ -55,7 +55,7 @@
 #include <uORB/topics/parameter_update.h>
 #include <uORB/topics/hbridge_setpoint.h>
 #include <uORB/topics/hbridge_status.h>
-#include <uORB/topics/limit_sensor.h>
+#include <uORB/topics/sensor_limit_switch.h>
 #include <board_config.h>
 #include "hbridge_config.h"
 
@@ -105,7 +105,7 @@ private:
 	// Subscriptions (instance-specific command subscription)
 	uORB::Subscription _parameter_update_sub{ORB_ID(parameter_update)};
 	uORB::SubscriptionMultiArray<hbridge_setpoint_s> _command_sub{ORB_ID::hbridge_setpoint};
-	uORB::SubscriptionMultiArray<limit_sensor_s> _limit_sensor_sub{ORB_ID::limit_sensor};
+	uORB::SubscriptionMultiArray<sensor_limit_switch_s> _limit_sensor_sub{ORB_ID::sensor_limit_switch};
 
 	// Performance counters
 	perf_counter_t _loop_perf{nullptr};

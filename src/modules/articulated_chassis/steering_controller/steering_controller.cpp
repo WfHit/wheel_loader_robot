@@ -90,6 +90,9 @@ void SteeringController::Run()
 	process_servo_feedback();
 	process_limit_sensors();
 	handle_abnormal_events();
+
+	// Publish steering status
+	publish_steering_status();
 }
 
 void SteeringController::process_steering_command()
@@ -181,7 +184,7 @@ void SteeringController::process_servo_feedback()
 
 void SteeringController::process_limit_sensors()
 {
-	limit_sensor_s limit_msg;
+	sensor_limit_switch_s limit_msg;
 
 	// Check left limit sensor for this instance
 	uint8_t left_limit_id = get_left_limit();
@@ -272,6 +275,68 @@ void SteeringController::handle_abnormal_events()
 	if (!has_fault && _servo_healthy) {
 		// Emergency stop may be cleared naturally when conditions improve
 	}
+}
+
+void SteeringController::publish_steering_status()
+{
+	steering_status_s status{};
+	status.timestamp = hrt_absolute_time();
+
+	// Convert angles to degrees for legacy fields
+	status.steering_angle_deg = math::degrees(_current_angle_rad);
+	status.steering_angle_setpoint_deg = math::degrees(_target_angle_rad);
+
+	// Calculate steering rate (basic differentiation)
+	static float prev_angle_rad = 0.0f;
+	static hrt_abstime prev_timestamp = 0;
+
+	if (prev_timestamp > 0) {
+		const float dt = (status.timestamp - prev_timestamp) / 1e6f; // Convert to seconds
+		if (dt > 0.001f) { // Avoid division by very small numbers
+			const float rate_rad_s = (_current_angle_rad - prev_angle_rad) / dt;
+			status.steering_rate_deg_s = math::degrees(rate_rad_s);
+			status.actual_rate_rad_s = rate_rad_s;
+		}
+	}
+	prev_angle_rad = _current_angle_rad;
+	prev_timestamp = status.timestamp;
+
+	// Set current values in radians
+	status.actual_angle_rad = _current_angle_rad;
+	status.servo_position_rad = _current_angle_rad;
+
+	// Servo status
+	status.servo_healthy = _servo_healthy;
+	status.steering_temperature_c = _servo_temperature_c;
+
+	// System health
+	status.is_healthy = _servo_healthy && _limit_sensors_healthy && !_emergency_stop;
+	status.position_valid = _servo_healthy && !is_feedback_timeout();
+	status.emergency_stop = _emergency_stop;
+	status.emergency_stop_active = _emergency_stop; // Legacy field
+
+	// Limit sensor status
+	status.limit_left_active = _left_limit_active;
+	status.limit_right_active = _right_limit_active;
+	status.limit_sensors_healthy = _limit_sensors_healthy;
+
+	// Safety status
+	status.safety_violation = _emergency_stop || (!_limit_sensors_healthy);
+
+	// Error flags and control mode
+	status.error_flags = _servo_error_flags;
+	status.control_mode = steering_status_s::CONTROL_MODE_POSITION; // We're always in position mode
+
+	// Power steering (always active for ST3125)
+	status.power_steering_active = true;
+
+	// Torque information (not available from ST3125, set defaults)
+	status.servo_torque_nm = 0.0f; // Not available from ST3125 feedback
+	status.power_steering_pressure = 0.0f; // Not applicable for servo system
+	status.max_torque_available = 50.0f; // ST3125 rated torque
+	status.slip_compensation_deg = 0.0f; // Not implemented
+
+	_steering_status_pub.publish(status);
 }
 
 float SteeringController::saturate_angle(float angle_rad)

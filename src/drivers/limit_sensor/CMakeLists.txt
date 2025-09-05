@@ -3,8 +3,7 @@ px4_add_module(
     MAIN limit_sensor
     COMPILE_FLAGS
     SRCS
-        LimitSensor.cpp
-        LimitSensor.hpp
+        limit_sensor.cpp
     MODULE_CONFIG
         module.yaml
     DEPENDS

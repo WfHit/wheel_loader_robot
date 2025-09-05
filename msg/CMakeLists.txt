@@ -227,6 +227,7 @@ set(msg_files
 	SensorUwb.msg
 	SensorAirflow.msg
 	SteeringSetpoint.msg
+	SteeringStatus.msg
 	SystemPower.msg
 	TakeoffStatus.msg
 	TaskStackInfo.msg
@@ -234,6 +235,8 @@ set(msg_files
 	TelemetryStatus.msg
 	TiltrotorExtraControls.msg
 	TimesyncStatus.msg
+	TractionSetpoint.msg
+	TractionStatus.msg
 	TrajectorySetpoint6dof.msg
 	TransponderReport.msg
 	TuneControl.msg

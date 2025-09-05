@@ -153,7 +153,7 @@ bool BucketHardwareInterface::update_boom_angle(SensorData& data)
 
 bool BucketHardwareInterface::update_limit_switches(SensorData& data)
 {
-	limit_sensor_s limit_msg;
+	sensor_limit_switch_s limit_msg;
 	bool load_updated = false;
 	bool dump_updated = false;
 
@@ -266,7 +266,7 @@ int BucketHardwareInterface::select_hbridge_instance()
 
 bool BucketHardwareInterface::select_limit_sensor_instances(int& load_instance, int& dump_instance)
 {
-	limit_sensor_s limit_msg;
+	sensor_limit_switch_s limit_msg;
 	const hrt_abstime timestamp_stale = math::max(hrt_absolute_time(), SENSOR_TIMEOUT_US) - SENSOR_TIMEOUT_US;
 	bool load_found = false, dump_found = false;
 

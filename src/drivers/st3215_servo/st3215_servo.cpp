@@ -1149,7 +1149,7 @@ bool ST3215Servo::calibrate_middle_position_sts(uint8_t servo_id)
 
 void ST3215Servo::process_limit_sensors()
 {
-	limit_sensor_s limit_msg;
+	sensor_limit_switch_s limit_msg;
 
 	// Check left limit sensor (HBridge pattern with bounds checking)
 	uint8_t left_limit_id = get_left_limit_id();

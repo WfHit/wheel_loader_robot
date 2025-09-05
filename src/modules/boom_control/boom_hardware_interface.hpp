@@ -40,7 +40,7 @@
 #include <uORB/SubscriptionMultiArray.hpp>
 #include <uORB/topics/hbridge_setpoint.h>
 #include <uORB/topics/hbridge_status.h>
-#include <uORB/topics/limit_sensor.h>
+#include <uORB/topics/sensor_limit_switch.h>
 #include <uORB/topics/sensor_mag_encoder.h>
 
 /**
@@ -205,7 +205,7 @@ private:
 	// uORB interface
 	uORB::Subscription _mag_encoder_sub{ORB_ID(sensor_mag_encoder)};
 	uORB::SubscriptionMultiArray<hbridge_status_s, 4> _hbridge_status_sub{ORB_ID::hbridge_status};
-	uORB::SubscriptionMultiArray<limit_sensor_s, 8> _limit_sensor_sub{ORB_ID::limit_sensor};
+	uORB::SubscriptionMultiArray<sensor_limit_switch_s, 8> _limit_sensor_sub{ORB_ID::sensor_limit_switch};
 	orb_advert_t _hbridge_command_pub{nullptr};
 
 	// Hardware parameters

@@ -1,6 +1,6 @@
 #include "safety_controllers.hpp"
 #include <uORB/topics/vehicle_command.h>
-#include <uORB/topics/hbridge_system.h>
+#include <uORB/topics/hbridge_status.h>
 #include <mathlib/mathlib.h>
 #include <px4_platform_common/px4_config.h>
 #include <px4_platform_common/log.h>

@@ -9,7 +9,7 @@
 #include <uORB/topics/bucket_trajectory_setpoint.h>
 #include <uORB/topics/bucket_status.h>
 #include <uORB/topics/boom_status.h>
-#include <uORB/topics/traction_control_status.h>
+#include <uORB/topics/traction_status.h>
 
 namespace distributed_uorb {
 
@@ -20,7 +20,7 @@ static const TopicMapping topic_mappings[] = {
      sizeof(wheel_loader_command_s), true, false, 1, "wl/cmd/front"},
 
     {TOPIC_TRACTION_CTRL_FRONT, "traction_ctrl_front",
-     sizeof(traction_control_status_s), true, false, 1, "wl/traction/front"},
+     sizeof(traction_status_s), true, false, 1, "wl/traction/front"},
 
     {TOPIC_BUCKET_CMD, "bucket_trajectory_setpoint",
      sizeof(bucket_trajectory_setpoint_s), true, false, 1, "wl/cmd/bucket"},
@@ -30,7 +30,7 @@ static const TopicMapping topic_mappings[] = {
      sizeof(wheel_loader_command_s), true, false, 2, "wl/cmd/rear"},
 
     {TOPIC_TRACTION_CTRL_REAR, "traction_ctrl_rear",
-     sizeof(traction_control_status_s), true, false, 2, "wl/traction/rear"},
+     sizeof(traction_status_s), true, false, 2, "wl/traction/rear"},
 
     {TOPIC_STEERING_CMD, "steering_cmd",
      sizeof(wheel_loader_command_s), true, false, 2, "wl/cmd/steering"},
@@ -43,7 +43,7 @@ static const TopicMapping topic_mappings[] = {
      sizeof(bucket_status_s), false, true, 1, "wl/feedback/bucket"},
 
     {TOPIC_TRACTION_STATUS_FRONT, "traction_status_front",
-     sizeof(traction_control_status_s), false, true, 1, "wl/status/traction/front"},
+     sizeof(traction_status_s), false, true, 1, "wl/status/traction/front"},
 
     // Feedback from Rear NXT to X7+
     {TOPIC_WHEEL_ENCODER_REAR, "wheel_encoder_rear",
@@ -53,7 +53,7 @@ static const TopicMapping topic_mappings[] = {
      sizeof(boom_status_s), false, true, 2, "wl/feedback/boom"},
 
     {TOPIC_TRACTION_STATUS_REAR, "traction_status_rear",
-     sizeof(traction_control_status_s), false, true, 2, "wl/status/traction/rear"},
+     sizeof(traction_status_s), false, true, 2, "wl/status/traction/rear"},
 
     // System status (shared)
     {TOPIC_SYSTEM_STATUS, "system_status",

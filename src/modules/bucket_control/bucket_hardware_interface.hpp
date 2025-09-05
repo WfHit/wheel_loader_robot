@@ -46,7 +46,7 @@
 #include <uORB/topics/hbridge_status.h>
 #include <uORB/topics/sensor_quad_encoder.h>
 #include <uORB/topics/sensor_mag_encoder.h>
-#include <uORB/topics/limit_sensor.h>
+#include <uORB/topics/sensor_limit_switch.h>
 #include <uORB/topics/sensor_quad_encoder_reset.h>
 
 /**
@@ -179,7 +179,7 @@ private:
 	// uORB subscriptions (multi-instance)
 	uORB::SubscriptionMultiArray<sensor_quad_encoder_s> _encoder_sub{ORB_ID::sensor_quad_encoder};
 	uORB::SubscriptionMultiArray<hbridge_status_s> _hbridge_status_sub{ORB_ID::hbridge_status};
-	uORB::SubscriptionMultiArray<limit_sensor_s> _limit_sensor_sub{ORB_ID::limit_sensor};
+	uORB::SubscriptionMultiArray<sensor_limit_switch_s> _limit_sensor_sub{ORB_ID::sensor_limit_switch};
 	uORB::Subscription _mag_encoder_sub{ORB_ID(sensor_mag_encoder)};
 
 	// uORB publications

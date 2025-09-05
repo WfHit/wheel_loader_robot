@@ -9,7 +9,7 @@
 
 #include <uORB/PublicationMulti.hpp>
 #include <uORB/Subscription.hpp>
-#include <uORB/topics/limit_sensor.h>
+#include <uORB/topics/sensor_limit_switch.h>
 #include <uORB/topics/parameter_update.h>
 
 #include <board_config.h>
