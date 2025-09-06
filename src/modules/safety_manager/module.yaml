@@ -8,23 +8,12 @@ parameters:
                 short: Maximum vehicle speed
                 long: |
                     Maximum allowed vehicle speed for safety monitoring.
+                    Vehicle will be flagged as unsafe if speed exceeds this limit.
             type: float
             unit: m/s
             min: 0.5
             max: 20.0
-            default: 8.0
-            decimal: 1
-
-        SM_MAX_ACCEL:
-            description:
-                short: Maximum acceleration
-                long: |
-                    Maximum allowed acceleration for safety monitoring.
-            type: float
-            unit: m/s^2
-            min: 0.5
-            max: 10.0
-            default: 3.0
+            default: 5.0
             decimal: 1
 
         SM_MAX_STR_ANG:
@@ -32,6 +21,7 @@ parameters:
                 short: Maximum steering angle
                 long: |
                     Maximum allowed steering angle in radians.
+                    Steering will be flagged as unsafe if angle exceeds this limit.
             type: float
             unit: rad
             min: 0.1
@@ -39,23 +29,11 @@ parameters:
             default: 0.785
             decimal: 3
 
-        SM_MAX_STR_RATE:
-            description:
-                short: Maximum steering rate
-                long: |
-                    Maximum allowed steering rate in radians per second.
-            type: float
-            unit: rad/s
-            min: 0.1
-            max: 2.0
-            default: 0.524
-            decimal: 3
-
         SM_MAX_ROLL:
             description:
                 short: Maximum roll angle
                 long: |
-                    Maximum allowed roll angle before safety intervention.
+                    Maximum allowed roll angle before flagging vehicle as unstable.
             type: float
             unit: rad
             min: 0.1
@@ -67,43 +45,7 @@ parameters:
             description:
                 short: Maximum pitch angle
                 long: |
-                    Maximum allowed pitch angle before safety intervention.
-            type: float
-            unit: rad
-            min: 0.1
-            max: 0.785
-            default: 0.349
-            decimal: 3
-
-        SM_MAX_PAYLOAD:
-            description:
-                short: Maximum payload weight
-                long: |
-                    Maximum allowed payload weight in kilograms.
-            type: float
-            unit: kg
-            min: 0
-            max: 20000
-            default: 8000
-            decimal: 0
-
-        SM_MAX_CG_OFF:
-            description:
-                short: Maximum CG offset
-                long: |
-                    Maximum allowed center of gravity offset from nominal.
-            type: float
-            unit: m
-            min: 0.1
-            max: 2.0
-            default: 1.0
-            decimal: 2
-
-        SM_MAX_SLOPE:
-            description:
-                short: Maximum slope angle
-                long: |
-                    Maximum allowed slope angle for vehicle operation.
+                    Maximum allowed pitch angle before flagging vehicle as unstable.
             type: float
             unit: rad
             min: 0.1
@@ -115,76 +57,10 @@ parameters:
             description:
                 short: Communication timeout
                 long: |
-                    Timeout for communication loss before safety intervention.
+                    Timeout in seconds for communication loss before flagging as unsafe.
             type: float
             unit: s
-            min: 0.1
+            min: 0.5
             max: 10.0
-            default: 1.0
-            decimal: 2
-
-        SM_SENS_TIMEOUT:
-            description:
-                short: Sensor timeout
-                long: |
-                    Timeout for sensor data loss before safety intervention.
-            type: float
-            unit: s
-            min: 0.1
-            max: 5.0
-            default: 0.5
-            decimal: 2
-
-        SM_EMRG_DECEL:
-            description:
-                short: Emergency deceleration rate
-                long: |
-                    Maximum deceleration rate for emergency stops.
-            type: float
-            unit: m/s^2
-            min: 1.0
-            max: 10.0
-            default: 5.0
+            default: 2.0
             decimal: 1
-
-        SM_STAB_MARGIN:
-            description:
-                short: Stability margin factor
-                long: |
-                    Safety margin factor for stability calculations.
-            type: float
-            min: 1.1
-            max: 3.0
-            default: 1.5
-            decimal: 2
-
-        SM_RISK_THRESH:
-            description:
-                short: Risk assessment threshold
-                long: |
-                    Threshold for risk assessment triggering safety intervention.
-            type: float
-            min: 0.1
-            max: 1.0
-            default: 0.7
-            decimal: 2
-
-        SM_EN_OVERRIDE:
-            description:
-                short: Enable safety override
-                long: |
-                    Enable manual safety override capability.
-            type: int32
-            min: 0
-            max: 1
-            default: 1
-
-        SM_AUTO_RECOV:
-            description:
-                short: Enable auto recovery
-                long: |
-                    Enable automatic recovery from safety events.
-            type: int32
-            min: 0
-            max: 1
-            default: 0

@@ -37,9 +37,6 @@ px4_add_module(
 	STACK_MAIN 2048
 	SRCS
 		safety_manager.cpp
-		safety_monitors.cpp
-		safety_controllers.cpp
-		safety_manager_main.cpp
 	DEPENDS
 		mathlib
 	MODULE_CONFIG

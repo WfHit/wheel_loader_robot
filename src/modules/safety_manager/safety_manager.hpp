@@ -1,193 +1,187 @@
+/****************************************************************************
+ *
+ *   Copyright (c) 2024 PX4 Development Team. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in
+ *    the documentation and/or other materials provided with the
+ *    distribution.
+ * 3. Neither the name PX4 nor the names of its contributors may be
+ *    used to endorse or promote products derived from this software
+ *    without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+ * COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
+ * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+ * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ *
+ ****************************************************************************/
+
 #pragma once
 
-#include "safety_types.hpp"
-#include "safety_monitors.hpp"
-#include "safety_controllers.hpp"
-
+#include <px4_platform_common/defines.h>
 #include <px4_platform_common/module.h>
 #include <px4_platform_common/module_params.h>
-#include <px4_platform_common/log.h>
-#include <px4_platform_common/px4_config.h>
-#include <px4_platform_common/defines.h>
-#include <uORB/Subscription.hpp>
+#include <px4_platform_common/px4_work_queue/ScheduledWorkItem.hpp>
 #include <uORB/Publication.hpp>
-#include <drivers/drv_hrt.h>
-#include <lib/perf/perf_counter.h>
-
-// uORB message includes - System Status
-#include <uORB/topics/vehicle_status.h>
-#include <uORB/topics/failsafe_flags.h>
-#include <uORB/topics/actuator_armed.h>
-#include <uORB/topics/vehicle_command.h>
-
-// uORB message includes - Chassis Control
-#include <uORB/topics/drivetrain_setpoint.h>
-#include <uORB/topics/steering_setpoint.h>
-#include <uORB/topics/steering_status.h>
-#include <uORB/topics/traction_status.h>
-
-// uORB message includes - Electric Actuator Systems
-#include <uORB/topics/boom_status.h>
-#include <uORB/topics/bucket_status.h>
-
-// uORB message includes - Sensors and Navigation
-#include <uORB/topics/vehicle_attitude.h>
+#include <uORB/Subscription.hpp>
 #include <uORB/topics/vehicle_local_position.h>
-#include <uORB/topics/sensor_accel.h>
-#include <uORB/topics/sensor_gyro.h>
-
-// uORB message includes - Limit Sensors
-#include <uORB/topics/sensor_limit_switch.h>
+#include <uORB/topics/vehicle_attitude.h>
+#include <uORB/topics/system_safety.h>
+#include <uORB/topics/drivetrain_status.h>
+#include <uORB/topics/steering_status.h>
 #include <uORB/topics/hbridge_status.h>
-#include <uORB/topics/input_rc.h>
+#include <uORB/topics/bucket_status.h>
+#include <lib/perf/perf_counter.h>
+#include <drivers/drv_hrt.h>
 
 using namespace time_literals;
-using namespace safety_manager;
 
-// Constants
-#define MAX_LIMIT_SENSORS 8
-
-/**
- * @brief Refactored Safety Manager for Wheel Loader
- *
- * Modular safety monitoring and fail-safe system that:
- * - Uses specialized monitor classes for different subsystems
- * - Implements centralized permit management
- * - Provides comprehensive risk assessment
- * - Maintains hardware enable control
- * - Supports configurable safety parameters
- * - Enables emergency response procedures
- *
- * Architecture:
- * - SafetyMonitors: Individual monitoring subsystems (speed, steering, etc.)
- * - SafetyPermitManager: Centralized permit decisions
- * - SafetyActionExecutor: Executes safety actions and fail-safes
- * - RiskAssessment: Calculates overall system risk
- * - HardwareEnableController: Manages hardware enable pins
- * - SafetyConfigManager: Handles parameter configuration
- */
-class SafetyManager : public ModuleBase<SafetyManager>, public ModuleParams
+class SafetyManager : public ModuleBase<SafetyManager>, public ModuleParams, public px4::ScheduledWorkItem
 {
 public:
-    SafetyManager();
-    ~SafetyManager() override = default;
+	SafetyManager();
+	~SafetyManager() override;
 
-    /** @see ModuleBase */
-    static int task_spawn(int argc, char *argv[]);
+	/** @see ModuleBase */
+	static int task_spawn(int argc, char *argv[]);
 
-    /** @see ModuleBase */
-    static int custom_command(int argc, char *argv[]);
+	/** @see ModuleBase */
+	static int custom_command(int argc, char *argv[]);
 
-    /** @see ModuleBase */
-    static int print_usage(const char *reason = nullptr);
+	/** @see ModuleBase */
+	static int print_usage(const char *reason = nullptr);
 
-    bool init();
-    int print_status() override;
+	/** @see ModuleBase */
+	int print_status() override;
+
+	bool init();
 
 private:
-    void run() override;
+	void Run() override;
 
-    /**
-     * Core safety management functions
-     */
-    void update_subscriptions();
-    void update_monitors();
-    void assess_safety_state();
-    void update_permits_and_actions();
-    void publish_safety_status();
+	/**
+	 * Update uORB subscriptions
+	 */
+	void update_subscriptions();
 
-    /**
-     * Monitor update functions
-     */
-    void update_speed_monitor();
-    void update_steering_monitor();
-    void update_stability_monitor();
-    void update_load_monitor();
-    void update_communication_monitor();
+	/**
+	 * Monitor safety conditions
+	 */
+	void monitor_safety();
 
-    /**
-     * Safety mode management
-     */
-    void handle_safety_mode_commands();
-    void update_zeroing_mode();
+	/**
+	 * Assess overall safety level
+	 */
+	void assess_safety_level();
 
-    /**
-     * Hardware enable management
-     */
-    void update_hardware_enable();
+	/**
+	 * Publish safety status
+	 */
+	void publish_safety_status();
 
-    // Safety subsystem components
-    SpeedMonitor _speed_monitor;
-    SteeringMonitor _steering_monitor;
-    StabilityMonitor _stability_monitor;
-    LoadMonitor _load_monitor;
-    CommunicationMonitor _communication_monitor;
+	/**
+	 * Check if speed is within safe limits
+	 */
+	bool is_speed_safe() const;
 
-    // Safety management components
-    SafetyPermitManager _permit_manager;
-    SafetyActionExecutor _action_executor;
-    RiskAssessment _risk_assessment;
-    HardwareEnableController _hardware_enable_controller;
-    SafetyConfigManager _config_manager;
+	/**
+	 * Check if steering is within safe limits
+	 */
+	bool is_steering_safe() const;
 
-    // Safety state
-    SafetyState _safety_state{};
-    SafetyPermits _safety_permits{};
-    EmergencyResponse _emergency_response{};
-    SafetyPerformance _safety_performance{};
+	/**
+	 * Check if vehicle stability is safe
+	 */
+	bool is_stability_safe() const;
 
-    // uORB subscriptions - System status
-    uORB::Subscription _vehicle_status_sub{ORB_ID(vehicle_status)};
-    uORB::Subscription _actuator_armed_sub{ORB_ID(actuator_armed)};
-    uORB::Subscription _failsafe_flags_sub{ORB_ID(failsafe_flags)};
+	/**
+	 * Check if communication is healthy
+	 */
+	bool is_communication_safe() const;
 
-    // uORB subscriptions - Chassis Control
-    uORB::Subscription _drivetrain_setpoint_sub{ORB_ID(drivetrain_setpoint)};
-    uORB::Subscription _steering_setpoint_sub{ORB_ID(steering_setpoint)};
-    uORB::Subscription _steering_status_sub{ORB_ID(steering_status)};
-    uORB::Subscription _traction_control_sub{ORB_ID(traction_status)};
+	/**
+	 * Check if H-bridge system is safe
+	 */
+	bool is_hbridge_safe() const;
 
-    // uORB subscriptions - Electric Actuator Systems
-    uORB::Subscription _boom_status_sub{ORB_ID(boom_status)};
-    uORB::Subscription _bucket_status_sub{ORB_ID(bucket_status)};
-    // uORB::Subscription _wheel_loader_status_sub{ORB_ID(wheel_loader_status)};
+	/**
+	 * Check if bucket system is safe
+	 */
+	bool is_bucket_safe() const;
 
-    // uORB subscriptions - Sensor data
-    uORB::Subscription _imu_sub{ORB_ID(sensor_accel)};
-    uORB::Subscription _gyro_sub{ORB_ID(sensor_gyro)};
-    uORB::Subscription _vehicle_attitude_sub{ORB_ID(vehicle_attitude)};
-    uORB::Subscription _vehicle_local_position_sub{ORB_ID(vehicle_local_position)};
+	// Safety levels
+	enum class SafetyLevel : uint8_t {
+		NORMAL = 0,
+		CAUTION = 1,
+		WARNING = 2,
+		CRITICAL = 3,
+		EMERGENCY = 4
+	};
 
-    // uORB subscriptions - Limit sensors (up to 8 instances)
-    uORB::Subscription _limit_sensor_sub[MAX_LIMIT_SENSORS]{};
+	// uORB subscriptions
+	uORB::Subscription _vehicle_local_position_sub{ORB_ID(vehicle_local_position)};
+	uORB::Subscription _vehicle_attitude_sub{ORB_ID(vehicle_attitude)};
+	uORB::Subscription _drivetrain_status_sub{ORB_ID(drivetrain_status)};
+	uORB::Subscription _steering_status_sub{ORB_ID(steering_status)};
+	uORB::Subscription _hbridge_status_sub{ORB_ID(hbridge_status)};
+	uORB::Subscription _bucket_status_sub{ORB_ID(bucket_status)};
 
-    // uORB subscriptions - Control commands
-    uORB::Subscription _manual_control_sub{ORB_ID(input_rc)};
+	// uORB publications
+	uORB::Publication<system_safety_s> _system_safety_pub{ORB_ID(system_safety)};
 
-    // uORB publications - Safety outputs
-    uORB::Publication<vehicle_command_s> _safety_command_pub{ORB_ID(vehicle_command)};
-    uORB::Publication<hbridge_status_s> _hbridge_system_pub{ORB_ID(hbridge_status)};
+	// uORB data structures
+	vehicle_local_position_s _vehicle_local_position{};
+	vehicle_attitude_s _vehicle_attitude{};
+	drivetrain_status_s _drivetrain_status{};
+	steering_status_s _steering_status{};
+	hbridge_status_s _hbridge_status{};
+	bucket_status_s _bucket_status{};
 
-    // Performance monitoring
-    perf_counter_t _loop_perf{perf_alloc(PC_ELAPSED, "safety_manager: cycle")};
-    perf_counter_t _loop_interval_perf{perf_alloc(PC_INTERVAL, "safety_manager: interval")};
+	// Safety state
+	SafetyLevel _current_safety_level{SafetyLevel::NORMAL};
+	SafetyLevel _previous_safety_level{SafetyLevel::NORMAL};
+	uint64_t _last_safety_check{0};
+	uint32_t _safety_check_counter{0};
+	uint32_t _safety_violations{0};
+	uint64_t _last_fault_time{0};
 
-    // Parameters - using PX4 parameter system placeholder (would need real parameter definitions)
-    struct {
-        float max_speed_ms{10.0f};
-        float max_acceleration_ms2{3.0f};
-        float emergency_decel_rate{5.0f};
-        float max_steering_angle_rad{1.0f};
-        float max_steering_rate_rads{0.5f};
-        float max_roll_angle_rad{0.3f};
-        float max_pitch_angle_rad{0.3f};
-        float stability_margin_factor{0.2f};
-        float max_payload_kg{5000.0f};
-        float max_cg_offset_m{1.0f};
-        float communication_timeout_s{5.0f};
-        float sensor_timeout_s{1.0f};
-        float risk_threshold{0.7f};
-        bool enable_safety_override{true};
-        bool enable_auto_recovery{true};
-    } _params;
+	// Monitoring flags
+	bool _speed_safe{true};
+	bool _steering_safe{true};
+	bool _stability_safe{true};
+	bool _communication_safe{true};
+	bool _hbridge_safe{true};
+	bool _bucket_safe{true};
+
+	// Timing
+	static constexpr uint32_t SAFETY_CHECK_INTERVAL_US = 20000; // 50Hz
+	static constexpr uint64_t COMMUNICATION_TIMEOUT_US = 1000000; // 1 second
+
+	// Performance counters
+	perf_counter_t _loop_perf{perf_alloc(PC_ELAPSED, MODULE_NAME": cycle")};
+	perf_counter_t _loop_interval_perf{perf_alloc(PC_INTERVAL, MODULE_NAME": interval")};
+
+	// Parameters
+	DEFINE_PARAMETERS(
+		(ParamFloat<px4::params::SM_MAX_SPEED>) _param_max_speed,
+		(ParamFloat<px4::params::SM_MAX_STR_ANG>) _param_max_steering_angle,
+		(ParamFloat<px4::params::SM_MAX_ROLL>) _param_max_roll,
+		(ParamFloat<px4::params::SM_MAX_PITCH>) _param_max_pitch,
+		(ParamFloat<px4::params::SM_COMM_TIMEOUT>) _param_comm_timeout
+	)
 };

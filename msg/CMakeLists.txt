@@ -230,6 +230,7 @@ set(msg_files
 	SteeringSetpoint.msg
 	SteeringStatus.msg
 	SystemPower.msg
+	SystemSafety.msg
 	TakeoffStatus.msg
 	TaskStackInfo.msg
 	TecsStatus.msg

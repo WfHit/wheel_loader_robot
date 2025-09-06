@@ -1,6 +1,8 @@
 # System-level safety status message
 # Published by the system-level Safety Manager
 
+# TOPICS system_safety
+
 uint64 timestamp                    # Time since system start (microseconds)
 
 # Overall safety status
