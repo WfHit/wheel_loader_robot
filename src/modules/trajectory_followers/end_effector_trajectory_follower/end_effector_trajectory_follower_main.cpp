@@ -48,5 +48,5 @@ extern "C" __EXPORT int end_effector_trajectory_follower_main(int argc, char *ar
  */
 int end_effector_trajectory_follower_main(int argc, char *argv[])
 {
-	return EndEffectorTrajectoryFollower::main(argc, argv);
+	return wheel_loader::EndEffectorTrajectoryFollower::main(argc, argv);
 }

@@ -34,7 +34,7 @@
 #pragma once
 
 #include <drivers/drv_hrt.h>
-#include <matrix/matrix/math.hpp>
+#include <lib/matrix/matrix/math.hpp>
 #include <lib/mathlib/mathlib.h>
 
 using namespace matrix;

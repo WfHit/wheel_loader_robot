@@ -42,11 +42,12 @@
 #include <uORB/topics/vehicle_local_position.h>
 #include <uORB/topics/end_effector_trajectory_setpoint.h>
 #include <uORB/topics/boom_status.h>
+#include <uORB/topics/bucket_status.h>
 #include <uORB/topics/end_effector_status.h>
 #include <uORB/topics/boom_trajectory_setpoint.h>
 #include <uORB/topics/bucket_trajectory_setpoint.h>
 #include <lib/perf/perf_counter.h>
-#include <matrix/matrix.hpp>
+#include <lib/matrix/matrix/math.hpp>
 #include <mathlib/mathlib.h>
 
 namespace wheel_loader
@@ -92,27 +93,46 @@ public:
 private:
 	void Run() override;
 
+	// System state management structure
+	struct SystemState {
+		matrix::Vector3f chassis_position{};
+		matrix::Quatf chassis_orientation{};
+		boom_status_s boom_status{};
+		bucket_status_s bucket_status{};
+		hrt_abstime timestamp{};
+	};
+
 	// Update subscriptions and process end effector trajectory setpoint
-	void update_subscriptions();
-	void update_trajectory_generation();
+	void update_trajectory_generation(const end_effector_trajectory_setpoint_s &setpoint);
+
+	// System state management
+	bool get_current_system_state(SystemState &state);
+	void generate_trajectory_commands(float target_boom_angle, float target_bucket_angle, const SystemState &current_state);
+
+	// Setpoint validation
+	bool is_valid_setpoint(const end_effector_trajectory_setpoint_s &setpoint) const;
 
 	// Inverse kinematics: end effector position (chassis frame) → boom + bucket joint angles
 	bool compute_joint_angles(const matrix::Vector3f &end_effector_position_chassis,
 				  const matrix::Quatf &end_effector_orientation_chassis,
 				  float &boom_angle_chassis,
-				  float &bucket_angle_boom);
+				  float &bucket_angle_boom) const;
 
 	// Forward kinematics: joint angles → end effector position (for validation)
-	matrix::Vector3f compute_end_effector_position(float boom_angle_chassis, float bucket_angle_boom);
+	matrix::Vector3f compute_end_effector_position(float boom_angle_chassis, float bucket_angle_boom) const;
 
 	// Generate smooth trajectory setpoints for controllers
 	void generate_boom_trajectory(float target_boom_angle, float boom_velocity);
 	void generate_bucket_trajectory(float target_bucket_angle, float bucket_velocity);
 
+	// Calculate velocities based on current status and target angles
+	float calculate_boom_velocity(float target_boom_angle, const boom_status_s &boom_status) const;
+	float calculate_bucket_velocity(float target_bucket_angle, const bucket_status_s &bucket_status) const;
+
 	// Transform between coordinate frames
 	matrix::Vector3f transform_world_to_chassis(const matrix::Vector3f &position_world,
 						    const matrix::Vector3f &chassis_position,
-						    const matrix::Quatf &chassis_orientation);
+						    const matrix::Quatf &chassis_orientation) const;
 
 	// uORB subscriptions
 	uORB::Subscription _end_effector_trajectory_setpoint_sub{ORB_ID(end_effector_trajectory_setpoint)};
@@ -158,6 +178,18 @@ private:
 	static constexpr float BOOM_LENGTH = 3.0f;     // meters
 	static constexpr float BUCKET_LENGTH = 1.5f;   // meters
 	static constexpr float BOOM_PIVOT_HEIGHT = 1.0f; // meters above chassis
+
+	// Control loop timing
+	static constexpr uint32_t CONTROL_LOOP_INTERVAL_US = 50000; // 50ms = 20Hz
+
+	// Trajectory generation constants
+	static constexpr float VELOCITY_PROPORTIONAL_GAIN = 2.0f;
+	static constexpr float DEFAULT_TIMEOUT_US = 1000000; // 1 second
+
+	// Coordinate frame tolerance
+	static constexpr float POSITION_TOLERANCE_M = 0.01f; // 1cm
+	static constexpr float ANGLE_TOLERANCE_RAD = 0.01f;  // ~0.57 degrees
+	static constexpr float QUATERNION_NORM_TOLERANCE = 0.1f; // Quaternion normalization tolerance
 
 	// Safety limits and validation
 	static constexpr float MIN_BOOM_ANGLE = -20.0f * M_PI_F / 180.0f; // -20 degrees (chassis frame)
