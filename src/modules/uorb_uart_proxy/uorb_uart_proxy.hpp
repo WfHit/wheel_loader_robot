@@ -35,9 +35,9 @@
  * @file uorb_uart_proxy.hpp
  * @author PX4 Development Team
  *
- * uORB UART Proxy module for NXT boards
- * Provides transparent uORB messaging to/from the X7+ main board via UART
- * Redesigned using ST3215 servo patterns for robust UART communication
+ * Refactored uORB UART Proxy module for NXT controller boards
+ * Uses improved distributed uORB protocol and dynamic topic registry
+ * Provides transparent uORB messaging with X7+ main board via UART
  */
 
 #pragma once
@@ -47,167 +47,127 @@
 #include <px4_platform_common/module_params.h>
 #include <px4_platform_common/px4_work_queue/ScheduledWorkItem.hpp>
 #include <lib/perf/perf_counter.h>
+#include <lib/distributed_uorb/distributed_uorb_protocol.hpp>
+#include <lib/distributed_uorb/distributed_uorb_topic_registry.hpp>
 
 #include <uORB/Publication.hpp>
 #include <uORB/Subscription.hpp>
 #include <uORB/SubscriptionMultiArray.hpp>
-
-#include <uORB/topics/actuator_outputs.h>
-#include <uORB/topics/vehicle_status.h>
-#include <uORB/topics/sensor_limit_switch.h>
-#include <uORB/topics/slip_estimation.h>
-#include <uORB/topics/traction_control.h>
-#include <uORB/topics/boom_trajectory_setpoint.h>
-#include <uORB/topics/boom_status.h>
-#include <uORB/topics/bucket_trajectory_setpoint.h>
-#include <uORB/topics/bucket_status.h>
-#include <uORB/topics/steering_command.h>
-#include <uORB/topics/steering_status.h>
-#include <uORB/topics/hbridge_status.h>
-#include <uORB/topics/load_lamp_command.h>
-#include <uORB/topics/sensor_quad_encoder.h>
 
 #include <poll.h>
 #include <termios.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/select.h>
+#include <vector>
 
 using namespace time_literals;
+using namespace distributed_uorb;
 
 /**
- * uORB UART Proxy module for NXT boards
- *
- * This module runs on NXT-Dual controller boards and provides transparent
- * uORB messaging to/from the X7+ main board via UART. It receives commands
- * from the main board and sends back status information.
- * Redesigned using ST3215 servo patterns for robust UART communication.
+ * Topic subscription/publication management for NXT proxy
  */
+struct ProxyTopicHandler {
+	uint16_t topic_id;
+	const orb_metadata *meta;
+	uORB::Subscription *subscription;
+	orb_advert_t publication;
+	uint8_t instance;
+	hrt_abstime last_updated;
+	bool is_outgoing; // true for NXT → X7+, false for X7+ → NXT
+};
+
 class UorbUartProxy : public ModuleBase<UorbUartProxy>,
 		      public ModuleParams,
 		      public px4::ScheduledWorkItem
 {
 public:
-	UorbUartProxy(const char *serial_port = "/dev/ttyS1");
-	~UorbUartProxy();
+	UorbUartProxy();
+	~UorbUartProxy() override;
 
 	static int task_spawn(int argc, char *argv[]);
 	static int custom_command(int argc, char *argv[]);
 	static int print_usage(const char *reason = nullptr);
 
-	bool init();
 	int print_status() override;
+	bool init();
 
 private:
 	void Run() override;
 
-	// Serial communication (ST3215 pattern)
-	bool configure_port();
-	bool send_packet(const uint8_t *data, size_t length);
-	bool receive_packet(uint8_t *buffer, size_t buffer_size, uint32_t timeout_ms);
-	uint8_t calculate_checksum(const uint8_t *data, size_t length);
+	// Connection management
+	bool configure_uart();
+	void check_connection();
+	void send_heartbeat();
 
 	// Message processing
-	void process_incoming_messages();
 	void process_outgoing_messages();
-	void send_heartbeat();
-	void handle_received_frame(const uint8_t *data, size_t length);
+	void process_incoming_messages();
+	void handle_received_frame(const ProtocolFrame *frame);
 
-	// Serial port (ST3215 pattern)
-	int _uart{-1};
-	char _port_name[32];
+	// Topic management
+	bool setup_topic_handlers();
+	void cleanup_topic_handlers();
+	ProxyTopicHandler *find_topic_handler(uint16_t topic_id, uint8_t instance);
+	bool publish_to_local_topic(uint16_t topic_id, uint8_t instance, const void *data, size_t data_size);
+
+	// Communication utilities
+	bool send_frame(const uint8_t *frame_data, size_t frame_size);
+	bool receive_frames();
+	void handle_communication_error(const char *error_msg);
+
+	// Board type detection and filtering
+	NodeId detect_board_type();
+	bool is_topic_relevant_for_node(uint16_t topic_id, NodeId node_id);
+
+	// UART connection
+	int _uart_fd{-1};
+	char _device_path[32];
+	bool _is_connected{false};
+
+	// Node identification
+	NodeId _node_id{NodeId::UNKNOWN};
+
+	// Topic handlers
+	std::vector<ProxyTopicHandler> _topic_handlers;
+
+	// Protocol utilities
+	FrameBuilder _frame_builder;
+	FrameParser _frame_parser;
 
 	// Communication state
-	bool _connection_ok{false};
-	hrt_abstime _last_update_time{0};
 	hrt_abstime _last_heartbeat_time{0};
-	int _consecutive_errors{0};
-
-	// Sequence numbers for packet tracking
+	hrt_abstime _last_message_time{0};
 	uint16_t _tx_sequence{0};
 	uint16_t _last_rx_sequence{0};
 
-	// Performance counters (ST3215 pattern)
+	// Performance counters
 	perf_counter_t _loop_perf;
 	perf_counter_t _comms_error_perf;
-	perf_counter_t _packet_count_perf;
-	perf_counter_t _tx_bytes_perf;
-	perf_counter_t _rx_bytes_perf;
+	perf_counter_t _packet_tx_perf;
+	perf_counter_t _packet_rx_perf;
+	perf_counter_t _bytes_tx_perf;
+	perf_counter_t _bytes_rx_perf;
 
-	// Subscriptions for outgoing topics (NXT → X7+)
-	uORB::Subscription _sensor_limit_switch_sub{ORB_ID(sensor_limit_switch)};
-	uORB::Subscription _slip_estimation_sub{ORB_ID(slip_estimation)};
-	uORB::Subscription _boom_status_sub{ORB_ID(boom_status)};
-	uORB::Subscription _bucket_status_sub{ORB_ID(bucket_status)};
-	uORB::Subscription _steering_status_sub{ORB_ID(steering_status)};
+	// Statistics
+	uint32_t _tx_packets{0};
+	uint32_t _rx_packets{0};
+	uint32_t _tx_errors{0};
+	uint32_t _rx_errors{0};
 
-	// HBridge status subscriptions (multi-instance, NXT → X7+)
-	uORB::Subscription _hbridge_status_sub_0{ORB_ID(hbridge_status), 0};
-	uORB::Subscription _hbridge_status_sub_1{ORB_ID(hbridge_status), 1};
+	// Timing constants
+	static constexpr unsigned SCHEDULE_INTERVAL = 10_ms;  // 10ms for responsiveness
+	static constexpr uint32_t HEARTBEAT_INTERVAL_MS = 1000;
+	static constexpr uint32_t CONNECTION_TIMEOUT_MS = 3000;
+	static constexpr size_t MAX_TX_QUEUE_SIZE = 30;
 
-	// Sensor quad encoder subscriptions (multi-instance, NXT → X7+)
-	uORB::Subscription _sensor_quad_encoder_sub_0{ORB_ID(sensor_quad_encoder), 0};
-	uORB::Subscription _sensor_quad_encoder_sub_1{ORB_ID(sensor_quad_encoder), 1};
-
-	// Publications for incoming topics (X7+ → NXT)
-	uORB::Publication<actuator_outputs_s> _actuator_outputs_front_pub{ORB_ID(actuator_outputs), 0};
-	uORB::Publication<actuator_outputs_s> _actuator_outputs_rear_pub{ORB_ID(actuator_outputs), 1};
-	uORB::Publication<vehicle_status_s> _vehicle_status_pub{ORB_ID(vehicle_status)};
-	uORB::Publication<traction_control_s> _traction_control_pub{ORB_ID(traction_control)};
-	uORB::Publication<boom_trajectory_setpoint_s> _boom_trajectory_setpoint_pub{ORB_ID(boom_trajectory_setpoint)};
-	uORB::Publication<bucket_trajectory_setpoint_s> _bucket_trajectory_setpoint_pub{ORB_ID(bucket_trajectory_setpoint)};
-	uORB::Publication<steering_command_s> _steering_command_pub{ORB_ID(steering_command)};
-	uORB::Publication<load_lamp_command_s> _load_lamp_command_pub{ORB_ID(load_lamp_command)};
-
-	// Protocol constants (same as bridge)
-	static constexpr uint8_t UART_SYNC_BYTE1 = 0xFF;
-	static constexpr uint8_t UART_SYNC_BYTE2 = 0xFE;
-	static constexpr uint8_t PROTOCOL_VERSION = 0x01;
-
-	// Message IDs (same as bridge)
-	enum class MessageId : uint8_t {
-		HEARTBEAT = 0x00,
-		ACTUATOR_OUTPUTS_FRONT = 0x01,
-		ACTUATOR_OUTPUTS_REAR = 0x02,
-		VEHICLE_STATUS = 0x03,
-		TRACTION_CONTROL = 0x04,
-		BOOM_TRAJECTORY_SETPOINT = 0x05,
-		BUCKET_TRAJECTORY_SETPOINT = 0x06,
-		STEERING_COMMAND = 0x07,
-		LOAD_LAMP_COMMAND = 0x08,
-		SENSOR_LIMIT_SWITCH = 0x10,
-		SLIP_ESTIMATION_FRONT = 0x11,
-		SLIP_ESTIMATION_REAR = 0x12,
-		BOOM_STATUS = 0x13,
-		BUCKET_STATUS = 0x14,
-		STEERING_STATUS = 0x15,
-		HBRIDGE_STATUS = 0x20,  // Base ID, instance in payload
-		SENSOR_QUAD_ENCODER = 0x30  // Base ID, instance in payload
-	};
-
-	// Packet structure (same as bridge)
-	struct __attribute__((packed)) UartPacket {
-		uint8_t sync1;
-		uint8_t sync2;
-		uint8_t msg_id;
-		uint8_t length;
-		uint16_t sequence;
-		uint8_t payload[256];  // Variable length
-		// Checksum at end
-	};
-
-	// Timing constants (ST3215 pattern)
-	static constexpr unsigned SCHEDULE_INTERVAL = 20_ms;
-	static constexpr uint32_t PACKET_TIMEOUT_MS = 50;
-	static constexpr uint32_t HEARTBEAT_INTERVAL = 1_s;
-	static constexpr uint32_t CONNECTION_TIMEOUT = 3_s;
-
-	// Module parameters (ST3215 pattern)
+	// Module parameters (≤16 chars per coding style)
 	DEFINE_PARAMETERS(
-		(ParamInt<px4::params::UART_PROXY_EN>) _param_enable,
-		(ParamInt<px4::params::UART_PROXY_BAUD>) _param_baudrate,
-		(ParamInt<px4::params::UART_PROXY_PORT>) _param_port,
-		(ParamInt<px4::params::UART_PROXY_TYPE>) _param_board_type  // 0=front, 1=rear
+		(ParamBool<px4::params::UORB_PX_EN>) _param_enable,
+		(ParamInt<px4::params::UORB_PX_BAUD>) _param_baudrate,
+		(ParamBool<px4::params::UORB_PX_STATS>) _param_enable_stats,
+		(ParamInt<px4::params::UORB_PX_NODE_ID>) _param_node_id,
+		(ParamInt<px4::params::UORB_PX_UART>) _param_uart_device
 	)
 };
 

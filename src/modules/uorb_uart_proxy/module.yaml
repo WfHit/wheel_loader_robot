@@ -2,16 +2,16 @@ module_name: uorb_uart_proxy
 serial_config:
     - command: uorb_uart_proxy start -d ${SERIAL_DEV} -b ${BAUD}
       port_config_param:
-        name: UART_PROXY_DEV
+        name: UORB_PX_DEV
         group: uORB UART Proxy
       baudrate_config_param:
-        name: UART_PROXY_BAUD
+        name: UORB_PX_BAUD
         group: uORB UART Proxy
 
 parameters:
     - group: uORB UART Proxy
       definitions:
-        UART_PROXY_EN:
+        UORB_PX_EN:
             description:
                 short: uORB UART Proxy Enable
                 long: |
@@ -24,7 +24,7 @@ parameters:
                 1: Enabled
             default: 1
 
-        UART_PROXY_PORT:
+        UORB_PX_UART:
             description:
                 short: uORB UART Proxy Port
                 long: |
@@ -41,7 +41,7 @@ parameters:
             default: 1
             reboot_required: true
 
-        UART_PROXY_BAUD:
+        UORB_PX_BAUD:
             description:
                 short: uORB UART Proxy Baudrate
                 long: |
@@ -60,46 +60,33 @@ parameters:
                 1000000: 1000000 baud
             min: 9600
             max: 1000000
-            unit: bps
             default: 921600
             reboot_required: true
 
-        UART_PROXY_TO:
+        UORB_PX_NODE_ID:
             description:
-                short: uORB UART Proxy Timeout
+                short: Board Node ID
                 long: |
-                    Communication timeout in milliseconds.
-                    If no response is received within this time, the communication
-                    is considered failed and will be retried.
-            type: int32
-            min: 10
-            max: 1000
-            unit: ms
-            default: 100
-
-        UART_PROXY_RETRY:
-            description:
-                short: uORB UART Proxy Retry Count
-                long: |
-                    Number of retries for failed communications.
-                    Higher values provide better reliability but may increase latency
-                    during communication failures.
-            type: int32
-            min: 1
-            max: 10
-            default: 3
-
-        UART_PROXY_BOARD:
-            description:
-                short: uORB UART Proxy Board Type
-                long: |
-                    Board type identification for message routing.
+                    Node ID identification for message routing.
                     This determines which messages are processed by this proxy instance.
+                    Must match the physical board configuration.
             type: int32
             values:
-                0: Front Board (handles steering, front motors)
-                1: Rear Board (handles boom, bucket, rear motors)
-            min: 0
-            max: 1
-            default: 0
+                2: Front NXT Board
+                3: Rear NXT Board
+            min: 2
+            max: 3
+            default: 2
             reboot_required: true
+
+        UORB_PX_STATS:
+            description:
+                short: Enable Statistics
+                long: |
+                    Enable periodic statistics output for debugging and monitoring.
+                    Shows connection status, packet counts, and error rates.
+            type: int32
+            values:
+                0: Disabled
+                1: Enabled
+            default: 0

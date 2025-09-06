@@ -34,9 +34,11 @@
 px4_add_module(
 	MODULE modules__uorb_uart_proxy
 	MAIN uorb_uart_proxy
-	STACK_MAIN 2048
+	STACK_MAIN 3072
 	SRCS
 		uorb_uart_proxy.cpp
+	DEPENDS
+		distributed_uorb
 	MODULE_CONFIG
 		module.yaml
 )

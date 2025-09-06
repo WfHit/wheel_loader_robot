@@ -2,16 +2,16 @@ module_name: uorb_uart_bridge
 serial_config:
     - command: uorb_uart_bridge start -d ${SERIAL_DEV} -b ${BAUD}
       port_config_param:
-        name: UART_BRIDGE_DEV
+        name: UORB_BR_DEV
         group: uORB UART Bridge
       baudrate_config_param:
-        name: UART_BRIDGE_BAUD
+        name: UORB_BR_BAUD
         group: uORB UART Bridge
 
 parameters:
     - group: uORB UART Bridge
       definitions:
-        UART_BRIDGE_EN:
+        UORB_BR_EN:
             description:
                 short: uORB UART Bridge Enable
                 long: |
@@ -25,12 +25,12 @@ parameters:
                 1: Enabled
             default: 1
 
-        UART_BRIDGE_PORT:
+        UORB_BR_F_PORT:
             description:
-                short: uORB UART Bridge Port
+                short: Front NXT UART Port
                 long: |
-                    Serial port selection for uORB UART Bridge.
-                    Specifies which UART port to use for communication with NXT boards.
+                    Serial port selection for Front NXT controller board.
+                    Specifies which UART port to use for communication with Front NXT.
             type: int32
             values:
                 1: ttyS1
@@ -39,10 +39,27 @@ parameters:
                 4: ttyS4
             min: 1
             max: 4
-            default: 1
+            default: 2
             reboot_required: true
 
-        UART_BRIDGE_BAUD:
+        UORB_BR_R_PORT:
+            description:
+                short: Rear NXT UART Port
+                long: |
+                    Serial port selection for Rear NXT controller board.
+                    Specifies which UART port to use for communication with Rear NXT.
+            type: int32
+            values:
+                1: ttyS1
+                2: ttyS2
+                3: ttyS3
+                4: ttyS4
+            min: 1
+            max: 4
+            default: 3
+            reboot_required: true
+
+        UORB_BR_BAUD:
             description:
                 short: uORB UART Bridge Baudrate
                 long: |
@@ -62,31 +79,17 @@ parameters:
                 1000000: 1000000 baud
             min: 9600
             max: 1000000
-            unit: bps
             default: 921600
             reboot_required: true
 
-        UART_BRIDGE_TO:
+        UORB_BR_STATS:
             description:
-                short: uORB UART Bridge Timeout
+                short: Enable Statistics
                 long: |
-                    Communication timeout in milliseconds.
-                    If no response is received within this time, the communication
-                    is considered failed and will be retried.
+                    Enable periodic statistics output for debugging and monitoring.
+                    Shows connection status, packet counts, and error rates.
             type: int32
-            min: 10
-            max: 1000
-            unit: ms
-            default: 100
-
-        UART_BRIDGE_RETRY:
-            description:
-                short: uORB UART Bridge Retry Count
-                long: |
-                    Number of retries for failed communications.
-                    Higher values provide better reliability but may increase latency
-                    during communication failures.
-            type: int32
-            min: 1
-            max: 10
-            default: 3
+            values:
+                0: Disabled
+                1: Enabled
+            default: 0
