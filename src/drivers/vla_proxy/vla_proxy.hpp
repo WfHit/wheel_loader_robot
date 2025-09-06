@@ -52,6 +52,10 @@
 #include <uORB/topics/vehicle_status.h>
 #include <uORB/topics/vehicle_local_position.h>
 #include <uORB/topics/vehicle_attitude.h>
+#include <uORB/topics/vehicle_angular_velocity.h>
+#include <uORB/topics/boom_status.h>
+#include <uORB/topics/bucket_status.h>
+#include <uORB/topics/chassis_status.h>
 #include <uORB/topics/bucket_trajectory_setpoint.h>
 
 #include <termios.h>
@@ -90,9 +94,11 @@ private:
 	bool receive_trajectory_commands();
 	void process_vla_message();
 
-	// Robot status structure (optimized for UART transmission)
-	struct __attribute__((packed)) RobotStatus {
+	// Wheel loader status structure (optimized for UART transmission)
+	struct __attribute__((packed)) WheelloaderStatus {
 		uint64_t timestamp;
+
+		// Base platform state
 		float position[3];        // x, y, z in meters
 		float velocity[3];        // vx, vy, vz in m/s
 		float quaternion[4];      // w, x, y, z
@@ -100,6 +106,32 @@ private:
 		uint8_t armed;           // 0=disarmed, 1=armed
 		uint8_t nav_state;       // Navigation state
 		float battery_voltage;    // Battery voltage in volts
+
+		// Joint states - Boom
+		float boom_angle;         // boom angle in radians
+		float boom_velocity;      // boom angular velocity (rad/s)
+		float boom_load;          // current load on boom (normalized 0-1)
+		float boom_motor_current; // boom motor current (A)
+		uint8_t boom_state;       // boom state
+
+		// Joint states - Bucket
+		float bucket_angle;       // bucket angle relative to boom (radians)
+		float bucket_ground_angle; // bucket angle relative to ground (radians)
+		float bucket_actuator_length; // current actuator length in mm
+		float bucket_velocity;    // actuator velocity (mm/s)
+		float bucket_motor_current; // bucket motor current (A)
+		uint8_t bucket_state;     // bucket state
+		float estimated_load_kg;  // estimated load in bucket (kg)
+
+		// Chassis state
+		float chassis_linear_velocity;  // forward/backward velocity [m/s]
+		float chassis_angular_velocity; // turning rate [rad/s]
+		float chassis_steering_angle;   // articulation angle [rad]
+		float wheel_speeds[4];    // individual wheel speeds [rad/s] FL,FR,RL,RR
+		float chassis_traction_mu; // friction coefficient estimate
+		uint8_t chassis_mode;     // current control mode
+		uint8_t chassis_state;    // current chassis state
+		uint8_t chassis_health;   // chassis health status
 	};
 
 	// VLA trajectory waypoint for 6DOF bucket control (optimized for UART)
@@ -111,8 +143,6 @@ private:
 		float angular_velocity[3]; // angular velocity in rad/s
 		float acceleration[3];     // linear acceleration in m/s²
 		float angular_acceleration[3]; // angular acceleration in rad/s²
-		uint8_t control_mode;      // Control mode for bucket
-		uint8_t priority;          // Trajectory priority
 	};
 
 	// VLA Protocol constants
@@ -125,7 +155,7 @@ private:
 
 	// Helper functions
 	void publish_trajectory_setpoint(const VLAWaypoint &waypoint);
-	void collect_robot_status(RobotStatus &status);
+	void collect_robot_status(WheelloaderStatus &status);
 	bool validate_waypoint(const VLAWaypoint &waypoint);
 
 	// Serial port
@@ -136,6 +166,10 @@ private:
 	uORB::Subscription _vehicle_status_sub{ORB_ID(vehicle_status)};
 	uORB::Subscription _vehicle_local_position_sub{ORB_ID(vehicle_local_position)};
 	uORB::Subscription _vehicle_attitude_sub{ORB_ID(vehicle_attitude)};
+	uORB::Subscription _vehicle_angular_velocity_sub{ORB_ID(vehicle_angular_velocity)};
+	uORB::Subscription _boom_status_sub{ORB_ID(boom_status)};
+	uORB::Subscription _bucket_status_sub{ORB_ID(bucket_status)};
+	uORB::Subscription _chassis_status_sub{ORB_ID(chassis_status)};
 	uORB::Publication<bucket_trajectory_setpoint_s> _bucket_trajectory_pub{ORB_ID(bucket_trajectory_setpoint)};
 
 	// Performance counters

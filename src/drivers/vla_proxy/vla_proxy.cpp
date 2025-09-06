@@ -230,7 +230,7 @@ void VLAProxy::Run()
 
 		// Check if we haven't received waypoints for too long
 		if (_last_waypoint_received > 0 &&
-		    (now - _last_waypoint_received) > _param_timeout_ms.get() * 1000) {
+		    (now - _last_waypoint_received) > static_cast<hrt_abstime>(_param_timeout_ms.get() * 1000)) {
 			if (_vla_active) {
 				PX4_WARN("VLA timeout - no waypoints received for %llu ms",
 				         (now - _last_waypoint_received) / 1000);
@@ -313,7 +313,7 @@ bool VLAProxy::receive_packet(uint8_t *buffer, size_t buffer_size, uint32_t time
 		// Check for timeout
 		if (hrt_elapsed_time(&start_time) > timeout_ms * 1000) {
 			if (_param_debug_level.get() > 1) {
-				PX4_WARN("VLA header timeout after %u ms, got %zu bytes", timeout_ms, bytes_received);
+				PX4_WARN("VLA header timeout after %lu ms, got %zu bytes", (unsigned long)timeout_ms, bytes_received);
 			}
 			return false;
 		}
@@ -368,8 +368,8 @@ bool VLAProxy::receive_packet(uint8_t *buffer, size_t buffer_size, uint32_t time
 	while (bytes_received < total_expected && bytes_received < buffer_size) {
 		if (hrt_elapsed_time(&start_time) > timeout_ms * 1000) {
 			if (_param_debug_level.get() > 1) {
-				PX4_WARN("VLA data timeout after %u ms, got %zu/%zu bytes",
-				         timeout_ms, bytes_received, total_expected);
+				PX4_WARN("VLA data timeout after %lu ms, got %zu/%zu bytes",
+				         (unsigned long)timeout_ms, bytes_received, total_expected);
 			}
 			return false;
 		}
@@ -414,7 +414,7 @@ bool VLAProxy::receive_packet(uint8_t *buffer, size_t buffer_size, uint32_t time
 	}
 }
 
-void VLAProxy::collect_robot_status(RobotStatus &status)
+void VLAProxy::collect_robot_status(WheelloaderStatus &status)
 {
 	status.timestamp = hrt_absolute_time();
 
@@ -443,9 +443,82 @@ void VLAProxy::collect_robot_status(RobotStatus &status)
 		status.quaternion[1] = attitude.q[1];  // x
 		status.quaternion[2] = attitude.q[2];  // y
 		status.quaternion[3] = attitude.q[3];  // z
-		status.angular_velocity[0] = attitude.rollspeed;
-		status.angular_velocity[1] = attitude.pitchspeed;
-		status.angular_velocity[2] = attitude.yawspeed;
+	}
+
+	// Get angular velocity
+	vehicle_angular_velocity_s angular_vel;
+	if (_vehicle_angular_velocity_sub.copy(&angular_vel)) {
+		status.angular_velocity[0] = angular_vel.xyz[0];  // roll rate
+		status.angular_velocity[1] = angular_vel.xyz[1];  // pitch rate
+		status.angular_velocity[2] = angular_vel.xyz[2];  // yaw rate
+	}
+
+	// Get boom status
+	boom_status_s boom_status;
+	if (_boom_status_sub.copy(&boom_status)) {
+		status.boom_angle = boom_status.angle;
+		status.boom_velocity = boom_status.velocity;
+		status.boom_load = boom_status.load;
+		status.boom_motor_current = boom_status.motor_current;
+		status.boom_state = boom_status.state;
+	} else {
+		// Default values if boom status unavailable
+		status.boom_angle = 0.0f;
+		status.boom_velocity = 0.0f;
+		status.boom_load = 0.0f;
+		status.boom_motor_current = 0.0f;
+		status.boom_state = 0;
+	}
+
+	// Get bucket status
+	bucket_status_s bucket_status;
+	if (_bucket_status_sub.copy(&bucket_status)) {
+		status.bucket_angle = bucket_status.bucket_angle;
+		status.bucket_ground_angle = bucket_status.ground_angle;
+		status.bucket_actuator_length = bucket_status.actuator_length;
+		status.bucket_velocity = bucket_status.velocity;
+		status.bucket_motor_current = bucket_status.motor_current;
+		status.bucket_state = bucket_status.state;
+		status.estimated_load_kg = bucket_status.estimated_load_kg;
+	} else {
+		// Default values if bucket status unavailable
+		status.bucket_angle = 0.0f;
+		status.bucket_ground_angle = 0.0f;
+		status.bucket_actuator_length = 0.0f;
+		status.bucket_velocity = 0.0f;
+		status.bucket_motor_current = 0.0f;
+		status.bucket_state = 0;
+		status.estimated_load_kg = 0.0f;
+	}
+
+	// Get chassis status
+	chassis_status_s chassis_status;
+	if (_chassis_status_sub.copy(&chassis_status)) {
+		status.chassis_linear_velocity = chassis_status.linear_velocity;
+		status.chassis_angular_velocity = chassis_status.angular_velocity;
+		status.chassis_steering_angle = chassis_status.steering_angle;
+
+		// Copy wheel speeds (4 wheels: FL, FR, RL, RR)
+		for (int i = 0; i < 4; i++) {
+			status.wheel_speeds[i] = chassis_status.wheel_speeds[i];
+		}
+
+		status.chassis_traction_mu = chassis_status.traction_mu;
+		status.chassis_mode = chassis_status.mode;
+		status.chassis_state = chassis_status.state;
+		status.chassis_health = chassis_status.health;
+	} else {
+		// Default values if chassis status unavailable
+		status.chassis_linear_velocity = 0.0f;
+		status.chassis_angular_velocity = 0.0f;
+		status.chassis_steering_angle = 0.0f;
+		for (int i = 0; i < 4; i++) {
+			status.wheel_speeds[i] = 0.0f;
+		}
+		status.chassis_traction_mu = 0.0f;
+		status.chassis_mode = 0;
+		status.chassis_state = 0;
+		status.chassis_health = 0;
 	}
 
 	// TODO: Get battery voltage from battery_status topic
@@ -454,21 +527,21 @@ void VLAProxy::collect_robot_status(RobotStatus &status)
 
 bool VLAProxy::send_robot_status()
 {
-	RobotStatus status;
+	WheelloaderStatus status;
 	collect_robot_status(status);
 
 	// Create packet: HEADER1 + HEADER2 + TYPE + LENGTH + DATA + CHECKSUM
-	uint8_t packet[sizeof(RobotStatus) + 6];  // 4 header bytes + data + 1 checksum
+	uint8_t packet[sizeof(WheelloaderStatus) + 6];  // 4 header bytes + data + 1 checksum
 	size_t packet_size = 0;
 
 	packet[packet_size++] = VLA_HEADER1;
 	packet[packet_size++] = VLA_HEADER2;
 	packet[packet_size++] = VLA_MSG_STATUS;
-	packet[packet_size++] = sizeof(RobotStatus);
+	packet[packet_size++] = sizeof(WheelloaderStatus);
 
 	// Copy status data
-	memcpy(&packet[packet_size], &status, sizeof(RobotStatus));
-	packet_size += sizeof(RobotStatus);
+	memcpy(&packet[packet_size], &status, sizeof(WheelloaderStatus));
+	packet_size += sizeof(WheelloaderStatus);
 
 	// Calculate and add checksum
 	uint8_t checksum = calculate_checksum(&packet[2], packet_size - 2);
@@ -485,62 +558,53 @@ bool VLAProxy::receive_trajectory_commands()
 		return false;
 	}
 
-	// Parse message type
+	// Parse message type and length
 	uint8_t msg_type = buffer[2];
 	uint8_t msg_length = buffer[3];
 
-	switch (msg_type) {
-	case VLA_MSG_WAYPOINT: {
-		if (msg_length != sizeof(VLAWaypoint)) {
-			if (_param_debug_level.get() > 0) {
-				PX4_ERR("VLA waypoint size mismatch: expected %zu, got %d",
-				        sizeof(VLAWaypoint), msg_length);
-			}
-			return false;
-		}
-
-		VLAWaypoint waypoint;
-		memcpy(&waypoint, &buffer[4], sizeof(VLAWaypoint));
-
-		if (!validate_waypoint(waypoint)) {
-			if (_param_debug_level.get() > 0) {
-				PX4_WARN("VLA waypoint validation failed");
-			}
-			return false;
-		}
-
-		// Add to buffer if there's space
-		if (_waypoint_buffer_count < WAYPOINT_BUFFER_SIZE) {
-			_waypoint_buffer[_waypoint_buffer_head] = waypoint;
-			_waypoint_buffer_head = (_waypoint_buffer_head + 1) % WAYPOINT_BUFFER_SIZE;
-			_waypoint_buffer_count++;
-			_vla_active = true;
-
-			if (_param_debug_level.get() > 1) {
-				PX4_INFO("VLA waypoint buffered, count: %zu", _waypoint_buffer_count);
-			}
-		} else {
-			if (_param_debug_level.get() > 0) {
-				PX4_WARN("VLA waypoint buffer full, dropping waypoint");
-			}
-		}
-		return true;
-	}
-
-	case VLA_MSG_COMMAND: {
-		// TODO: Handle VLA control commands (start, stop, pause, etc.)
-		if (_param_debug_level.get() > 1) {
-			PX4_INFO("VLA command received (not implemented)");
-		}
-		return true;
-	}
-
-	default:
+	// Only handle waypoint messages for now
+	if (msg_type != VLA_MSG_WAYPOINT) {
 		if (_param_debug_level.get() > 0) {
-			PX4_WARN("Unknown VLA message type: 0x%02X", msg_type);
+			PX4_WARN("Unsupported VLA message type: 0x%02X", msg_type);
 		}
 		return false;
 	}
+
+	if (msg_length != sizeof(VLAWaypoint)) {
+		if (_param_debug_level.get() > 0) {
+			PX4_ERR("VLA waypoint size mismatch: expected %zu, got %d",
+			        sizeof(VLAWaypoint), msg_length);
+		}
+		return false;
+	}
+
+	VLAWaypoint waypoint;
+	memcpy(&waypoint, &buffer[4], sizeof(VLAWaypoint));
+
+	if (!validate_waypoint(waypoint)) {
+		if (_param_debug_level.get() > 0) {
+			PX4_WARN("VLA waypoint validation failed");
+		}
+		return false;
+	}
+
+	// Add to buffer if there's space
+	if (_waypoint_buffer_count < WAYPOINT_BUFFER_SIZE) {
+		_waypoint_buffer[_waypoint_buffer_head] = waypoint;
+		_waypoint_buffer_head = (_waypoint_buffer_head + 1) % WAYPOINT_BUFFER_SIZE;
+		_waypoint_buffer_count++;
+		_vla_active = true;
+
+		if (_param_debug_level.get() > 1) {
+			PX4_INFO("VLA waypoint buffered, count: %zu", _waypoint_buffer_count);
+		}
+	} else {
+		if (_param_debug_level.get() > 0) {
+			PX4_WARN("VLA waypoint buffer full, dropping waypoint");
+		}
+	}
+
+	return true;
 }
 
 bool VLAProxy::validate_waypoint(const VLAWaypoint &waypoint)
@@ -552,26 +616,26 @@ bool VLAProxy::validate_waypoint(const VLAWaypoint &waypoint)
 
 	// Check for reasonable position values (within ±1000 meters)
 	for (int i = 0; i < 3; i++) {
-		if (!isfinite(waypoint.position[i]) || fabs(waypoint.position[i]) > 1000.0f) {
+		if (!std::isfinite(waypoint.position[i]) || fabsf(waypoint.position[i]) > 1000.0f) {
 			return false;
 		}
-		if (!isfinite(waypoint.velocity[i]) || fabs(waypoint.velocity[i]) > 100.0f) {
+		if (!std::isfinite(waypoint.velocity[i]) || fabsf(waypoint.velocity[i]) > 100.0f) {
 			return false;
 		}
-		if (!isfinite(waypoint.acceleration[i]) || fabs(waypoint.acceleration[i]) > 100.0f) {
+		if (!std::isfinite(waypoint.acceleration[i]) || fabsf(waypoint.acceleration[i]) > 100.0f) {
 			return false;
 		}
 	}
 
 	// Check orientation values (reasonable Euler angles)
 	for (int i = 0; i < 3; i++) {
-		if (!isfinite(waypoint.orientation[i]) || fabs(waypoint.orientation[i]) > 2 * M_PI) {
+		if (!std::isfinite(waypoint.orientation[i]) || fabsf(waypoint.orientation[i]) > 2.0f * static_cast<float>(M_PI)) {
 			return false;
 		}
-		if (!isfinite(waypoint.angular_velocity[i]) || fabs(waypoint.angular_velocity[i]) > 10.0f) {
+		if (!std::isfinite(waypoint.angular_velocity[i]) || fabsf(waypoint.angular_velocity[i]) > 10.0f) {
 			return false;
 		}
-		if (!isfinite(waypoint.angular_acceleration[i]) || fabs(waypoint.angular_acceleration[i]) > 100.0f) {
+		if (!std::isfinite(waypoint.angular_acceleration[i]) || fabsf(waypoint.angular_acceleration[i]) > 100.0f) {
 			return false;
 		}
 	}
@@ -623,7 +687,6 @@ void VLAProxy::publish_trajectory_setpoint(const VLAWaypoint &waypoint)
 	setpoint.time_from_start = 0.0f;
 
 	// Control flags
-	setpoint.priority = waypoint.priority;
 	setpoint.valid = true;
 
 	_bucket_trajectory_pub.publish(setpoint);
@@ -648,11 +711,9 @@ int VLAProxy::print_status()
 	PX4_INFO("  Last Waypoint Received: %llu ms ago",
 	         (_last_waypoint_received > 0) ? (hrt_absolute_time() - _last_waypoint_received) / 1000 : 0);
 
+	// Print only essential performance counters
 	perf_print_counter(_loop_perf);
 	perf_print_counter(_comms_error_perf);
-	perf_print_counter(_packet_count_perf);
-	perf_print_counter(_status_sent_perf);
-	perf_print_counter(_waypoint_received_perf);
 
 	return 0;
 }
@@ -744,12 +805,14 @@ $ vla_proxy status
 
 	PRINT_MODULE_USAGE_NAME("vla_proxy", "driver");
 	PRINT_MODULE_USAGE_COMMAND_DESCR("start", "Start driver");
-	PRINT_MODULE_USAGE_PARAM_STRING('d', "/dev/ttyS3", "Serial port", true);
+	PRINT_MODULE_USAGE_PARAM_STRING('d', "/dev/ttyS3", "<device>", "Serial port", false);
 	PRINT_MODULE_USAGE_COMMAND_DESCR("stop", "Stop driver");
 	PRINT_MODULE_USAGE_COMMAND_DESCR("status", "Show driver status");
 
 	return 0;
 }
+
+extern "C" __EXPORT int vla_proxy_main(int argc, char *argv[]);
 
 int vla_proxy_main(int argc, char *argv[])
 {
