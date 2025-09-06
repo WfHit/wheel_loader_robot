@@ -54,13 +54,22 @@
 #include <uORB/Subscription.hpp>
 #include <uORB/SubscriptionMultiArray.hpp>
 
+// uORB topic includes
+#include <uORB/topics/boom_status.h>
+#include <uORB/topics/bucket_status.h>
+#include <uORB/topics/boom_trajectory_setpoint.h>
+#include <uORB/topics/bucket_trajectory_setpoint.h>
+#include <uORB/topics/steering_status.h>
+#include <uORB/topics/sensor_limit_switch.h>
+#include <uORB/topics/sensor_quad_encoder.h>
+#include <uORB/topics/hbridge_status.h>
+#include <uORB/topics/vehicle_status.h>
+
 #include <poll.h>
 #include <termios.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/select.h>
-#include <map>
-#include <vector>
 
 using namespace time_literals;
 using namespace distributed_uorb;
@@ -157,11 +166,15 @@ private:
 	void update_statistics();
 	void print_connection_status(const RemoteNodeConnection &conn) const;
 
-	// Remote node connections
-	std::vector<RemoteNodeConnection> _connections;
+	// Remote node connections (fixed-size arrays for embedded system)
+	static constexpr size_t MAX_CONNECTIONS = 4; // Support up to 4 remote nodes
+	RemoteNodeConnection _connections[MAX_CONNECTIONS];
+	size_t _connection_count{0};
 
 	// Topic handlers
-	std::vector<TopicHandler> _topic_handlers;
+	static constexpr size_t MAX_TOPIC_HANDLERS = 32; // Support up to 32 topics
+	TopicHandler _topic_handlers[MAX_TOPIC_HANDLERS];
+	size_t _topic_handler_count{0};
 
 	// Protocol utilities
 	FrameBuilder _frame_builder;
@@ -179,6 +192,14 @@ private:
 	perf_counter_t _packet_rx_perf;
 	perf_counter_t _bytes_tx_perf;
 	perf_counter_t _bytes_rx_perf;
+
+	// Communication statistics
+	struct {
+		uint32_t tx_packets{0};
+		uint32_t rx_packets{0};
+		uint32_t tx_errors{0};
+		uint32_t rx_errors{0};
+	} _stats;
 
 	// Timing constants
 	static constexpr unsigned SCHEDULE_INTERVAL = 10_ms;  // 10ms for responsiveness

@@ -54,12 +54,22 @@
 #include <uORB/Subscription.hpp>
 #include <uORB/SubscriptionMultiArray.hpp>
 
+// uORB topic includes
+#include <uORB/topics/boom_status.h>
+#include <uORB/topics/bucket_status.h>
+#include <uORB/topics/boom_trajectory_setpoint.h>
+#include <uORB/topics/bucket_trajectory_setpoint.h>
+#include <uORB/topics/steering_status.h>
+#include <uORB/topics/sensor_limit_switch.h>
+#include <uORB/topics/sensor_quad_encoder.h>
+#include <uORB/topics/hbridge_status.h>
+#include <uORB/topics/vehicle_status.h>
+
 #include <poll.h>
 #include <termios.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/select.h>
-#include <vector>
 
 using namespace time_literals;
 using namespace distributed_uorb;
@@ -126,10 +136,12 @@ private:
 	bool _is_connected{false};
 
 	// Node identification
-	NodeId _node_id{NodeId::UNKNOWN};
+	NodeId _node_id{NodeId::RESERVED};
 
-	// Topic handlers
-	std::vector<ProxyTopicHandler> _topic_handlers;
+	// Topic handlers (fixed-size array for embedded system)
+	static constexpr size_t MAX_TOPIC_HANDLERS = 24; // Support up to 24 topics per NXT node
+	ProxyTopicHandler _topic_handlers[MAX_TOPIC_HANDLERS];
+	size_t _topic_handler_count{0};
 
 	// Protocol utilities
 	FrameBuilder _frame_builder;
@@ -149,11 +161,13 @@ private:
 	perf_counter_t _bytes_tx_perf;
 	perf_counter_t _bytes_rx_perf;
 
-	// Statistics
-	uint32_t _tx_packets{0};
-	uint32_t _rx_packets{0};
-	uint32_t _tx_errors{0};
-	uint32_t _rx_errors{0};
+	// Communication statistics
+	struct {
+		uint32_t tx_packets{0};
+		uint32_t rx_packets{0};
+		uint32_t tx_errors{0};
+		uint32_t rx_errors{0};
+	} _stats;
 
 	// Timing constants
 	static constexpr unsigned SCHEDULE_INTERVAL = 10_ms;  // 10ms for responsiveness
