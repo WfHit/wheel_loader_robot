@@ -267,7 +267,7 @@ void OperationModeManager::publish_trajectory_setpoints()
 	if (current_mode != nullptr) {
 		// Get setpoints from current mode
 		ChassisTrajectorySetpoint chassis_setpoint = current_mode->get_chassis_setpoint();
-		BucketTrajectorySetpoint bucket_setpoint = current_mode->get_bucket_setpoint();
+		EndEffectorTrajectorySetpoint end_effector_setpoint = current_mode->get_end_effector_setpoint();
 
 		// Publish chassis setpoint
 		if (chassis_setpoint.valid) {
@@ -285,19 +285,19 @@ void OperationModeManager::publish_trajectory_setpoints()
 			chassis_setpoint_pub.publish(chassis_msg);
 		}
 
-		// Publish bucket setpoint
-		if (bucket_setpoint.valid) {
-			bucket_trajectory_setpoint_s bucket_msg{};
-			bucket_msg.timestamp = hrt_absolute_time();
-			// Convert bucket setpoint to message format
-			// Note: This conversion depends on the bucket control mode
-			bucket_msg.control_mode = 3; // World frame trajectory control mode
-			bucket_msg.x_position = bucket_setpoint.position(0);
-			bucket_msg.y_position = bucket_setpoint.position(1);
-			bucket_msg.z_position = bucket_setpoint.position(2);
+		// Publish end effector setpoint
+		if (end_effector_setpoint.valid) {
+			bucket_trajectory_setpoint_s end_effector_msg{};
+			end_effector_msg.timestamp = hrt_absolute_time();
+			// Convert end effector setpoint to message format
+			// Note: This conversion depends on the end effector control mode
+			end_effector_msg.control_mode = 3; // Chassis frame trajectory control mode
+			end_effector_msg.x_position = end_effector_setpoint.position(0);
+			end_effector_msg.y_position = end_effector_setpoint.position(1);
+			end_effector_msg.z_position = end_effector_setpoint.position(2);
 			// Add other fields as needed based on the message definition
 
-			bucket_setpoint_pub.publish(bucket_msg);
+			bucket_setpoint_pub.publish(end_effector_msg);
 		}
 	}
 

@@ -40,7 +40,7 @@ bool ManualMode::init()
 {
 	// Initialize setpoints
 	chassis_setpoint = {};
-	bucket_setpoint = {};
+	end_effector_setpoint = {};
 
 	return true;
 }
@@ -57,7 +57,7 @@ void ManualMode::deactivate()
 
 	// Reset setpoints to safe values
 	chassis_setpoint = {};
-	bucket_setpoint = {};
+	end_effector_setpoint = {};
 }
 
 void ManualMode::update(float dt)
@@ -128,7 +128,7 @@ void ManualMode::generate_bucket_trajectory()
 
 	// Generate bucket motion from RC inputs
 	float boom_velocity_cmd = manual_inputs.boom_lift_velocity * boom_velocity_scale;
-	float bucket_angle_cmd = manual_inputs.bucket_angle * bucket_angle_scale;
+	float bucket_angle_cmd = manual_inputs.end_effector_angle * bucket_angle_scale;
 
 	// Calculate bucket position relative to current chassis position
 	// This is a simplified kinematic model
@@ -151,12 +151,12 @@ void ManualMode::generate_bucket_trajectory()
 	bucket_velocity(2) = boom_velocity_cmd;  // Vertical motion from boom
 
 	// Set bucket trajectory setpoint
-	bucket_setpoint.position = bucket_position;
-	bucket_setpoint.orientation = bucket_orientation;
-	bucket_setpoint.velocity = bucket_velocity;
-	bucket_setpoint.angular_velocity.zero();  // Simple model
-	bucket_setpoint.timestamp = now;
-	bucket_setpoint.valid = true;
+	end_effector_setpoint.position = bucket_position;
+	end_effector_setpoint.orientation = bucket_orientation;
+	end_effector_setpoint.velocity = bucket_velocity;
+	end_effector_setpoint.angular_velocity.zero();  // Simple model
+	end_effector_setpoint.timestamp = now;
+	end_effector_setpoint.valid = true;
 }
 
 ChassisTrajectorySetpoint ManualMode::get_chassis_setpoint() const
@@ -164,7 +164,7 @@ ChassisTrajectorySetpoint ManualMode::get_chassis_setpoint() const
 	return chassis_setpoint;
 }
 
-BucketTrajectorySetpoint ManualMode::get_bucket_setpoint() const
+EndEffectorTrajectorySetpoint ManualMode::get_end_effector_setpoint() const
 {
-	return bucket_setpoint;
+	return end_effector_setpoint;
 }

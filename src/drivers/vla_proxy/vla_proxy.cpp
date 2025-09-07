@@ -52,10 +52,7 @@ VLAProxy::VLAProxy(const char *serial_port) :
 	ModuleParams(nullptr),
 	ScheduledWorkItem(MODULE_NAME, px4::serial_port_to_wq(serial_port)),
 	_loop_perf(perf_alloc(PC_ELAPSED, MODULE_NAME": loop")),
-	_comms_error_perf(perf_alloc(PC_COUNT, MODULE_NAME": comm_err")),
-	_packet_count_perf(perf_alloc(PC_COUNT, MODULE_NAME": packets")),
-	_status_sent_perf(perf_alloc(PC_COUNT, MODULE_NAME": status_sent")),
-	_waypoint_received_perf(perf_alloc(PC_COUNT, MODULE_NAME": waypoint_recv"))
+	_comms_error_perf(perf_alloc(PC_COUNT, MODULE_NAME": comm_err"))
 {
 	strncpy(_port_name, serial_port, sizeof(_port_name) - 1);
 	_port_name[sizeof(_port_name) - 1] = '\0';
@@ -70,9 +67,6 @@ VLAProxy::~VLAProxy()
 
 	perf_free(_loop_perf);
 	perf_free(_comms_error_perf);
-	perf_free(_packet_count_perf);
-	perf_free(_status_sent_perf);
-	perf_free(_waypoint_received_perf);
 }
 
 bool VLAProxy::init()
@@ -214,14 +208,12 @@ void VLAProxy::Run()
 	if (now - _last_status_sent > status_interval_us) {
 		if (send_robot_status()) {
 			_last_status_sent = now;
-			perf_count(_status_sent_perf);
 		}
 	}
 
 	// Process incoming trajectory commands
 	if (receive_trajectory_commands()) {
 		_last_waypoint_received = now;
-		perf_count(_waypoint_received_perf);
 	}
 
 	// Check connection status
@@ -293,7 +285,6 @@ bool VLAProxy::send_packet(const uint8_t *data, size_t length)
 
 	// Wait for transmission to complete
 	tcdrain(_uart);
-	perf_count(_packet_count_perf);
 	return true;
 }
 
@@ -645,55 +636,52 @@ bool VLAProxy::validate_waypoint(const VLAWaypoint &waypoint)
 
 void VLAProxy::publish_trajectory_setpoint(const VLAWaypoint &waypoint)
 {
-	bucket_trajectory_setpoint_s setpoint{};
+	vla_trajectory_setpoint_s setpoint{};
 	setpoint.timestamp = hrt_absolute_time();
 
 	// Set control mode
-	setpoint.control_mode = bucket_trajectory_setpoint_s::MODE_TRAJECTORY;
+	setpoint.control_mode = vla_trajectory_setpoint_s::MODE_TRAJECTORY;
 
-	// World frame position
-	setpoint.x_position = waypoint.position[0];
-	setpoint.y_position = waypoint.position[1];
-	setpoint.z_position = waypoint.position[2];
+	// Bucket position
+	setpoint.bucket_position_x = waypoint.position[0];
+	setpoint.bucket_position_y = waypoint.position[1];
+	setpoint.bucket_position_z = waypoint.position[2];
 
-	// Convert orientation from Euler angles to quaternion
-	float roll = waypoint.orientation[0];
-	float pitch = waypoint.orientation[1];
-	float yaw = waypoint.orientation[2];
-
-	float cr = cosf(roll * 0.5f);
-	float sr = sinf(roll * 0.5f);
-	float cp = cosf(pitch * 0.5f);
-	float sp = sinf(pitch * 0.5f);
-	float cy = cosf(yaw * 0.5f);
-	float sy = sinf(yaw * 0.5f);
-
-	setpoint.q_w = cr * cp * cy + sr * sp * sy;
-	setpoint.q_x = sr * cp * cy - cr * sp * sy;
-	setpoint.q_y = cr * sp * cy + sr * cp * sy;
-	setpoint.q_z = cr * cp * sy - sr * sp * cy;
+	// Bucket orientation (Euler angles)
+	setpoint.bucket_orientation_roll = waypoint.orientation[0];
+	setpoint.bucket_orientation_pitch = waypoint.orientation[1];
+	setpoint.bucket_orientation_yaw = waypoint.orientation[2];
 
 	// Motion constraints
-	setpoint.max_velocity = sqrtf(waypoint.angular_velocity[0] * waypoint.angular_velocity[0] +
-	                              waypoint.angular_velocity[1] * waypoint.angular_velocity[1] +
-	                              waypoint.angular_velocity[2] * waypoint.angular_velocity[2]);
+	setpoint.max_velocity = sqrtf(waypoint.velocity[0] * waypoint.velocity[0] +
+	                              waypoint.velocity[1] * waypoint.velocity[1] +
+	                              waypoint.velocity[2] * waypoint.velocity[2]);
 
-	setpoint.max_acceleration = sqrtf(waypoint.angular_acceleration[0] * waypoint.angular_acceleration[0] +
-	                                  waypoint.angular_acceleration[1] * waypoint.angular_acceleration[1] +
-	                                  waypoint.angular_acceleration[2] * waypoint.angular_acceleration[2]);
+	setpoint.max_acceleration = sqrtf(waypoint.acceleration[0] * waypoint.acceleration[0] +
+	                                  waypoint.acceleration[1] * waypoint.acceleration[1] +
+	                                  waypoint.acceleration[2] * waypoint.acceleration[2]);
 
 	// Trajectory timing
 	setpoint.trajectory_time = 0.1f;
 	setpoint.time_from_start = 0.0f;
 
 	// Control flags
-	setpoint.valid = true;
+	setpoint.enable_trajectory = true;
+	setpoint.hold_position = false;
+	setpoint.emergency_stop = false;
+	setpoint.valid_output = true;
+	setpoint.confidence_score = 1.0f;
 
-	_bucket_trajectory_pub.publish(setpoint);
+	// Sequence information
+	setpoint.sequence_id = 0;
+	setpoint.sequence_step = 0;
+	setpoint.sequence_complete = false;
+
+	_vla_trajectory_pub.publish(setpoint);
 
 	if (_param_debug_level.get() > 1) {
 		PX4_INFO("VLA trajectory setpoint published: pos=[%.2f,%.2f,%.2f]",
-		         (double)setpoint.x_position, (double)setpoint.y_position, (double)setpoint.z_position);
+		         (double)setpoint.bucket_position_x, (double)setpoint.bucket_position_y, (double)setpoint.bucket_position_z);
 	}
 }
 

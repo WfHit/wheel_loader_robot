@@ -56,14 +56,14 @@ struct ChassisTrajectorySetpoint {
 };
 
 /**
- * End effector trajectory setpoint in WORLD coordinates
+ * End effector trajectory setpoint in CHASSIS coordinates
  * Published by operation modes, subscribed by end effector trajectory follower
  */
 struct EndEffectorTrajectorySetpoint {
-	Vector3f position;           // End effector position in world frame (m)
-	Quatf orientation;           // End effector orientation in world frame
-	Vector3f velocity;           // End effector linear velocity in world frame (m/s)
-	Vector3f angular_velocity;   // End effector angular velocity in world frame (rad/s)
+	Vector3f position;           // End effector position in chassis frame (m)
+	Quatf orientation;           // End effector orientation in chassis frame
+	Vector3f velocity;           // End effector linear velocity in chassis frame (m/s)
+	Vector3f angular_velocity;   // End effector angular velocity in chassis frame (rad/s)
 	hrt_abstime timestamp;       // Timestamp
 	bool valid{false};           // Validity flag
 };
@@ -91,30 +91,6 @@ struct ManualControlInputs {
 	float end_effector_angle;    // End effector angle command (-1 to 1)
 	bool mode_switch;            // Mode switch state
 	hrt_abstime timestamp;       // Timestamp
-};
-
-/**
- * Chassis control command
- * Published by chassis trajectory follower to wheel/steering modules
- */
-struct ChassisControlCommand {
-	float velocity;              // Forward/backward velocity (m/s)
-	float steering_angle;        // Steering angle (rad)
-	hrt_abstime timestamp;       // Timestamp
-	bool valid{false};           // Validity flag
-};
-
-/**
- * End effector control command
- * Published by end effector trajectory follower to boom/end effector control modules
- */
-struct EndEffectorControlCommand {
-	Vector3f position;           // Target end effector position (m)
-	Quatf orientation;           // Target end effector orientation
-	Vector3f velocity;           // Target end effector velocity (m/s)
-	Vector3f angular_velocity;   // Target end effector angular velocity (rad/s)
-	hrt_abstime timestamp;       // Timestamp
-	bool valid{false};           // Validity flag
 };
 
 } // namespace wheel_loader

@@ -39,13 +39,13 @@
 #include <uORB/Subscription.hpp>
 #include <uORB/Publication.hpp>
 #include <uORB/topics/manual_control_setpoint.h>
-#include <uORB/topics/parameter_update.h>
 #include <uORB/topics/vehicle_status.h>
 #include <uORB/topics/vehicle_local_position.h>
 #include <uORB/topics/chassis_trajectory_setpoint.h>
 #include <uORB/topics/bucket_trajectory_setpoint.h>
 #include <uORB/topics/operation_mode_status.h>
 #include <uORB/topics/vla_trajectory_setpoint.h>
+#include <uORB/topics/parameter_update.h>
 #include <lib/matrix/matrix/math.hpp>
 #include <lib/perf/perf_counter.h>
 #include <lib/systemlib/err.h>
@@ -163,10 +163,10 @@ private:
 
 	// uORB subscriptions
 	uORB::Subscription manual_control_setpoint_sub{ORB_ID(manual_control_setpoint)};
-	uORB::Subscription parameter_update_sub{ORB_ID(parameter_update)};
 	uORB::Subscription vehicle_status_sub{ORB_ID(vehicle_status)};
 	uORB::Subscription vehicle_local_position_sub{ORB_ID(vehicle_local_position)};
 	uORB::Subscription vla_trajectory_setpoint_sub{ORB_ID(vla_trajectory_setpoint)};
+	uORB::Subscription parameter_update_sub{ORB_ID(parameter_update)};
 
 	// uORB publications
 	uORB::Publication<chassis_trajectory_setpoint_s> chassis_setpoint_pub{ORB_ID(chassis_trajectory_setpoint)};

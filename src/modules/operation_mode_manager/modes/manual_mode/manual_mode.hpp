@@ -50,7 +50,7 @@ public:
 	void deactivate() override;
 	void update(float dt) override;
 	ChassisTrajectorySetpoint get_chassis_setpoint() const override;
-	BucketTrajectorySetpoint get_bucket_setpoint() const override;
+	EndEffectorTrajectorySetpoint get_end_effector_setpoint() const override;
 
 	/**
 	 * Set manual control inputs

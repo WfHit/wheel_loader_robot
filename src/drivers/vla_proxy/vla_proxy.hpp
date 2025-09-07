@@ -56,7 +56,7 @@
 #include <uORB/topics/boom_status.h>
 #include <uORB/topics/bucket_status.h>
 #include <uORB/topics/chassis_status.h>
-#include <uORB/topics/bucket_trajectory_setpoint.h>
+#include <uORB/topics/vla_trajectory_setpoint.h>
 
 #include <termios.h>
 #include <fcntl.h>
@@ -170,14 +170,11 @@ private:
 	uORB::Subscription _boom_status_sub{ORB_ID(boom_status)};
 	uORB::Subscription _bucket_status_sub{ORB_ID(bucket_status)};
 	uORB::Subscription _chassis_status_sub{ORB_ID(chassis_status)};
-	uORB::Publication<bucket_trajectory_setpoint_s> _bucket_trajectory_pub{ORB_ID(bucket_trajectory_setpoint)};
+	uORB::Publication<vla_trajectory_setpoint_s> _vla_trajectory_pub{ORB_ID(vla_trajectory_setpoint)};
 
 	// Performance counters
 	perf_counter_t _loop_perf;
 	perf_counter_t _comms_error_perf;
-	perf_counter_t _packet_count_perf;
-	perf_counter_t _status_sent_perf;
-	perf_counter_t _waypoint_received_perf;
 
 	// Communication state
 	bool _connection_ok{false};

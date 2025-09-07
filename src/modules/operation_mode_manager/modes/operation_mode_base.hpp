@@ -73,7 +73,7 @@ public:
 	/**
 	 * Get bucket trajectory setpoint
 	 */
-	virtual BucketTrajectorySetpoint get_bucket_setpoint() const = 0;
+	virtual EndEffectorTrajectorySetpoint get_end_effector_setpoint() const = 0;
 
 	/**
 	 * Check if mode is active
@@ -83,7 +83,7 @@ public:
 protected:
 	bool active{false};
 	ChassisTrajectorySetpoint chassis_setpoint{};
-	BucketTrajectorySetpoint bucket_setpoint{};
+	EndEffectorTrajectorySetpoint end_effector_setpoint{};
 };
 
 } // namespace wheel_loader

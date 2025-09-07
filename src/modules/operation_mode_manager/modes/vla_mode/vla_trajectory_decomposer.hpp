@@ -61,33 +61,33 @@ public:
 	void init(float max_reach, float coord_factor);
 
 	/**
-	 * Decompose VLA trajectory into chassis and bucket world trajectories
+	 * Decompose VLA trajectory into chassis and end effector world trajectories
 	 *
-	 * @param vla_point Input VLA trajectory point (bucket 6DOF in world frame)
+	 * @param vla_point Input VLA trajectory point (end effector 6DOF in world frame)
 	 * @param current_chassis_pos Current chassis position in world frame
 	 * @param current_chassis_yaw Current chassis yaw angle
 	 * @param chassis_trajectory Output chassis trajectory in world frame
-	 * @param bucket_trajectory Output bucket trajectory in world frame
+	 * @param end_effector_trajectory Output end effector trajectory in world frame
 	 * @return true if decomposition successful
 	 */
 	bool decompose(const VlaTrajectoryPoint &vla_point,
 	               const Vector3f &current_chassis_pos,
 	               float current_chassis_yaw,
 	               ChassisTrajectorySetpoint &chassis_trajectory,
-	               BucketTrajectorySetpoint &bucket_trajectory);
+	               EndEffectorTrajectorySetpoint &end_effector_trajectory);
 
 private:
 	/**
-	 * Determine optimal chassis contribution to bucket motion
+	 * Determine optimal chassis contribution to end effector motion
 	 *
-	 * The chassis can help reduce bucket motion by moving closer to the target.
-	 * This calculates how much the chassis should move to assist the bucket.
+	 * The chassis can help reduce end effector motion by moving closer to the target.
+	 * This calculates how much the chassis should move to assist the end effector.
 	 */
-	Vector3f calculate_chassis_contribution(const Vector3f &bucket_target_world,
+	Vector3f calculate_chassis_contribution(const Vector3f &end_effector_target_world,
 	                                        const Vector3f &current_chassis_pos);
 
 	/**
-	 * Calculate chassis trajectory to support bucket motion
+	 * Calculate chassis trajectory to support end effector motion
 	 */
 	void generate_chassis_trajectory(const VlaTrajectoryPoint &vla_point,
 	                                 const Vector3f &current_chassis_pos,
@@ -96,26 +96,26 @@ private:
 	                                 ChassisTrajectorySetpoint &chassis_trajectory);
 
 	/**
-	 * Generate bucket trajectory in world frame
+	 * Generate end effector trajectory in world frame
 	 */
-	void generate_bucket_trajectory(const VlaTrajectoryPoint &vla_point,
-	                                BucketTrajectorySetpoint &bucket_trajectory);
+	void generate_end_effector_trajectory(const VlaTrajectoryPoint &vla_point,
+	                                EndEffectorTrajectorySetpoint &end_effector_trajectory);
 
 	/**
 	 * Check if the decomposed trajectories are feasible
 	 */
 	bool validate_trajectories(const ChassisTrajectorySetpoint &chassis_trajectory,
-	                           const BucketTrajectorySetpoint &bucket_trajectory);
+	                           const EndEffectorTrajectorySetpoint &end_effector_trajectory);
 
 	// Robot constraints
-	float max_reach{3.0f};           // Maximum bucket reach from chassis (m)
-	float coordination_factor{0.7f}; // How much chassis helps bucket (0=none, 1=full)
+	float max_reach{3.0f};           // Maximum end effector reach from chassis (m)
+	float coordination_factor{0.7f}; // How much chassis helps end effector (0=none, 1=full)
 
 	// Motion limits
-	float max_chassis_velocity{2.0f};     // m/s
-	float max_chassis_turn_rate{1.0f};    // rad/s
-	float max_bucket_velocity{1.0f};      // m/s
-	float max_bucket_angular_rate{1.5f};  // rad/s
+	float max_chassis_velocity{2.0f};        // m/s
+	float max_chassis_turn_rate{1.0f};       // rad/s
+	float max_end_effector_velocity{1.0f};      // m/s
+	float max_end_effector_angular_rate{1.5f};  // rad/s
 };
 
 } // namespace wheel_loader

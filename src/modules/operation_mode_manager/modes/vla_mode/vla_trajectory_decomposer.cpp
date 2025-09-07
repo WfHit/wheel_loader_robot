@@ -46,34 +46,34 @@ bool VlaTrajectoryDecomposer::decompose(const VlaTrajectoryPoint &vla_point,
                                         const Vector3f &current_chassis_pos,
                                         float current_chassis_yaw,
                                         ChassisTrajectorySetpoint &chassis_trajectory,
-                                        BucketTrajectorySetpoint &bucket_trajectory)
+                                        EndEffectorTrajectorySetpoint &end_effector_trajectory)
 {
 	// Calculate how much the chassis should contribute to the motion
 	Vector3f chassis_contribution = calculate_chassis_contribution(
-		vla_point.bucket_position, current_chassis_pos);
+		vla_point.end_effector_position, current_chassis_pos);
 
 	// Generate chassis trajectory
 	generate_chassis_trajectory(vla_point, current_chassis_pos, current_chassis_yaw,
 	                            chassis_contribution, chassis_trajectory);
 
-	// Generate bucket trajectory (directly from VLA command)
-	generate_bucket_trajectory(vla_point, bucket_trajectory);
+	// Generate end effector trajectory (convert from world to chassis frame)
+	generate_end_effector_trajectory(vla_point, end_effector_trajectory);
 
 	// Validate the trajectories
-	return validate_trajectories(chassis_trajectory, bucket_trajectory);
+	return validate_trajectories(chassis_trajectory, end_effector_trajectory);
 }
 
 Vector3f VlaTrajectoryDecomposer::calculate_chassis_contribution(
-	const Vector3f &bucket_target_world,
+	const Vector3f &end_effector_target_world,
 	const Vector3f &current_chassis_pos)
 {
-	// Calculate distance from chassis to bucket target
-	Vector3f chassis_to_bucket = bucket_target_world - current_chassis_pos;
-	chassis_to_bucket(2) = 0.0f;  // Only consider horizontal distance
+	// Calculate distance from chassis to end effector target
+	Vector3f chassis_to_end_effector = end_effector_target_world - current_chassis_pos;
+	chassis_to_end_effector(2) = 0.0f;  // Only consider horizontal distance
 
-	float reach_distance = chassis_to_bucket.norm();
+	float reach_distance = chassis_to_end_effector.norm();
 
-	// If bucket target is far, chassis should move to help
+	// If end effector target is far, chassis should move to help
 	if (reach_distance > max_reach * 0.6f) {
 		// Calculate how much chassis should move
 		float assistance_factor = math::constrain(
@@ -82,7 +82,7 @@ Vector3f VlaTrajectoryDecomposer::calculate_chassis_contribution(
 		);
 
 		// Direction chassis should move
-		Vector3f assistance_direction = chassis_to_bucket.normalized();
+		Vector3f assistance_direction = chassis_to_end_effector.normalized();
 
 		// Calculate chassis contribution
 		float contribution_magnitude = coordination_factor * assistance_factor *
@@ -107,7 +107,7 @@ void VlaTrajectoryDecomposer::generate_chassis_trajectory(
 	Vector3f target_chassis_pos = current_chassis_pos + chassis_contribution;
 
 	// Calculate target chassis orientation to face bucket target
-	Vector3f bucket_direction = vla_point.bucket_position - target_chassis_pos;
+	Vector3f bucket_direction = vla_point.end_effector_position - target_chassis_pos;
 	bucket_direction(2) = 0.0f;  // Only horizontal
 
 	float target_chassis_yaw = current_chassis_yaw;
@@ -139,40 +139,60 @@ void VlaTrajectoryDecomposer::generate_chassis_trajectory(
 	chassis_trajectory.valid = true;
 }
 
-void VlaTrajectoryDecomposer::generate_bucket_trajectory(
+void VlaTrajectoryDecomposer::generate_end_effector_trajectory(
 	const VlaTrajectoryPoint &vla_point,
-	BucketTrajectorySetpoint &bucket_trajectory)
+	EndEffectorTrajectorySetpoint &end_effector_trajectory)
 {
-	// Bucket trajectory is directly from VLA command (world frame)
-	bucket_trajectory.position = vla_point.bucket_position;
-	bucket_trajectory.orientation = vla_point.bucket_orientation;
-	bucket_trajectory.velocity = vla_point.bucket_velocity;
-	bucket_trajectory.angular_velocity = vla_point.bucket_angular_velocity;
-	bucket_trajectory.timestamp = vla_point.timestamp;
-	bucket_trajectory.valid = vla_point.valid;
+	// Transform end effector trajectory from world frame to chassis frame
+	// Note: This requires the current chassis pose to perform the transformation
+
+	// Get current chassis pose (this should be available from vehicle state)
+	// For now, using the generated chassis trajectory as reference
+	Vector3f chassis_position = Vector3f(0.0f, 0.0f, 0.0f); // Will be set from actual chassis pose
+	Quatf chassis_orientation = Quatf(1.0f, 0.0f, 0.0f, 0.0f); // Will be set from actual chassis pose
+
+	// TODO: Get actual chassis pose from vehicle state or current chassis trajectory
+	// chassis_position = current_chassis_position;
+	// chassis_orientation = current_chassis_orientation;
+
+	// Transform position from world frame to chassis frame
+	Vector3f world_to_chassis_position = vla_point.end_effector_position - chassis_position;
+	end_effector_trajectory.position = chassis_orientation.inversed().rotateVector(world_to_chassis_position);
+
+	// Transform orientation from world frame to chassis frame
+	end_effector_trajectory.orientation = chassis_orientation.inversed() * vla_point.end_effector_orientation;
+
+	// Transform velocity from world frame to chassis frame
+	end_effector_trajectory.velocity = chassis_orientation.inversed().rotateVector(vla_point.end_effector_velocity);
+
+	// Transform angular velocity from world frame to chassis frame
+	end_effector_trajectory.angular_velocity = chassis_orientation.inversed().rotateVector(vla_point.end_effector_angular_velocity);
+
+	end_effector_trajectory.timestamp = vla_point.timestamp;
+	end_effector_trajectory.valid = vla_point.valid;
 
 	// Apply velocity limits
-	float velocity_norm = bucket_trajectory.velocity.norm();
-	if (velocity_norm > max_bucket_velocity) {
-		bucket_trajectory.velocity = bucket_trajectory.velocity * (max_bucket_velocity / velocity_norm);
+	float velocity_norm = end_effector_trajectory.velocity.norm();
+	if (velocity_norm > max_end_effector_velocity) {
+		end_effector_trajectory.velocity = end_effector_trajectory.velocity * (max_end_effector_velocity / velocity_norm);
 	}
 
-	float angular_velocity_norm = bucket_trajectory.angular_velocity.norm();
-	if (angular_velocity_norm > max_bucket_angular_rate) {
-		bucket_trajectory.angular_velocity = bucket_trajectory.angular_velocity *
-		                                     (max_bucket_angular_rate / angular_velocity_norm);
+	float angular_velocity_norm = end_effector_trajectory.angular_velocity.norm();
+	if (angular_velocity_norm > max_end_effector_angular_rate) {
+		end_effector_trajectory.angular_velocity = end_effector_trajectory.angular_velocity *
+		                                     (max_end_effector_angular_rate / angular_velocity_norm);
 	}
 }
 
 bool VlaTrajectoryDecomposer::validate_trajectories(
 	const ChassisTrajectorySetpoint &chassis_trajectory,
-	const BucketTrajectorySetpoint &bucket_trajectory)
+	const EndEffectorTrajectorySetpoint &end_effector_trajectory)
 {
-	// Check if bucket is within reach from chassis position
-	Vector3f chassis_to_bucket = bucket_trajectory.position - chassis_trajectory.position;
-	chassis_to_bucket(2) = 0.0f;  // Only horizontal distance
+	// Check if end effector is within reach from chassis position
+	Vector3f chassis_to_end_effector = end_effector_trajectory.position - chassis_trajectory.position;
+	chassis_to_end_effector(2) = 0.0f;  // Only horizontal distance
 
-	float reach_distance = chassis_to_bucket.norm();
+	float reach_distance = chassis_to_end_effector.norm();
 	if (reach_distance > max_reach) {
 		return false;  // Bucket too far from chassis
 	}
@@ -182,7 +202,7 @@ bool VlaTrajectoryDecomposer::validate_trajectories(
 		return false;
 	}
 
-	if (bucket_trajectory.velocity.norm() > max_bucket_velocity) {
+	if (end_effector_trajectory.velocity.norm() > max_end_effector_velocity) {
 		return false;
 	}
 
@@ -191,7 +211,7 @@ bool VlaTrajectoryDecomposer::validate_trajectories(
 		return false;
 	}
 
-	if (bucket_trajectory.angular_velocity.norm() > max_bucket_angular_rate) {
+	if (end_effector_trajectory.angular_velocity.norm() > max_end_effector_angular_rate) {
 		return false;
 	}
 

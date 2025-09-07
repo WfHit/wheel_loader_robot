@@ -43,7 +43,7 @@ bool VlaMode::init()
 
 	// Initialize setpoints
 	chassis_setpoint = {};
-	bucket_setpoint = {};
+	end_effector_setpoint = {};
 
 	return true;
 }
@@ -61,7 +61,7 @@ void VlaMode::deactivate()
 
 	// Reset setpoints to safe values
 	chassis_setpoint = {};
-	bucket_setpoint = {};
+	end_effector_setpoint = {};
 	vla_trajectory = {};
 }
 
@@ -75,7 +75,7 @@ void VlaMode::update(float dt)
 	if (!is_trajectory_valid()) {
 		// Invalid or old trajectory - stop motion
 		chassis_setpoint.valid = false;
-		bucket_setpoint.valid = false;
+		end_effector_setpoint.valid = false;
 		return;
 	}
 
@@ -116,7 +116,7 @@ bool VlaMode::decompose_trajectory()
 		current_position,
 		current_yaw,
 		chassis_setpoint,
-		bucket_setpoint
+		end_effector_setpoint
 	);
 }
 
@@ -125,7 +125,7 @@ ChassisTrajectorySetpoint VlaMode::get_chassis_setpoint() const
 	return chassis_setpoint;
 }
 
-BucketTrajectorySetpoint VlaMode::get_bucket_setpoint() const
+EndEffectorTrajectorySetpoint VlaMode::get_end_effector_setpoint() const
 {
-	return bucket_setpoint;
+	return end_effector_setpoint;
 }
