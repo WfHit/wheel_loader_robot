@@ -69,9 +69,9 @@ private:
 	void generate_chassis_trajectory();
 
 	/**
-	 * Generate bucket trajectory from RC inputs
+	 * Generate end effector trajectory from RC inputs
 	 */
-	void generate_bucket_trajectory();
+	void generate_end_effector_trajectory();
 
 	// Manual inputs
 	ManualControlInputs manual_inputs{};

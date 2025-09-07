@@ -100,13 +100,13 @@ void TractionControl::Run()
     _desired_force = 0.0f;     // Default to no force
 
     // Core traction control pipeline
-    estimate_axle_slip();
+    estimate_drivetrain_slip();
     estimate_ground_conditions();
 
     // Compute velocity commands based on slip control
     compute_velocity_commands();
 
-    // Compute force distribution between axles
+    // Compute force distribution between drivetrains
     compute_force_distribution();
 
     // Compute steering compensation for slip
@@ -116,7 +116,7 @@ void TractionControl::Run()
     detect_wheel_stall();
 
     // Handle excessive slip events
-    if (_front_axle.is_slipping || _rear_axle.is_slipping) {
+    if (_front_drivetrain.is_slipping || _rear_drivetrain.is_slipping) {
         handle_excessive_slip();
     }
 
@@ -169,7 +169,7 @@ void TractionControl::update_drivetrain_feedback()
     // Front drivetrain (instance 0) and rear drivetrain (instance 1)
 
     drivetrain_status_s front_status{}, rear_status{};
-    bool front_updated = false, rear_updated = false;    // Check all drivetrain status instances to find front and rear axles
+    bool front_updated = false, rear_updated = false;    // Check all drivetrain status instances to find front and rear drivetrains
     for (uint8_t i = 0; i < _drivetrain_status_sub.size(); i++) {
         drivetrain_status_s status;
         if (_drivetrain_status_sub[i].updated() && _drivetrain_status_sub[i].copy(&status)) {
@@ -183,29 +183,29 @@ void TractionControl::update_drivetrain_feedback()
         }
     }
 
-    // Update front axle data
+    // Update front drivetrain data
     if (front_updated) {
         // Convert RPM to rad/s
-        _front_axle.motor_speed = front_status.current_speed_rpm * (2.0f * M_PI_F / 60.0f);
+        _front_drivetrain.motor_speed = front_status.current_speed_rpm * (2.0f * M_PI_F / 60.0f);
 
         // For wheel speed, use encoder-based speed if available, otherwise current speed
         if (front_status.encoder_healthy) {
-            _front_axle.wheel_speed = front_status.encoder_speed_rpm * (2.0f * M_PI_F / 60.0f);
+            _front_drivetrain.wheel_speed = front_status.encoder_speed_rpm * (2.0f * M_PI_F / 60.0f);
         } else {
-            _front_axle.wheel_speed = _front_axle.motor_speed;
+            _front_drivetrain.wheel_speed = _front_drivetrain.motor_speed;
         }
     }
 
-    // Update rear axle data
+    // Update rear drivetrain data
     if (rear_updated) {
         // Convert RPM to rad/s
-        _rear_axle.motor_speed = rear_status.current_speed_rpm * (2.0f * M_PI_F / 60.0f);
+        _rear_drivetrain.motor_speed = rear_status.current_speed_rpm * (2.0f * M_PI_F / 60.0f);
 
         // For wheel speed, use encoder-based speed if available, otherwise current speed
         if (rear_status.encoder_healthy) {
-            _rear_axle.wheel_speed = rear_status.encoder_speed_rpm * (2.0f * M_PI_F / 60.0f);
+            _rear_drivetrain.wheel_speed = rear_status.encoder_speed_rpm * (2.0f * M_PI_F / 60.0f);
         } else {
-            _rear_axle.wheel_speed = _rear_axle.motor_speed;
+            _rear_drivetrain.wheel_speed = _rear_drivetrain.motor_speed;
         }
     }
 }
@@ -263,18 +263,18 @@ void TractionControl::update_traction_setpoint()
     }
 }
 
-void TractionControl::estimate_axle_slip()
+void TractionControl::estimate_drivetrain_slip()
 {
-    // Estimate slip for each axle
-    _front_axle.slip = calculate_axle_slip(
-        _front_axle.wheel_speed,
+    // Estimate slip for each drivetrain
+    _front_drivetrain.slip = calculate_drivetrain_slip(
+        _front_drivetrain.wheel_speed,
         _vehicle.ground_speed,
         _vehicle.articulation_angle,
         true
     );
 
-    _rear_axle.slip = calculate_axle_slip(
-        _rear_axle.wheel_speed,
+    _rear_drivetrain.slip = calculate_drivetrain_slip(
+        _rear_drivetrain.wheel_speed,
         _vehicle.ground_speed,
         _vehicle.articulation_angle,
         false
@@ -283,25 +283,25 @@ void TractionControl::estimate_axle_slip()
     // Determine if slipping
     float slip_threshold = _param_max_slip.get();
 
-    if (fabsf(_front_axle.slip.longitudinal) > slip_threshold) {
-        _front_axle.is_slipping = true;
+    if (fabsf(_front_drivetrain.slip.longitudinal) > slip_threshold) {
+        _front_drivetrain.is_slipping = true;
         perf_count(_slip_detect_perf);
         _last_slip_event = hrt_absolute_time();
     } else {
-        _front_axle.is_slipping = false;
+        _front_drivetrain.is_slipping = false;
     }
 
-    if (fabsf(_rear_axle.slip.longitudinal) > slip_threshold) {
-        _rear_axle.is_slipping = true;
+    if (fabsf(_rear_drivetrain.slip.longitudinal) > slip_threshold) {
+        _rear_drivetrain.is_slipping = true;
         perf_count(_slip_detect_perf);
         _last_slip_event = hrt_absolute_time();
     } else {
-        _rear_axle.is_slipping = false;
+        _rear_drivetrain.is_slipping = false;
     }
 }
 
-TractionControl::SlipEstimate TractionControl::calculate_axle_slip(
-    float wheel_speed, float vehicle_speed, float articulation_angle, bool is_front_axle)
+TractionControl::SlipEstimate TractionControl::calculate_drivetrain_slip(
+    float wheel_speed, float vehicle_speed, float articulation_angle, bool is_front_drivetrain)
 {
     SlipEstimate slip;
     slip.timestamp = hrt_absolute_time();
@@ -315,11 +315,11 @@ TractionControl::SlipEstimate TractionControl::calculate_axle_slip(
         float wheelbase = _param_wheelbase.get();
         float turn_radius = wheelbase / tanf(articulation_angle);
 
-        if (is_front_axle) {
-            // Front axle outer radius adjustment
+        if (is_front_drivetrain) {
+            // Front drivetrain outer radius adjustment
             effective_speed *= (1.0f + wheelbase / (2.0f * fabsf(turn_radius)));
         } else {
-            // Rear axle inner radius adjustment
+            // Rear drivetrain inner radius adjustment
             effective_speed *= (1.0f - wheelbase / (2.0f * fabsf(turn_radius)));
         }
     }
@@ -337,7 +337,7 @@ TractionControl::SlipEstimate TractionControl::calculate_axle_slip(
     slip.longitudinal = math::constrain(slip.longitudinal, -1.0f, 1.0f);
 
     // Estimate lateral slip
-    if (is_front_axle) {
+    if (is_front_drivetrain) {
         slip.lateral = _vehicle.sideslip_angle + articulation_angle / 2.0f;
     } else {
         slip.lateral = _vehicle.sideslip_angle - articulation_angle / 2.0f;
@@ -352,8 +352,8 @@ TractionControl::SlipEstimate TractionControl::calculate_axle_slip(
 void TractionControl::estimate_ground_conditions()
 {
     // Estimate surface type from slip behavior
-    float avg_slip = (fabsf(_front_axle.slip.longitudinal) +
-                     fabsf(_rear_axle.slip.longitudinal)) / 2.0f;
+    float avg_slip = (fabsf(_front_drivetrain.slip.longitudinal) +
+                     fabsf(_rear_drivetrain.slip.longitudinal)) / 2.0f;
 
     // Surface estimation based on slip characteristics
     if (avg_slip < 0.05f) {
@@ -380,8 +380,8 @@ void TractionControl::compute_velocity_commands()
     float target_slip = _param_target_slip.get();
 
     // Compute slip errors
-    float front_slip_error = target_slip - _front_axle.slip.longitudinal;
-    float rear_slip_error = target_slip - _rear_axle.slip.longitudinal;
+    float front_slip_error = target_slip - _front_drivetrain.slip.longitudinal;
+    float rear_slip_error = target_slip - _rear_drivetrain.slip.longitudinal;
 
     // PID control for slip regulation
     float dt = (_last_update > 0) ? (hrt_absolute_time() - _last_update) * 1e-6f : 0.02f;
@@ -393,7 +393,7 @@ void TractionControl::compute_velocity_commands()
     _front_velocity_cmd = base_velocity * (1.0f + front_correction);
     _rear_velocity_cmd = base_velocity * (1.0f + rear_correction);
 
-    // Limit velocity difference between axles for stability
+    // Limit velocity difference between drivetrains for stability
     float max_diff = base_velocity * 0.2f; // 20% maximum difference
     float diff = _front_velocity_cmd - _rear_velocity_cmd;
     if (fabsf(diff) > max_diff) {
@@ -409,10 +409,10 @@ void TractionControl::compute_force_distribution()
     float front_ratio = _param_force_distribution.get();
 
     // Adjust for slip conditions
-    if (_front_axle.is_slipping && !_rear_axle.is_slipping) {
+    if (_front_drivetrain.is_slipping && !_rear_drivetrain.is_slipping) {
         // Reduce front force
         front_ratio = fmaxf(0.2f, front_ratio - 0.2f);
-    } else if (_rear_axle.is_slipping && !_front_axle.is_slipping) {
+    } else if (_rear_drivetrain.is_slipping && !_front_drivetrain.is_slipping) {
         // Reduce rear force
         front_ratio = fminf(0.8f, front_ratio + 0.2f);
     }
@@ -475,9 +475,9 @@ void TractionControl::detect_wheel_stall()
 {
     // Detect if wheels are stalled (not rotating despite commands)
     bool front_stalled = (_front_velocity_cmd > MIN_GROUND_SPEED &&
-                          _front_axle.wheel_speed < _param_stall_threshold.get());
+                          _front_drivetrain.wheel_speed < _param_stall_threshold.get());
     bool rear_stalled = (_rear_velocity_cmd > MIN_GROUND_SPEED &&
-                         _rear_axle.wheel_speed < _param_stall_threshold.get());
+                         _rear_drivetrain.wheel_speed < _param_stall_threshold.get());
 
     if (front_stalled || rear_stalled) {
         perf_count(_stall_detect_perf);
@@ -499,20 +499,20 @@ void TractionControl::handle_excessive_slip()
 {
     // Handle excessive slip events
 
-    if (_front_axle.is_slipping) {
+    if (_front_drivetrain.is_slipping) {
         // Reduce front velocity and force
         _front_velocity_cmd *= 0.8f;
         _front_force_cmd *= 0.7f;
     }
 
-    if (_rear_axle.is_slipping) {
+    if (_rear_drivetrain.is_slipping) {
         // Reduce rear velocity and force
         _rear_velocity_cmd *= 0.8f;
         _rear_force_cmd *= 0.7f;
     }
 
     // If both slipping, reduce overall commands
-    if (_front_axle.is_slipping && _rear_axle.is_slipping) {
+    if (_front_drivetrain.is_slipping && _rear_drivetrain.is_slipping) {
         _front_velocity_cmd *= 0.7f;
         _rear_velocity_cmd *= 0.7f;
         _front_force_cmd *= 0.6f;
@@ -522,7 +522,7 @@ void TractionControl::handle_excessive_slip()
 
 void TractionControl::publish_drivetrain_commands()
 {
-    // Publish drivetrain setpoints for front and rear axles
+    // Publish drivetrain setpoints for front and rear drivetrains
 
     // Front drivetrain setpoint
     drivetrain_setpoint_s front_setpoint{};
@@ -607,7 +607,7 @@ int TractionControl::print_usage(const char *reason)
 Traction Control Module for Articulated Wheel Loader
 
 This module provides slip-based traction control optimized for mining operations:
-- Estimates slip for front/rear axles using motor encoders and EKF velocity
+- Estimates slip for front/rear drivetrains using motor encoders and EKF velocity
 - Provides steering compensation for articulated vehicle
 - Optimizes traction and stability for maximum performance
 

@@ -68,7 +68,7 @@ void ManualMode::update(float dt)
 
 	// Generate trajectories from manual inputs
 	generate_chassis_trajectory();
-	generate_bucket_trajectory();
+	generate_end_effector_trajectory();
 }
 
 void ManualMode::set_manual_inputs(const ManualControlInputs &inputs)
@@ -122,39 +122,26 @@ void ManualMode::generate_chassis_trajectory()
 	chassis_setpoint.valid = true;
 }
 
-void ManualMode::generate_bucket_trajectory()
+void ManualMode::generate_end_effector_trajectory()
 {
 	const hrt_abstime now = hrt_absolute_time();
 
-	// Generate bucket motion from RC inputs
+	// Generate end effector motion from RC inputs
 	float boom_velocity_cmd = manual_inputs.boom_lift_velocity * boom_velocity_scale;
 	float bucket_angle_cmd = manual_inputs.end_effector_angle * bucket_angle_scale;
 
-	// Calculate bucket position relative to current chassis position
-	// This is a simplified kinematic model
-	const float boom_length = 2.5f;   // Robot parameter
-	const float boom_height = 1.2f;   // Height of boom pivot
+	// Simple integration for boom angle (could be improved with proper kinematics)
+	static float current_boom_angle = 0.0f; // Should be tracked properly
+	current_boom_angle += boom_velocity_cmd * 0.02f; // Assuming 50Hz update rate
 
-	// Simple forward kinematics (assuming boom moves vertically)
-	Vector3f bucket_position = current_position;
-	bucket_position(0) += boom_length * cosf(current_yaw);  // Forward from chassis
-	bucket_position(1) += boom_length * sinf(current_yaw);  // Lateral from chassis
-	bucket_position(2) = boom_height;  // Height (would be controlled by boom)
+	// Clamp boom angle to reasonable limits
+	current_boom_angle = math::constrain(current_boom_angle, -1.57f, 1.57f); // -90 to +90 degrees
 
-	// Bucket orientation (simple model)
-	Quatf bucket_orientation = Quatf(AxisAnglef(Vector3f(0, 1, 0), bucket_angle_cmd));
-
-	// Bucket velocity
-	Vector3f bucket_velocity;
-	bucket_velocity(0) = 0.0f;  // No lateral motion in manual mode
-	bucket_velocity(1) = 0.0f;
-	bucket_velocity(2) = boom_velocity_cmd;  // Vertical motion from boom
-
-	// Set bucket trajectory setpoint
-	end_effector_setpoint.position = bucket_position;
-	end_effector_setpoint.orientation = bucket_orientation;
-	end_effector_setpoint.velocity = bucket_velocity;
-	end_effector_setpoint.angular_velocity.zero();  // Simple model
+	// Set end effector trajectory setpoint
+	end_effector_setpoint.boom_angle = current_boom_angle;
+	end_effector_setpoint.bucket_angle = bucket_angle_cmd;
+	end_effector_setpoint.boom_angle_rate = boom_velocity_cmd;
+	end_effector_setpoint.bucket_angle_rate = 0.0f; // Bucket position control, not rate
 	end_effector_setpoint.timestamp = now;
 	end_effector_setpoint.valid = true;
 }

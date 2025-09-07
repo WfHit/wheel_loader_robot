@@ -143,11 +143,10 @@ void VlaTrajectoryDecomposer::generate_end_effector_trajectory(
 	const VlaTrajectoryPoint &vla_point,
 	EndEffectorTrajectorySetpoint &end_effector_trajectory)
 {
-	// Transform end effector trajectory from world frame to chassis frame
-	// Note: This requires the current chassis pose to perform the transformation
+	// Convert from 6DOF end effector pose in world frame to 2DOF joint angles in chassis frame
+	// This involves inverse kinematics to compute boom and bucket angles
 
 	// Get current chassis pose (this should be available from vehicle state)
-	// For now, using the generated chassis trajectory as reference
 	Vector3f chassis_position = Vector3f(0.0f, 0.0f, 0.0f); // Will be set from actual chassis pose
 	Quatf chassis_orientation = Quatf(1.0f, 0.0f, 0.0f, 0.0f); // Will be set from actual chassis pose
 
@@ -155,64 +154,94 @@ void VlaTrajectoryDecomposer::generate_end_effector_trajectory(
 	// chassis_position = current_chassis_position;
 	// chassis_orientation = current_chassis_orientation;
 
-	// Transform position from world frame to chassis frame
+	// Transform end effector position from world frame to chassis frame
 	Vector3f world_to_chassis_position = vla_point.end_effector_position - chassis_position;
-	end_effector_trajectory.position = chassis_orientation.inversed().rotateVector(world_to_chassis_position);
+	Vector3f ee_pos_chassis = chassis_orientation.inversed().rotateVector(world_to_chassis_position);
 
-	// Transform orientation from world frame to chassis frame
-	end_effector_trajectory.orientation = chassis_orientation.inversed() * vla_point.end_effector_orientation;
+	// Simplified inverse kinematics for 2DOF boom-bucket system
+	// Assuming boom rotates vertically and bucket rotates relative to boom
+	const float boom_length = 2.5f;   // Robot parameter (should come from config)
+	// const float bucket_length = 1.0f; // Robot parameter - not needed for 2DOF joint control
+	const float boom_pivot_height = 1.2f; // Height of boom pivot above chassis
 
-	// Transform velocity from world frame to chassis frame
-	end_effector_trajectory.velocity = chassis_orientation.inversed().rotateVector(vla_point.end_effector_velocity);
+	// Calculate boom angle from horizontal distance and height
+	float horizontal_distance = sqrtf(ee_pos_chassis(0)*ee_pos_chassis(0) + ee_pos_chassis(1)*ee_pos_chassis(1));
+	float vertical_distance = ee_pos_chassis(2) - boom_pivot_height;
 
-	// Transform angular velocity from world frame to chassis frame
-	end_effector_trajectory.angular_velocity = chassis_orientation.inversed().rotateVector(vla_point.end_effector_angular_velocity);
+	// Boom angle (measured from horizontal)
+	end_effector_trajectory.boom_angle = atan2f(vertical_distance, horizontal_distance);
+
+	// Simplified bucket angle calculation (from end effector orientation)
+	// This is a simplified model - in practice would need full inverse kinematics
+	AxisAnglef ee_axis_angle = AxisAnglef(chassis_orientation.inversed() * vla_point.end_effector_orientation);
+	end_effector_trajectory.bucket_angle = ee_axis_angle(1); // Pitch component as bucket angle
+
+	// Calculate angle rates from end effector velocities (simplified)
+	Vector3f ee_vel_chassis = chassis_orientation.inversed().rotateVector(vla_point.end_effector_velocity);
+	Vector3f ee_angvel_chassis = chassis_orientation.inversed().rotateVector(vla_point.end_effector_angular_velocity);
+
+	// Approximate joint rates from end effector motion (this is a simplification)
+	end_effector_trajectory.boom_angle_rate = ee_vel_chassis(2) / boom_length; // Vertical velocity to boom rate
+	end_effector_trajectory.bucket_angle_rate = ee_angvel_chassis(1); // Angular velocity pitch component
+
+	// Apply joint limits
+	end_effector_trajectory.boom_angle = math::constrain(end_effector_trajectory.boom_angle, -1.57f, 1.57f); // ±90°
+	end_effector_trajectory.bucket_angle = math::constrain(end_effector_trajectory.bucket_angle, -1.57f, 1.57f); // ±90°
+
+	// Apply rate limits
+	end_effector_trajectory.boom_angle_rate = math::constrain(end_effector_trajectory.boom_angle_rate, -1.0f, 1.0f); // rad/s
+	end_effector_trajectory.bucket_angle_rate = math::constrain(end_effector_trajectory.bucket_angle_rate, -2.0f, 2.0f); // rad/s
 
 	end_effector_trajectory.timestamp = vla_point.timestamp;
 	end_effector_trajectory.valid = vla_point.valid;
-
-	// Apply velocity limits
-	float velocity_norm = end_effector_trajectory.velocity.norm();
-	if (velocity_norm > max_end_effector_velocity) {
-		end_effector_trajectory.velocity = end_effector_trajectory.velocity * (max_end_effector_velocity / velocity_norm);
-	}
-
-	float angular_velocity_norm = end_effector_trajectory.angular_velocity.norm();
-	if (angular_velocity_norm > max_end_effector_angular_rate) {
-		end_effector_trajectory.angular_velocity = end_effector_trajectory.angular_velocity *
-		                                     (max_end_effector_angular_rate / angular_velocity_norm);
-	}
 }
 
 bool VlaTrajectoryDecomposer::validate_trajectories(
 	const ChassisTrajectorySetpoint &chassis_trajectory,
 	const EndEffectorTrajectorySetpoint &end_effector_trajectory)
 {
-	// Check if end effector is within reach from chassis position
-	Vector3f chassis_to_end_effector = end_effector_trajectory.position - chassis_trajectory.position;
-	chassis_to_end_effector(2) = 0.0f;  // Only horizontal distance
-
-	float reach_distance = chassis_to_end_effector.norm();
-	if (reach_distance > max_reach) {
-		return false;  // Bucket too far from chassis
+	// Validate joint angles are within limits
+	if (fabsf(end_effector_trajectory.boom_angle) > 1.57f) { // ±90°
+		return false;
 	}
 
-	// Check velocity limits
+	if (fabsf(end_effector_trajectory.bucket_angle) > 1.57f) { // ±90°
+		return false;
+	}
+
+	// Validate joint rates are within limits
+	if (fabsf(end_effector_trajectory.boom_angle_rate) > 1.0f) { // rad/s
+		return false;
+	}
+
+	if (fabsf(end_effector_trajectory.bucket_angle_rate) > 2.0f) { // rad/s
+		return false;
+	}
+
+	// Check chassis velocity limits
 	if (chassis_trajectory.velocity.norm() > max_chassis_velocity) {
 		return false;
 	}
 
-	if (end_effector_trajectory.velocity.norm() > max_end_effector_velocity) {
-		return false;
-	}
-
-	// Check angular rate limits
+	// Check chassis angular rate limits
 	if (fabsf(chassis_trajectory.yaw_rate) > max_chassis_turn_rate) {
 		return false;
 	}
 
-	if (end_effector_trajectory.angular_velocity.norm() > max_end_effector_angular_rate) {
-		return false;
+	// Check workspace limits (forward kinematics to validate reach)
+	const float boom_length = 2.5f;
+	const float bucket_length = 1.0f;
+
+	// Calculate end effector position from joint angles
+	float boom_tip_x = boom_length * cosf(end_effector_trajectory.boom_angle);
+	float boom_tip_z = boom_length * sinf(end_effector_trajectory.boom_angle);
+
+	float ee_x = boom_tip_x + bucket_length * cosf(end_effector_trajectory.boom_angle + end_effector_trajectory.bucket_angle);
+	float ee_z = boom_tip_z + bucket_length * sinf(end_effector_trajectory.boom_angle + end_effector_trajectory.bucket_angle);
+
+	float reach_distance = sqrtf(ee_x*ee_x + ee_z*ee_z);
+	if (reach_distance > max_reach) {
+		return false;  // End effector beyond maximum reach
 	}
 
 	return true;

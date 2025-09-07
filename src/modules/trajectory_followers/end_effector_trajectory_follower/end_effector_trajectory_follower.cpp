@@ -44,13 +44,12 @@ using namespace wheel_loader;
 
 EndEffectorTrajectoryFollower::EndEffectorTrajectoryFollower() :
 	ModuleParams(nullptr),
-	ScheduledWorkItem(MODULE_NAME, px4::wq_configurations::hp_default),
-	_loop_perf(perf_alloc(PC_ELAPSED, MODULE_NAME ": cycle")),
-	_kinematics_perf(perf_alloc(PC_ELAPSED, MODULE_NAME ": kinematics"))
+	ScheduledWorkItem(MODULE_NAME, px4::wq_configurations::lp_default),
+	_loop_perf(perf_alloc(PC_ELAPSED, MODULE_NAME)),
+	_kinematics_perf(perf_alloc(PC_ELAPSED, MODULE_NAME"_kinematics"))
 {
-	// Initialize last known state
-	_last_end_effector_position.zero();
-	_last_end_effector_orientation.identity();
+	_last_boom_angle = 0.0f;
+	_last_bucket_angle = 0.0f;
 }
 
 EndEffectorTrajectoryFollower::~EndEffectorTrajectoryFollower()
@@ -100,41 +99,43 @@ void EndEffectorTrajectoryFollower::Run()
 	perf_end(_loop_perf);
 }
 
-bool EndEffectorTrajectoryFollower::is_valid_setpoint(const end_effector_trajectory_setpoint_s& setpoint) const
+bool EndEffectorTrajectoryFollower::is_valid_setpoint(const end_effector_trajectory_setpoint_s &setpoint) const
 {
-	// Check if setpoint is marked as valid
-	if (!setpoint.valid) {
+	// Check timestamp validity
+	if (setpoint.timestamp == 0) {
 		return false;
 	}
 
-	// Check position validity
-	const Vector3f pos(setpoint.x, setpoint.y, setpoint.z);
-	if (!PX4_ISFINITE(pos(0)) || !PX4_ISFINITE(pos(1)) || !PX4_ISFINITE(pos(2))) {
+	// Check boom angle limits (chassis frame)
+	const float boom_angle_limit = M_PI_F / 2.0f;  // ±90 degrees
+	if (setpoint.boom_angle < -boom_angle_limit || setpoint.boom_angle > boom_angle_limit) {
 		return false;
 	}
 
-	// Check velocity validity
-	const Vector3f vel(setpoint.vx, setpoint.vy, setpoint.vz);
-	if (!PX4_ISFINITE(vel(0)) || !PX4_ISFINITE(vel(1)) || !PX4_ISFINITE(vel(2))) {
+	// Check bucket angle limits (boom frame)
+	const float bucket_angle_limit = M_PI_F / 2.0f;  // ±90 degrees
+	if (setpoint.bucket_angle < -bucket_angle_limit || setpoint.bucket_angle > bucket_angle_limit) {
 		return false;
 	}
 
-	// Check acceleration validity
-	const Vector3f accel(setpoint.ax, setpoint.ay, setpoint.az);
-	if (!PX4_ISFINITE(accel(0)) || !PX4_ISFINITE(accel(1)) || !PX4_ISFINITE(accel(2))) {
+	// Check for NaN values
+	if (!PX4_ISFINITE(setpoint.boom_angle) || !PX4_ISFINITE(setpoint.bucket_angle)) {
 		return false;
 	}
 
-	// Check quaternion validity
-	const Quatf q(setpoint.q);
-	if (!PX4_ISFINITE(q(0)) || !PX4_ISFINITE(q(1)) || !PX4_ISFINITE(q(2)) || !PX4_ISFINITE(q(3))) {
-		return false;
+	// Check rate limits if provided
+	if (PX4_ISFINITE(setpoint.boom_angle_rate)) {
+		const float max_boom_rate = 2.0f; // rad/s
+		if (fabsf(setpoint.boom_angle_rate) > max_boom_rate) {
+			return false;
+		}
 	}
 
-	// Check if quaternion is approximately unit
-	const float norm_sq = q.norm_squared();
-	if (fabsf(norm_sq - 1.0f) > QUATERNION_NORM_TOLERANCE) {
-		return false;
+	if (PX4_ISFINITE(setpoint.bucket_angle_rate)) {
+		const float max_bucket_rate = 2.0f; // rad/s
+		if (fabsf(setpoint.bucket_angle_rate) > max_bucket_rate) {
+			return false;
+		}
 	}
 
 	return true;
@@ -152,23 +153,9 @@ void EndEffectorTrajectoryFollower::update_trajectory_generation(const end_effec
 		return;
 	}
 
-	// Transform setpoint to chassis coordinates
-	const Vector3f chassis_position = transform_world_to_chassis(
-		Vector3f(setpoint.x, setpoint.y, setpoint.z),
-		current_state.chassis_position,
-		current_state.chassis_orientation
-	);
-
-	const Quatf chassis_orientation(setpoint.q);
-
-	// Compute target joint angles using inverse kinematics
-	float target_boom_angle, target_bucket_angle;
-	if (!compute_joint_angles(chassis_position, chassis_orientation,
-	                         target_boom_angle, target_bucket_angle)) {
-		PX4_WARN("Inverse kinematics failed for target position");
-		perf_end(_kinematics_perf);
-		return;
-	}
+	// For 2DOF joint control, use the joint angles directly
+	float target_boom_angle = setpoint.boom_angle;
+	float target_bucket_angle = setpoint.bucket_angle;
 
 	// Generate smooth trajectory commands
 	generate_trajectory_commands(target_boom_angle, target_bucket_angle, current_state);
@@ -176,8 +163,8 @@ void EndEffectorTrajectoryFollower::update_trajectory_generation(const end_effec
 	// Update trajectory state
 	_trajectory_active = true;
 	_last_update_time = hrt_absolute_time();
-	_last_end_effector_position = Vector3f(setpoint.x, setpoint.y, setpoint.z);
-	_last_end_effector_orientation = Quatf(setpoint.q);
+	_last_boom_angle = setpoint.boom_angle;
+	_last_bucket_angle = setpoint.bucket_angle;
 
 	perf_end(_kinematics_perf);
 }
@@ -385,11 +372,12 @@ int EndEffectorTrajectoryFollower::print_status()
 	         (double)_last_bucket_angle,
 	         (double)math::degrees(_last_bucket_angle));
 
-	// End effector position
-	PX4_INFO("  Last EE position: [%.2f, %.2f, %.2f] m",
-	         (double)_last_end_effector_position(0),
-	         (double)_last_end_effector_position(1),
-	         (double)_last_end_effector_position(2));
+	// Compute current end effector position from joint angles
+	matrix::Vector3f current_position = compute_end_effector_position(_last_boom_angle, _last_bucket_angle);
+	PX4_INFO("  Computed EE position: [%.2f, %.2f, %.2f] m",
+	         (double)current_position(0),
+	         (double)current_position(1),
+	         (double)current_position(2));
 
 	// Timing information
 	const hrt_abstime now = hrt_absolute_time();

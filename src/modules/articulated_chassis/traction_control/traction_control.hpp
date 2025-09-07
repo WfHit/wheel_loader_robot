@@ -92,7 +92,7 @@ private:
         uint64_t timestamp{0};
     };
 
-    struct AxleState {
+    struct DrivetrainState {
         float motor_speed{0.0f};       // Motor speed from encoder (rad/s)
         float wheel_speed{0.0f};       // Estimated wheel speed (rad/s)
         float velocity_cmd{0.0f};      // Velocity command to wheel controller (m/s)
@@ -114,15 +114,15 @@ private:
     void update_vehicle_state();
     void update_drivetrain_feedback();
     void update_traction_setpoint();
-    void estimate_axle_slip();
+    void estimate_drivetrain_slip();
     void estimate_ground_conditions();
 
     // Slip calculation for articulated vehicle
-    SlipEstimate calculate_axle_slip(
+    SlipEstimate calculate_drivetrain_slip(
         float motor_speed,
         float vehicle_speed,
         float articulation_angle,
-        bool is_front_axle
+        bool is_front_drivetrain
     );
 
     // Traction control algorithms
@@ -147,8 +147,8 @@ private:
     void publish_steering_command();
 
     // State variables
-    AxleState _front_axle{};
-    AxleState _rear_axle{};
+    DrivetrainState _front_drivetrain{};
+    DrivetrainState _rear_drivetrain{};
     VehicleState _vehicle{};
 
     // Current traction setpoint from trajectory follower
@@ -162,8 +162,8 @@ private:
     // Control outputs for wheel controller
     float _front_velocity_cmd{0.0f};   // Front wheel velocity command (m/s)
     float _rear_velocity_cmd{0.0f};    // Rear wheel velocity command (m/s)
-    float _front_force_cmd{0.0f};      // Front axle force command (N)
-    float _rear_force_cmd{0.0f};       // Rear axle force command (N)
+    float _front_force_cmd{0.0f};      // Front drivetrain force command (N)
+    float _rear_force_cmd{0.0f};       // Rear drivetrain force command (N)
     float _articulation_cmd{0.0f};     // Articulation angle command (rad)
 
     // Control parameters

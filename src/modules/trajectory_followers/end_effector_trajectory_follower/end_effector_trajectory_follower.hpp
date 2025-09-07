@@ -168,8 +168,6 @@ private:
 
 	// Control state
 	bool _trajectory_active{false};
-	matrix::Vector3f _last_end_effector_position{};
-	matrix::Quatf _last_end_effector_orientation{};
 	float _last_boom_angle{0.0f};
 	float _last_bucket_angle{0.0f};
 	hrt_abstime _last_update_time{0};
@@ -189,7 +187,6 @@ private:
 	// Coordinate frame tolerance
 	static constexpr float POSITION_TOLERANCE_M = 0.01f; // 1cm
 	static constexpr float ANGLE_TOLERANCE_RAD = 0.01f;  // ~0.57 degrees
-	static constexpr float QUATERNION_NORM_TOLERANCE = 0.1f; // Quaternion normalization tolerance
 
 	// Safety limits and validation
 	static constexpr float MIN_BOOM_ANGLE = -20.0f * M_PI_F / 180.0f; // -20 degrees (chassis frame)

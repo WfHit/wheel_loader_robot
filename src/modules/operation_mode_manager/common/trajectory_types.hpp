@@ -56,14 +56,14 @@ struct ChassisTrajectorySetpoint {
 };
 
 /**
- * End effector trajectory setpoint in CHASSIS coordinates
+ * End effector trajectory setpoint with 2 DOF control in CHASSIS coordinates
  * Published by operation modes, subscribed by end effector trajectory follower
  */
 struct EndEffectorTrajectorySetpoint {
-	Vector3f position;           // End effector position in chassis frame (m)
-	Quatf orientation;           // End effector orientation in chassis frame
-	Vector3f velocity;           // End effector linear velocity in chassis frame (m/s)
-	Vector3f angular_velocity;   // End effector angular velocity in chassis frame (rad/s)
+	float boom_angle;            // Boom angle relative to chassis (rad)
+	float bucket_angle;          // Bucket angle relative to boom (rad)
+	float boom_angle_rate;       // Boom angle rate (rad/s)
+	float bucket_angle_rate;     // Bucket angle rate (rad/s)
 	hrt_abstime timestamp;       // Timestamp
 	bool valid{false};           // Validity flag
 };

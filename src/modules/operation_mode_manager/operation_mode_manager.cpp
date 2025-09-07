@@ -123,6 +123,12 @@ void OperationModeManager::update_subscriptions()
 		manual_control_valid = (hrt_absolute_time() - manual_control.timestamp) < 200000; // 200ms timeout
 	}
 
+	// Update VLA command
+	if (vla_trajectory_setpoint_sub.updated()) {
+		vla_trajectory_setpoint_sub.copy(&vla_trajectory_setpoint);
+		vla_trajectory_setpoint_valid = (hrt_absolute_time() - vla_trajectory_setpoint.timestamp) < 1000000; // 1s timeout
+	}
+
 	// Update vehicle status
 	if (vehicle_status_sub.updated()) {
 		vehicle_status_sub.copy(&vehicle_status);
@@ -133,12 +139,6 @@ void OperationModeManager::update_subscriptions()
 	if (vehicle_local_position_sub.updated()) {
 		vehicle_local_position_sub.copy(&vehicle_position);
 		position_valid = vehicle_position.xy_valid && vehicle_position.z_valid;
-	}
-
-	// Update VLA command
-	if (vla_trajectory_setpoint_sub.updated()) {
-		vla_trajectory_setpoint_sub.copy(&vla_trajectory_setpoint);
-		vla_trajectory_setpoint_valid = (hrt_absolute_time() - vla_trajectory_setpoint.timestamp) < 1000000; // 1s timeout
 	}
 }
 
@@ -266,8 +266,10 @@ void OperationModeManager::publish_trajectory_setpoints()
 {
 	if (current_mode != nullptr) {
 		// Get setpoints from current mode
-		ChassisTrajectorySetpoint chassis_setpoint = current_mode->get_chassis_setpoint();
-		EndEffectorTrajectorySetpoint end_effector_setpoint = current_mode->get_end_effector_setpoint();
+		ChassisTrajectorySetpoint chassis_setpoint =
+			current_mode->get_chassis_setpoint();
+		EndEffectorTrajectorySetpoint end_effector_setpoint =
+			current_mode->get_end_effector_setpoint();
 
 		// Publish chassis setpoint
 		if (chassis_setpoint.valid) {
@@ -287,17 +289,19 @@ void OperationModeManager::publish_trajectory_setpoints()
 
 		// Publish end effector setpoint
 		if (end_effector_setpoint.valid) {
-			bucket_trajectory_setpoint_s end_effector_msg{};
+			end_effector_trajectory_setpoint_s end_effector_msg{};
 			end_effector_msg.timestamp = hrt_absolute_time();
 			// Convert end effector setpoint to message format
-			// Note: This conversion depends on the end effector control mode
-			end_effector_msg.control_mode = 3; // Chassis frame trajectory control mode
-			end_effector_msg.x_position = end_effector_setpoint.position(0);
-			end_effector_msg.y_position = end_effector_setpoint.position(1);
-			end_effector_msg.z_position = end_effector_setpoint.position(2);
-			// Add other fields as needed based on the message definition
+			end_effector_msg.boom_angle = end_effector_setpoint.boom_angle;
+			end_effector_msg.bucket_angle = end_effector_setpoint.bucket_angle;
+			end_effector_msg.boom_angle_rate = end_effector_setpoint.boom_angle_rate;
+			end_effector_msg.bucket_angle_rate = end_effector_setpoint.bucket_angle_rate;
+			end_effector_msg.valid = end_effector_setpoint.valid;
+			end_effector_msg.sequence_id = 0; // Could be set from mode
+			end_effector_msg.priority = 100; // Normal priority
+			end_effector_msg.confidence_score = 1.0f; // Full confidence for internal trajectories
 
-			bucket_setpoint_pub.publish(end_effector_msg);
+			end_effector_setpoint_pub.publish(end_effector_msg);
 		}
 	}
 

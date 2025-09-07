@@ -42,7 +42,7 @@
 #include <uORB/topics/vehicle_status.h>
 #include <uORB/topics/vehicle_local_position.h>
 #include <uORB/topics/chassis_trajectory_setpoint.h>
-#include <uORB/topics/bucket_trajectory_setpoint.h>
+#include <uORB/topics/end_effector_trajectory_setpoint.h>
 #include <uORB/topics/operation_mode_status.h>
 #include <uORB/topics/vla_trajectory_setpoint.h>
 #include <uORB/topics/parameter_update.h>
@@ -163,14 +163,14 @@ private:
 
 	// uORB subscriptions
 	uORB::Subscription manual_control_setpoint_sub{ORB_ID(manual_control_setpoint)};
+	uORB::Subscription vla_trajectory_setpoint_sub{ORB_ID(vla_trajectory_setpoint)};
 	uORB::Subscription vehicle_status_sub{ORB_ID(vehicle_status)};
 	uORB::Subscription vehicle_local_position_sub{ORB_ID(vehicle_local_position)};
-	uORB::Subscription vla_trajectory_setpoint_sub{ORB_ID(vla_trajectory_setpoint)};
 	uORB::Subscription parameter_update_sub{ORB_ID(parameter_update)};
 
 	// uORB publications
 	uORB::Publication<chassis_trajectory_setpoint_s> chassis_setpoint_pub{ORB_ID(chassis_trajectory_setpoint)};
-	uORB::Publication<bucket_trajectory_setpoint_s> bucket_setpoint_pub{ORB_ID(bucket_trajectory_setpoint)};
+	uORB::Publication<end_effector_trajectory_setpoint_s> end_effector_setpoint_pub{ORB_ID(end_effector_trajectory_setpoint)};
 	uORB::Publication<operation_mode_status_s> mode_status_pub{ORB_ID(operation_mode_status)};
 
 	// Operation modes
