@@ -32,8 +32,6 @@ The system's core innovation lies in its **Operation Mode Manager** - a sophisti
 
 ## System Overview
 
-![Wheel Loader System Architecture](../docs/assets/wheel_loader_system_architecture.svg)
-
 ### Primary Function
 The wheel loader robot is designed for autonomous material handling operations in construction, mining, and industrial environments. The system can execute complex work cycles including loading, transporting, dumping, and positioning materials with precision matching or exceeding human operators.
 
@@ -70,8 +68,6 @@ The architecture is designed to accommodate future enhancements including improv
 
 ## Architectural Framework
 
-![uORB Message Flow Diagram](../docs/assets/uorb_message_flow.svg)
-
 ### Central Coordination Model
 The architecture centers on the **Operation Mode Manager** which serves as the intelligent hub coordinating all subsystem activities. This centralized approach ensures consistent behavior across operational modes while maintaining subsystem independence.
 
@@ -95,8 +91,6 @@ The system implements a clear control hierarchy:
 ---
 
 ## Operational Modes
-
-![Operation Mode State Machine](../docs/assets/operation_mode_state_machine.svg)
 
 ### Manual Mode
 Manual mode provides direct operator control with full authority over all system functions. The system acts as an intelligent assistant, providing:
@@ -132,8 +126,6 @@ Mode transitions are managed through sophisticated validation and safety checks:
 
 ### Electric Actuator Paradigm
 
-![Electric Actuator System Overview](../docs/assets/electric_actuator_overview.svg)
-
 The system represents a fundamental shift from hydraulic to electric actuation, providing:
 - **Precision Control**: Exact positioning with sub-millimeter accuracy
 - **Energy Efficiency**: Regenerative braking and optimized power consumption
@@ -142,8 +134,6 @@ The system represents a fundamental shift from hydraulic to electric actuation, 
 - **Diagnostic Capability**: Comprehensive health monitoring and predictive maintenance
 
 ### Boom Control System
-
-![Boom Kinematics Diagram](../docs/assets/boom_kinematics.svg)
 
 The boom control system implements sophisticated kinematic control:
 - **Forward Kinematics**: Real-time calculation of boom position from actuator length
@@ -171,8 +161,6 @@ The chassis system provides mobility and stability:
 ---
 
 ## Safety Design
-
-![Multi-Layer Safety Architecture](../docs/assets/safety_architecture.svg)
 
 ### Multi-Layer Safety Philosophy
 The safety architecture implements multiple independent layers ensuring redundant protection:
