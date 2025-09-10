@@ -25,6 +25,9 @@ import sys
 import os
 import tempfile
 from pathlib import Path
+import re
+import base64
+import mimetypes
 
 def get_document_title(markdown_content):
     """Extract the first heading as document title"""
@@ -33,6 +36,76 @@ def get_document_title(markdown_content):
         if line.startswith('# '):
             return line[2:].strip()
     return "Document"
+
+def process_images(html_content, markdown_file_path):
+    """Process images in HTML content to embed them as base64 data URIs"""
+    base_dir = Path(markdown_file_path).parent
+
+    # Find all img tags
+    img_pattern = r'<img([^>]*?)src=["\']([^"\']*?)["\']([^>]*?)>'
+
+    def replace_img(match):
+        pre_src = match.group(1)
+        src = match.group(2)
+        post_src = match.group(3)
+
+        # Skip if already a data URI
+        if src.startswith('data:'):
+            return match.group(0)
+
+        # Skip if absolute URL
+        if src.startswith(('http://', 'https://')):
+            return match.group(0)
+
+        # Resolve relative path
+        img_path = base_dir / src
+        if not img_path.exists():
+            print(f"Warning: Image not found: {img_path}")
+            return match.group(0)
+
+        try:
+            # Read image and convert to base64
+            with open(img_path, 'rb') as f:
+                img_data = f.read()
+
+            # Get MIME type
+            mime_type, _ = mimetypes.guess_type(str(img_path))
+            if not mime_type:
+                mime_type = 'image/png'  # default
+
+            # Create data URI
+            b64_data = base64.b64encode(img_data).decode('utf-8')
+            data_uri = f"data:{mime_type};base64,{b64_data}"
+
+            return f'<img{pre_src}src="{data_uri}"{post_src}>'
+
+        except Exception as e:
+            print(f"Warning: Could not process image {img_path}: {e}")
+            return match.group(0)
+
+    return re.sub(img_pattern, replace_img, html_content)
+
+def process_code_blocks(html_content):
+    """Process code blocks to add landscape orientation for better readability"""
+    # Find all pre tags with code
+    pre_pattern = r'<pre([^>]*)>(.*?)</pre>'
+
+    def replace_pre(match):
+        pre_attrs = match.group(1)
+        code_content = match.group(2)
+
+        # Count lines and check if code block is long enough for landscape
+        lines = code_content.count('\n') + 1
+        line_length = max(len(line.strip()) for line in code_content.split('\n') if line.strip())
+
+        # Use landscape for code blocks with many lines or very long lines
+        if lines > 10 or line_length > 80:
+            # Wrap in a div with landscape class
+            return f'<div class="code-landscape"><pre{pre_attrs} class="landscape">{code_content}</pre></div>'
+        else:
+            return f'<pre{pre_attrs}>{code_content}</pre>'
+
+    return re.sub(pre_pattern, replace_pre, html_content, flags=re.DOTALL)
 
 def markdown_to_pdf(markdown_file, output_pdf):
     """Convert a markdown file to PDF using markdown and weasyprint"""
@@ -49,6 +122,12 @@ def markdown_to_pdf(markdown_file, output_pdf):
         md = markdown.Markdown(extensions=['tables', 'toc', 'codehilite', 'fenced_code'])
         html_content = md.convert(markdown_content)
 
+        # Process images to embed them as base64
+        html_content = process_images(html_content, markdown_file)
+
+        # Process code blocks for landscape orientation
+        html_content = process_code_blocks(html_content)
+
         # Create a complete HTML document with professional CSS styling
         html_document = f"""
         <!DOCTYPE html>
@@ -59,12 +138,13 @@ def markdown_to_pdf(markdown_file, output_pdf):
             <style>
                 body {{
                     font-family: 'Arial', 'Helvetica', sans-serif;
-                    line-height: 1.6;
+                    line-height: 1.5;
                     color: #333;
-                    max-width: 800px;
-                    margin: 0 auto;
-                    padding: 20px;
+                    max-width: none;
+                    margin: 0;
+                    padding: 0;
                     background-color: white;
+                    font-size: 11pt;
                 }}
                 h1 {{
                     color: #2c3e50;
@@ -141,11 +221,31 @@ def markdown_to_pdf(markdown_file, output_pdf):
                     overflow-x: auto;
                     margin-bottom: 15px;
                     page-break-inside: avoid;
+                    page-break-before: auto;
+                    font-size: 9pt;
+                    white-space: pre-wrap;
+                    word-wrap: break-word;
+                }}
+                pre.landscape {{
+                    page-break-before: always;
+                    page-break-after: always;
+                    margin: 0;
+                    padding: 20px;
+                    width: 100%;
+                    box-sizing: border-box;
+                }}
+                @page code-landscape {{
+                    size: A4 landscape;
+                    margin: 1.5cm;
+                }}
+                .code-landscape {{
+                    page: code-landscape;
                 }}
                 pre code {{
                     background-color: transparent;
                     padding: 0;
                     color: #333;
+                    font-size: inherit;
                 }}
                 blockquote {{
                     border-left: 4px solid #3498db;
@@ -194,21 +294,23 @@ def markdown_to_pdf(markdown_file, output_pdf):
                     margin: 30px 0;
                 }}
                 @page {{
-                    margin: 2.5cm;
-                    size: A4;
+                    margin: 2cm 1.5cm;
+                    size: A4 portrait;
                     @top-center {{
                         content: "{doc_title}";
-                        font-size: 10pt;
+                        font-size: 9pt;
                         color: #666;
                         border-bottom: 1px solid #ddd;
-                        padding-bottom: 5px;
+                        padding-bottom: 3px;
+                        margin-bottom: 1cm;
                     }}
                     @bottom-center {{
                         content: "Page " counter(page) " of " counter(pages);
-                        font-size: 10pt;
+                        font-size: 9pt;
                         color: #666;
                         border-top: 1px solid #ddd;
-                        padding-top: 5px;
+                        padding-top: 3px;
+                        margin-top: 1cm;
                     }}
                 }}
                 .page-break {{
@@ -216,6 +318,25 @@ def markdown_to_pdf(markdown_file, output_pdf):
                 }}
                 .no-break {{
                     page-break-inside: avoid;
+                }}
+                img {{
+                    max-width: 100%;
+                    height: auto;
+                    display: block;
+                    margin: 10px auto;
+                    border-radius: 5px;
+                    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+                }}
+                figure {{
+                    margin: 20px 0;
+                    text-align: center;
+                    page-break-inside: avoid;
+                }}
+                figcaption {{
+                    font-style: italic;
+                    color: #666;
+                    margin-top: 5px;
+                    font-size: 0.9em;
                 }}
             </style>
         </head>
@@ -226,25 +347,36 @@ def markdown_to_pdf(markdown_file, output_pdf):
         """
 
         # Convert HTML to PDF using WeasyPrint
-        # Note: Due to compatibility issues with pydyf library, we'll create HTML output as primary method
-        html_output = output_pdf.replace('.pdf', '.html')
-        with open(html_output, 'w', encoding='utf-8') as f:
-            f.write(html_document)
-
-        print(f"HTML version created: {html_output}")
-        print("Note: PDF conversion has compatibility issues. HTML file created instead.")
-        print("You can open the HTML file in a browser and print/save as PDF manually.")
-
-        # Try WeasyPrint if user specifically wants PDF
         try:
-            html_doc = weasyprint.HTML(string=html_document)
+            # Create HTML document object
+            html_doc = weasyprint.HTML(string=html_document, base_url=str(Path(markdown_file).parent))
+
+            # Write PDF directly
             html_doc.write_pdf(output_pdf)
-            print(f"PDF also created successfully: {output_pdf}")
-        except Exception as we_error:
-            print(f"PDF creation failed (expected due to library compatibility): {we_error}")
-            # Copy HTML to PDF name for consistency
-            import shutil
-            shutil.copy2(html_output, output_pdf.replace('.pdf', '_converted.html'))
+            print(f"✓ PDF created successfully: {output_pdf}")
+
+        except Exception as e:
+            print(f"Error creating PDF: {e}")
+            print("Attempting alternative PDF generation method...")
+
+            try:
+                # Alternative method: create temporary HTML file
+                with tempfile.NamedTemporaryFile(mode='w', suffix='.html', delete=False, encoding='utf-8') as temp_html:
+                    temp_html.write(html_document)
+                    temp_html_path = temp_html.name
+
+                # Create PDF from temporary HTML file
+                html_doc = weasyprint.HTML(filename=temp_html_path)
+                html_doc.write_pdf(output_pdf)
+
+                # Clean up temporary file
+                os.unlink(temp_html_path)
+
+                print(f"✓ PDF created successfully: {output_pdf}")
+
+            except Exception as e2:
+                print(f"PDF creation failed: {e2}")
+                return False
 
         return True
 
@@ -310,18 +442,12 @@ Examples:
 
     if markdown_to_pdf(str(input_path), str(output_path)):
         if output_path.exists():
-            print(f"✓ PDF created successfully: {output_path}")
+            print(f"✓ Conversion completed successfully!")
+            print(f"  Output file: {output_path}")
             print(f"  File size: {output_path.stat().st_size / 1024:.1f} KB")
         else:
-            # Check for HTML file instead
-            html_path = output_path.with_suffix('.html')
-            if html_path.exists():
-                print(f"✓ HTML file created successfully: {html_path}")
-                print(f"  File size: {html_path.stat().st_size / 1024:.1f} KB")
-                print("  (PDF conversion had compatibility issues - HTML file created instead)")
-            else:
-                print("✗ No output file created")
-                sys.exit(1)
+            print("✗ No output file created")
+            sys.exit(1)
     else:
         print("✗ Conversion failed")
         sys.exit(1)
