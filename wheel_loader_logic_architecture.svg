@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg viewBox="0 0 1200 620" xmlns="http://www.w3.org/2000/svg">
+<svg width="2400" height="1240" viewBox="0 0 2400 1240" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
   <defs>
     <style>
-      .title { font-family: Arial, sans-serif; font-size: 18px; font-weight: bold; text-anchor: middle; fill: white; }
-      .section-title { font-family: Arial, sans-serif; font-size: 16px; font-weight: bold; text-anchor: middle; fill: white; }
-      .module-text { font-family: Arial, sans-serif; font-size: 11px; text-anchor: middle; fill: white; font-weight: bold; }
-      .small-text { font-family: Arial, sans-serif; font-size: 9px; text-anchor: middle; fill: white; }
+      .title { font-family: Arial, sans-serif; font-size: 36px; font-weight: bold; text-anchor: middle; fill: white; }
+      .section-title { font-family: Arial, sans-serif; font-size: 32px; font-weight: bold; text-anchor: middle; fill: white; }
+      .module-text { font-family: Arial, sans-serif; font-size: 22px; text-anchor: middle; fill: white; font-weight: bold; }
+      .small-text { font-family: Arial, sans-serif; font-size: 18px; text-anchor: middle; fill: white; }
 
       /* Business-style color scheme - professional and corporate */
       .domain-control { fill: #2F4F4F; stroke: #1C3A3A; stroke-width: 2; }
@@ -24,132 +24,132 @@
       .hardware-module { fill: #D2B48C; stroke: #BC9A6A; stroke-width: 1; }
 
       /* Connection styles */
-      .connection-line { stroke: #2F4F4F; stroke-width: 2; fill: none; stroke-dasharray: 5,5; }
+      .connection-line { stroke: #2F4F4F; stroke-width: 4; fill: none; stroke-dasharray: 10,10; }
     </style>
   </defs>
 
   <!-- Main Title -->
-  <rect x="0" y="0" width="1200" height="60" fill="#263238"/>
-  <text x="600" y="35" class="title" style="font-size: 24px;">Wheel Loader Robot - Distributed Architecture</text>
+  <rect x="0" y="0" width="2400" height="120" fill="#263238"/>
+  <text x="1200" y="70" class="title" style="font-size: 48px;">Wheel Loader Robot - Distributed Architecture</text>
 
   <!-- Domain Control Section (Top) -->
-  <rect x="220" y="80" width="850" height="230" class="domain-control" rx="15"/>
-  <text x="645" y="110" class="section-title">CUAV X7Plus-WL Domain Controller Board</text>
+  <rect x="440" y="160" width="1700" height="460" class="domain-control" rx="30"/>
+  <text x="1290" y="220" class="section-title">CUAV X7Plus-WL Domain Controller Board</text>
 
   <!-- Top Row: Input Layer - Better Balanced to the Right -->
-  <rect x="300" y="130" width="280" height="45" class="vla-module" rx="8"/>
-  <text x="440" y="150" class="module-text">VlaProxy Driver</text>
-  <text x="440" y="165" class="small-text">Vision-Language-Action Interface</text>
+  <rect x="600" y="260" width="560" height="90" class="vla-module" rx="16"/>
+  <text x="880" y="300" class="module-text">VlaProxy Driver</text>
+  <text x="880" y="330" class="small-text">Vision-Language-Action Interface</text>
 
-  <rect x="600" y="130" width="280" height="45" class="rc-module" rx="8"/>
-  <text x="740" y="150" class="module-text">RC Input Controller</text>
-  <text x="740" y="165" class="small-text">Manual Remote Control Interface</text>
+  <rect x="1200" y="260" width="560" height="90" class="rc-module" rx="16"/>
+  <text x="1480" y="300" class="module-text">RC Input Controller</text>
+  <text x="1480" y="330" class="small-text">Manual Remote Control Interface</text>
 
   <!-- Right Side: State Estimation -->
-  <rect x="900" y="130" width="150" height="80" class="ekf-module" rx="8"/>
-  <text x="975" y="155" class="module-text">EKF2</text>
-  <text x="975" y="170" class="small-text">Extended Kalman</text>
-  <text x="975" y="185" class="small-text">Filter</text>
-  <text x="975" y="200" class="small-text">State Estimation</text>
+  <rect x="1800" y="260" width="300" height="160" class="ekf-module" rx="16"/>
+  <text x="1950" y="310" class="module-text">EKF2</text>
+  <text x="1950" y="340" class="small-text">Extended Kalman</text>
+  <text x="1950" y="370" class="small-text">Filter</text>
+  <text x="1950" y="400" class="small-text">State Estimation</text>
 
   <!-- Middle Row: Core Management - Centered -->
-  <rect x="360" y="190" width="480" height="50" class="management-module" rx="8"/>
-  <text x="600" y="210" class="section-title">OperationModeManager</text>
-  <text x="600" y="225" class="small-text">Autonomous ↔ Manual ↔ Emergency State Machine &amp; Decision Logic</text>
+  <rect x="720" y="380" width="960" height="100" class="management-module" rx="16"/>
+  <text x="1200" y="420" class="section-title">OperationModeManager</text>
+  <text x="1200" y="450" class="small-text">Autonomous ↔ Manual ↔ Emergency State Machine &amp; Decision Logic</text>
 
   <!-- Bottom Row: Communication Hub - Centered -->
-  <rect x="430" y="260" width="340" height="40" class="bridge-module" rx="8"/>
-  <text x="600" y="278" class="section-title">uORB UART Bridge</text>
-  <text x="600" y="293" class="small-text">Distributed Message Router &amp; Cross-Board Communication</text>
+  <rect x="860" y="520" width="680" height="80" class="bridge-module" rx="16"/>
+  <text x="1200" y="556" class="section-title">uORB UART Bridge</text>
+  <text x="1200" y="586" class="small-text">Distributed Message Router &amp; Cross-Board Communication</text>
 
   <!-- Front NXT Board (Bottom Left) -->
-  <rect x="40" y="320" width="550" height="280" class="front-board" rx="15"/>
-  <text x="315" y="345" class="section-title">HKUST NXT-Dual-WL Front Board</text>
+  <rect x="80" y="640" width="1100" height="560" class="front-board" rx="30"/>
+  <text x="630" y="690" class="section-title">HKUST NXT-Dual-WL Front Board</text>
 
   <!-- Front Board uORB Proxy -->
-  <rect x="80" y="365" width="460" height="35" class="bridge-module" rx="8"/>
-  <text x="310" y="380" class="section-title">uORB Proxy Hub</text>
-  <text x="310" y="395" class="small-text">Message Router &amp; Distribution Hub</text>
+  <rect x="160" y="730" width="920" height="70" class="bridge-module" rx="16"/>
+  <text x="620" y="760" class="section-title">uORB Proxy Hub</text>
+  <text x="620" y="790" class="small-text">Message Router &amp; Distribution Hub</text>
 
   <!-- Front Board Control Layer -->
-  <rect x="80" y="415" width="200" height="50" class="control-module" rx="8"/>
-  <text x="180" y="435" class="module-text">WheelController</text>
-  <text x="180" y="450" class="small-text">Front Drive System</text>
+  <rect x="160" y="830" width="400" height="100" class="control-module" rx="16"/>
+  <text x="360" y="870" class="module-text">WheelController</text>
+  <text x="360" y="900" class="small-text">Front Drive System</text>
 
-  <rect x="300" y="415" width="200" height="50" class="control-module" rx="8"/>
-  <text x="400" y="435" class="module-text">BucketControl</text>
-  <text x="400" y="450" class="small-text">Dual-Linkage Kinematics</text>
+  <rect x="600" y="830" width="400" height="100" class="control-module" rx="16"/>
+  <text x="800" y="870" class="module-text">BucketControl</text>
+  <text x="800" y="900" class="small-text">Dual-Linkage Kinematics</text>
 
   <!-- Front Board Trajectory Layer -->
-  <rect x="80" y="480" width="200" height="40" class="trajectory-module" rx="8"/>
-  <text x="180" y="497" class="module-text">BucketTrajectory</text>
-  <text x="180" y="512" class="small-text">Stage 1 &amp; 2 Control</text>
+  <rect x="160" y="960" width="400" height="80" class="trajectory-module" rx="16"/>
+  <text x="360" y="994" class="module-text">BucketTrajectory</text>
+  <text x="360" y="1024" class="small-text">Stage 1 &amp; 2 Control</text>
 
-  <rect x="300" y="480" width="200" height="40" class="trajectory-module" rx="8"/>
-  <text x="400" y="497" class="module-text">Motion Controller</text>
-  <text x="400" y="512" class="small-text">Local Path Following</text>
+  <rect x="600" y="960" width="400" height="80" class="trajectory-module" rx="16"/>
+  <text x="800" y="994" class="module-text">Motion Controller</text>
+  <text x="800" y="1024" class="small-text">Local Path Following</text>
 
   <!-- Front Board Hardware Layer -->
-  <rect x="80" y="535" width="130" height="35" class="hardware-module" rx="5"/>
-  <text x="145" y="550" class="small-text">H-Bridge</text>
-  <text x="145" y="563" class="small-text">Motor Driver</text>
+  <rect x="160" y="1070" width="260" height="70" class="hardware-module" rx="10"/>
+  <text x="290" y="1100" class="small-text">H-Bridge</text>
+  <text x="290" y="1126" class="small-text">Motor Driver</text>
 
-  <rect x="225" y="535" width="130" height="35" class="hardware-module" rx="5"/>
-  <text x="290" y="550" class="small-text">Encoders</text>
-  <text x="290" y="563" class="small-text">Position</text>
+  <rect x="450" y="1070" width="260" height="70" class="hardware-module" rx="10"/>
+  <text x="580" y="1100" class="small-text">Encoders</text>
+  <text x="580" y="1126" class="small-text">Position</text>
 
-  <rect x="370" y="535" width="130" height="35" class="hardware-module" rx="5"/>
-  <text x="435" y="550" class="small-text">Limit Sensors</text>
-  <text x="435" y="563" class="small-text">Safety</text>
+  <rect x="740" y="1070" width="260" height="70" class="hardware-module" rx="10"/>
+  <text x="870" y="1100" class="small-text">Limit Sensors</text>
+  <text x="870" y="1126" class="small-text">Safety</text>
 
   <!-- Rear NXT Board (Bottom Right) -->
-  <rect x="610" y="320" width="550" height="280" class="rear-board" rx="15"/>
-  <text x="885" y="345" class="section-title">HKUST NXT-Dual-WL Rear Board</text>
+  <rect x="1220" y="640" width="1100" height="560" class="rear-board" rx="30"/>
+  <text x="1770" y="690" class="section-title">HKUST NXT-Dual-WL Rear Board</text>
 
   <!-- Rear Board uORB Proxy -->
-  <rect x="650" y="365" width="460" height="35" class="bridge-module" rx="8"/>
-  <text x="880" y="380" class="section-title">uORB Proxy Hub</text>
-  <text x="880" y="395" class="small-text">Message Router &amp; Distribution Hub</text>
+  <rect x="1300" y="730" width="920" height="70" class="bridge-module" rx="16"/>
+  <text x="1760" y="760" class="section-title">uORB Proxy Hub</text>
+  <text x="1760" y="790" class="small-text">Message Router &amp; Distribution Hub</text>
 
   <!-- Rear Board Control Layer -->
-  <rect x="650" y="415" width="200" height="50" class="control-module" rx="8"/>
-  <text x="750" y="435" class="module-text">DriveControl</text>
-  <text x="750" y="450" class="small-text">Rear Drive System</text>
+  <rect x="1300" y="830" width="400" height="100" class="control-module" rx="16"/>
+  <text x="1500" y="870" class="module-text">DriveControl</text>
+  <text x="1500" y="900" class="small-text">Rear Drive System</text>
 
-  <rect x="870" y="415" width="200" height="50" class="control-module" rx="8"/>
-  <text x="970" y="435" class="module-text">BoomControl</text>
-  <text x="970" y="450" class="small-text">Hydraulic Kinematics</text>
+  <rect x="1740" y="830" width="400" height="100" class="control-module" rx="16"/>
+  <text x="1940" y="870" class="module-text">BoomControl</text>
+  <text x="1940" y="900" class="small-text">Hydraulic Kinematics</text>
 
   <!-- Rear Board Trajectory Layer -->
-  <rect x="650" y="480" width="200" height="40" class="trajectory-module" rx="8"/>
-  <text x="750" y="497" class="module-text">BoomTrajectory</text>
-  <text x="750" y="512" class="small-text">Z-Bar Control</text>
+  <rect x="1300" y="960" width="400" height="80" class="trajectory-module" rx="16"/>
+  <text x="1500" y="994" class="module-text">BoomTrajectory</text>
+  <text x="1500" y="1024" class="small-text">Z-Bar Control</text>
 
-  <rect x="870" y="480" width="200" height="40" class="trajectory-module" rx="8"/>
-  <text x="970" y="497" class="module-text">StabilityControl</text>
-  <text x="970" y="512" class="small-text">Active Stability</text>
+  <rect x="1740" y="960" width="400" height="80" class="trajectory-module" rx="16"/>
+  <text x="1940" y="994" class="module-text">StabilityControl</text>
+  <text x="1940" y="1024" class="small-text">Active Stability</text>
 
   <!-- Rear Board Hardware Layer -->
-  <rect x="650" y="535" width="130" height="35" class="hardware-module" rx="5"/>
-  <text x="715" y="550" class="small-text">Hydraulics</text>
-  <text x="715" y="563" class="small-text">Valves</text>
+  <rect x="1300" y="1070" width="260" height="70" class="hardware-module" rx="10"/>
+  <text x="1430" y="1100" class="small-text">Hydraulics</text>
+  <text x="1430" y="1126" class="small-text">Valves</text>
 
-  <rect x="795" y="535" width="130" height="35" class="hardware-module" rx="5"/>
-  <text x="860" y="550" class="small-text">IMU Sensors</text>
-  <text x="860" y="563" class="small-text">Orientation</text>
+  <rect x="1590" y="1070" width="260" height="70" class="hardware-module" rx="10"/>
+  <text x="1720" y="1100" class="small-text">IMU Sensors</text>
+  <text x="1720" y="1126" class="small-text">Orientation</text>
 
-  <rect x="940" y="535" width="130" height="35" class="hardware-module" rx="5"/>
-  <text x="1005" y="550" class="small-text">UWB Tracking</text>
-  <text x="1005" y="563" class="small-text">Position</text>
+  <rect x="1880" y="1070" width="260" height="70" class="hardware-module" rx="10"/>
+  <text x="2010" y="1100" class="small-text">UWB Tracking</text>
+  <text x="2010" y="1126" class="small-text">Position</text>
 
   <!-- Enhanced Connection Lines -->
   <!-- Main communication flows from bridge to board proxies -->
-  <line x1="600" y1="300" x2="310" y2="365" class="connection-line"/>
-  <line x1="600" y1="300" x2="880" y2="365" class="connection-line"/>
+  <line x1="1200" y1="600" x2="620" y2="730" class="connection-line"/>
+  <line x1="1200" y1="600" x2="1760" y2="730" class="connection-line"/>
 
   <!-- Hierarchical control flows -->
-  <line x1="600" y1="240" x2="600" y2="260" class="connection-line"/>
-  <line x1="440" y1="175" x2="600" y2="190" class="connection-line"/>
-  <line x1="740" y1="175" x2="600" y2="190" class="connection-line"/>
+  <line x1="1200" y1="480" x2="1200" y2="520" class="connection-line"/>
+  <line x1="880" y1="350" x2="1200" y2="380" class="connection-line"/>
+  <line x1="1480" y1="350" x2="1200" y2="380" class="connection-line"/>
 
 </svg>
