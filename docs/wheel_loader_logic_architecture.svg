@@ -29,7 +29,7 @@
   <text x="1182.66658" y="664.88893" class="section-title" font-family="Arial, sans-serif" font-size="32px" font-weight="bold" text-anchor="middle" fill="white" id="svg_20">uORB UART Bridge</text>
   <text x="1182.66658" y="694.88893" class="small-text" font-family="Arial, sans-serif" font-size="18px" text-anchor="middle" fill="white" id="svg_21">Distributed Message Router &amp; Cross-Board Communication</text>
   <rect x="0" y="786.44449" width="1038.88892" height="506.00003" class="front-board" rx="30" fill="#4682B4" stroke-width="2" id="svg_22" stroke="#2F5F8F"/>
-  <text x="519.44446" y="874.44451" class="section-title" font-family="Arial, sans-serif" font-size="32px" font-weight="bold" text-anchor="middle" fill="white" id="svg_23">HKUST NXT-Dual-WL Front Board</text>
+  <text x="610" y="874.44451" class="section-title" font-family="Arial, sans-serif" font-size="32px" font-weight="bold" text-anchor="middle" fill="white" id="svg_23">HKUST NXT-Dual-WL Front Board</text>
   <rect x="356" y="914.44451" width="522.22208" height="70" class="bridge-module" rx="16" fill="#20B2AA" id="svg_24" stroke="#008B8B"/>
   <text x="602.66658" y="944.44451" class="section-title" font-family="Arial, sans-serif" font-size="32px" font-weight="bold" text-anchor="middle" fill="white" id="svg_25">uORB Proxy Hub</text>
   <text x="602.66658" y="974.44451" class="small-text" font-family="Arial, sans-serif" font-size="18px" text-anchor="middle" fill="white" id="svg_26">Message Router &amp; Distribution Hub</text>
