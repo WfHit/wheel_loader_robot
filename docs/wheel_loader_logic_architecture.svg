@@ -28,8 +28,8 @@
   <rect x="842.66658" y="628.88893" width="680" height="80" class="bridge-module" rx="16" fill="#20B2AA" stroke="#008B8B" id="svg_19"/>
   <text x="1182.66658" y="664.88893" class="section-title" font-family="Arial, sans-serif" font-size="32px" font-weight="bold" text-anchor="middle" fill="white" id="svg_20">uORB UART Bridge</text>
   <text x="1182.66658" y="694.88893" class="small-text" font-family="Arial, sans-serif" font-size="18px" text-anchor="middle" fill="white" id="svg_21">Distributed Message Router &amp; Cross-Board Communication</text>
-  <rect x="14.88874" y="786.44449" width="1038.88892" height="506.00003" class="front-board" rx="30" fill="#4682B4" stroke-width="2" id="svg_22" stroke="#2F5F8F"/>
-  <text x="612.66658" y="874.44451" class="section-title" font-family="Arial, sans-serif" font-size="32px" font-weight="bold" text-anchor="middle" fill="white" id="svg_23">HKUST NXT-Dual-WL Front Board</text>
+  <rect x="0" y="786.44449" width="1038.88892" height="506.00003" class="front-board" rx="30" fill="#4682B4" stroke-width="2" id="svg_22" stroke="#2F5F8F"/>
+  <text x="519.44446" y="874.44451" class="section-title" font-family="Arial, sans-serif" font-size="32px" font-weight="bold" text-anchor="middle" fill="white" id="svg_23">HKUST NXT-Dual-WL Front Board</text>
   <rect x="356" y="914.44451" width="522.22208" height="70" class="bridge-module" rx="16" fill="#20B2AA" id="svg_24" stroke="#008B8B"/>
   <text x="602.66658" y="944.44451" class="section-title" font-family="Arial, sans-serif" font-size="32px" font-weight="bold" text-anchor="middle" fill="white" id="svg_25">uORB Proxy Hub</text>
   <text x="602.66658" y="974.44451" class="small-text" font-family="Arial, sans-serif" font-size="18px" text-anchor="middle" fill="white" id="svg_26">Message Router &amp; Distribution Hub</text>
@@ -59,11 +59,13 @@
   <text x="1409.33322" y="565.11096" class="module-text" font-family="Arial, sans-serif" font-size="22px" text-anchor="middle" fill="white" font-weight="bold" id="svg_60">BoomTrajectory</text>
   <!-- Connection lines removed as requested -->
   <!-- Trajectory Planning Layer -->
-  <rect x="722.66639" y="517.77765" width="368" height="64" class="trajectory-module" rx="16" fill="#6495ED" stroke="#4169E1" id="svg_80"/>
-  <text x="906.66639" y="555.77765" class="module-text" font-family="Arial, sans-serif" font-size="22px" text-anchor="middle" fill="white" font-weight="bold" id="svg_85">ChassisTrajectory</text>
+  <rect x="722.66639" y="517.77765" width="450" height="80" class="trajectory-module" rx="16" fill="#6495ED" stroke="#4169E1" id="svg_80"/>
+  <text x="947.66639" y="550.77765" class="module-text" font-family="Arial, sans-serif" font-size="24px" text-anchor="middle" fill="white" font-weight="bold" id="svg_85">ChassisTrajectory</text>
+  <text x="947.66639" y="572.77765" class="small-text" font-family="Arial, sans-serif" font-size="16px" text-anchor="middle" fill="white" id="svg_chassis_note">Vehicle Path Planning &amp; Traction Control</text>
 
-  <rect x="1225.3332" y="513.33319" width="368" height="64" class="trajectory-module" rx="16" fill="#6495ED" stroke="#4169E1" id="svg_81"/>
-  <text x="1409.3332" y="551.33319" class="module-text" font-family="Arial, sans-serif" font-size="22px" text-anchor="middle" fill="white" font-weight="bold" id="svg_86">EndEffectorTrajectory</text>
+  <rect x="1225.3332" y="513.33319" width="450" height="80" class="trajectory-module" rx="16" fill="#6495ED" stroke="#4169E1" id="svg_81"/>
+  <text x="1450.3332" y="546.33319" class="module-text" font-family="Arial, sans-serif" font-size="24px" text-anchor="middle" fill="white" font-weight="bold" id="svg_86">EndEffectorTrajectory</text>
+  <text x="1450.3332" y="568.33319" class="small-text" font-family="Arial, sans-serif" font-size="16px" text-anchor="middle" fill="white" id="svg_endeff_note">Bucket &amp; Boom Coordinated Motion</text>
   <path fill="#A0522D" stroke="#8B4513" opacity="undefined" d="m1944.88879,1026.00006c0,-8.69406 7.30594,-16 16,-16l368,0c8.69406,0 16,7.30594 16,16l0,68c0,8.69406 -7.30594,16 -16,16l-368,0c-8.69406,0 -16,-7.30594 -16,-16l0,-68z" id="svg_88"/>
   <text x="2144.88885" y="1050.00007" class="module-text" font-family="Arial, sans-serif" font-size="22px" text-anchor="middle" fill="white" font-weight="bold" id="svg_89">SteeringControl</text>
   <text x="2144.88885" y="1080.00007" class="small-text" font-family="Arial, sans-serif" font-size="18px" text-anchor="middle" fill="white" id="svg_90">Articulated Kinematics</text>
