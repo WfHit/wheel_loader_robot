@@ -1,91 +1,234 @@
-<svg width="2600" height="1500" xmlns="http://www.w3.org/2000/svg">
- <!-- Rearranged Architecture with Better Component Organization -->
- <!-- Layer 1: Title and Main System Overview -->
- <!-- Layer 2: Domain Controller (X7Plus-WL) with Input/Processing/State Estimation -->
- <!-- Layer 3: Communication Bridge Hub -->
- <!-- Layer 4: Distributed Control Boards (Front and Rear NXT) -->
- <!-- Layer 5: Hardware Interface Layer -->
- <g>
-  <title>Layer 1</title>
-  <rect x="0" y="0" width="2400" height="120" fill="#263238" id="svg_1"/>
-  <text x="1200" y="70" class="title" font-size="36px" font-family="Arial, sans-serif" font-weight="bold" text-anchor="middle" fill="white" id="svg_2">Wheel Loader Robot - Distributed Architecture</text>
-  <rect x="422.66658" y="175.55556" width="1700" height="564.44446" class="domain-control" rx="30" fill="#2F4F4F" stroke-width="2" id="svg_3" stroke="#1C3A3A"/>
-  <text x="1272.66658" y="220" class="section-title" font-family="Arial, sans-serif" font-size="32px" font-weight="bold" text-anchor="middle" fill="white" id="svg_4">CUAV X7Plus-WL Domain Controller Board</text>
-  <rect x="582.66658" y="260" width="560" height="90" class="vla-module" rx="16" fill="#708090" stroke="#556B7C" id="svg_5"/>
-  <text x="862.66658" y="300" class="module-text" font-family="Arial, sans-serif" font-size="22px" text-anchor="middle" fill="white" font-weight="bold" id="svg_6">VlaProxy Driver</text>
-  <text x="862.66658" y="330" class="small-text" font-family="Arial, sans-serif" font-size="18px" text-anchor="middle" fill="white" id="svg_7">Vision-Language-Action Interface</text>
-  <rect x="1182.66658" y="260" width="560" height="90" class="rc-module" rx="16" fill="#778899" stroke="#5D6B7A" id="svg_8"/>
-  <text x="1462.66658" y="300" class="module-text" font-family="Arial, sans-serif" font-size="22px" text-anchor="middle" fill="white" font-weight="bold" id="svg_9">RC Input Controller</text>
-  <text x="1462.66658" y="330" class="small-text" font-family="Arial, sans-serif" font-size="18px" text-anchor="middle" fill="white" id="svg_10">Manual Remote Control Interface</text>
-  <rect x="1782.66658" y="260" width="300" height="400.00008" class="ekf-module" rx="16" fill="#9370DB" id="svg_11" stroke="#7B68EE"/>
-  <text x="1932.66658" y="310" class="module-text" font-family="Arial, sans-serif" font-size="22px" text-anchor="middle" fill="white" font-weight="bold" id="svg_12">Navigation</text>
-  <text x="1932.66658" y="340" class="small-text" font-family="Arial, sans-serif" font-size="18px" text-anchor="middle" fill="white" id="svg_13">Extended Kalman</text>
-  <text x="1932.66658" y="370" class="small-text" font-family="Arial, sans-serif" font-size="18px" text-anchor="middle" fill="white" id="svg_14">Filter</text>
-  <text x="1932.66658" y="400" class="small-text" font-family="Arial, sans-serif" font-size="18px" text-anchor="middle" fill="white" id="svg_15">State Estimation</text>
-  <rect x="702.66658" y="380" width="960" height="100" class="management-module" rx="16" fill="#696969" stroke="#4A4A4A" id="svg_16"/>
-  <text x="1182.66658" y="420" class="section-title" font-family="Arial, sans-serif" font-size="32px" font-weight="bold" text-anchor="middle" fill="white" id="svg_17">OperationModeManager</text>
-  <text x="1182.66658" y="450" class="small-text" font-family="Arial, sans-serif" font-size="18px" text-anchor="middle" fill="white" id="svg_18">Autonomous ↔ Manual ↔ Emergency State Machine &amp; Decision Logic</text>
-  <rect x="842.66658" y="628.88893" width="680" height="80" class="bridge-module" rx="16" fill="#20B2AA" stroke="#008B8B" id="svg_19"/>
-  <text x="1182.66658" y="664.88893" class="section-title" font-family="Arial, sans-serif" font-size="32px" font-weight="bold" text-anchor="middle" fill="white" id="svg_20">uORB UART Bridge</text>
-  <text x="1182.66658" y="694.88893" class="small-text" font-family="Arial, sans-serif" font-size="18px" text-anchor="middle" fill="white" id="svg_21">Distributed Message Router &amp; Cross-Board Communication</text>
-  <rect x="0" y="786.44449" width="1038.88892" height="506.00003" class="front-board" rx="30" fill="#4682B4" stroke-width="2" id="svg_22" stroke="#2F5F8F"/>
-  <text x="610" y="874.44451" class="section-title" font-family="Arial, sans-serif" font-size="32px" font-weight="bold" text-anchor="middle" fill="white" id="svg_23">HKUST NXT-Dual-WL Front Board</text>
-  <rect x="356" y="914.44451" width="522.22208" height="70" class="bridge-module" rx="16" fill="#20B2AA" id="svg_24" stroke="#008B8B"/>
-  <text x="602.66658" y="944.44451" class="section-title" font-family="Arial, sans-serif" font-size="32px" font-weight="bold" text-anchor="middle" fill="white" id="svg_25">uORB Proxy Hub</text>
-  <text x="602.66658" y="974.44451" class="small-text" font-family="Arial, sans-serif" font-size="18px" text-anchor="middle" fill="white" id="svg_26">Message Router &amp; Distribution Hub</text>
-  <rect x="142.66658" y="1014.44451" width="400" height="100" class="control-module" rx="16" fill="#A0522D" stroke="#8B4513" id="svg_27"/>
-  <text x="342.66658" y="1054.44451" class="module-text" font-family="Arial, sans-serif" font-size="22px" text-anchor="middle" fill="white" font-weight="bold" id="svg_28">WheelControl</text>
-  <text x="342.66658" y="1084.44451" class="small-text" font-family="Arial, sans-serif" font-size="18px" text-anchor="middle" fill="white" id="svg_29">Front Drive System</text>
-  <rect x="582.66658" y="1014.44451" width="400" height="100" class="control-module" rx="16" fill="#A0522D" stroke="#8B4513" id="svg_30"/>
-  <text x="782.66658" y="1054.44451" class="module-text" font-family="Arial, sans-serif" font-size="22px" text-anchor="middle" fill="white" font-weight="bold" id="svg_31">BucketControl</text>
-  <text x="782.66658" y="1084.44451" class="small-text" font-family="Arial, sans-serif" font-size="18px" text-anchor="middle" fill="white" id="svg_32">Dual-Linkage Kinematics</text>
-  <rect x="142.66658" y="1162.44451" width="260" height="70" class="hardware-module" rx="10" fill="#D2B48C" stroke="#BC9A6A" id="svg_39"/>
-  <text x="272.66658" y="1192.44451" class="small-text" font-family="Arial, sans-serif" font-size="22px" text-anchor="middle" fill="white" id="svg_40">H-Bridge</text>
-  <rect x="432.66658" y="1162.44451" width="260" height="70" class="hardware-module" rx="10" fill="#D2B48C" stroke="#BC9A6A" id="svg_42"/>
-  <text x="562.66658" y="1192.44451" class="small-text" font-family="Arial, sans-serif" font-size="22px" text-anchor="middle" fill="white" id="svg_43">Encoders</text>
-  <path fill="#D2B48C" stroke="#BC9A6A" opacity="undefined" d="m722.66656,1172.44446c0,-5.43379 4.56621,-10 10,-10l240,0c5.43379,0 10,4.56621 10,10l0,50c0,5.43379 -4.56621,10 -10,10l-240,0c-5.43379,0 -10,-4.56621 -10,-10l0,-50z" id="svg_45"/>
-  <text x="852.66658" y="1192.44451" class="small-text" font-family="Arial, sans-serif" font-size="22px" text-anchor="middle" fill="white" id="svg_46">Limit Sensors</text>
-  <rect x="1084.88873" y="780.88894" width="1297.77795" height="516.00001" class="rear-board" rx="30" fill="#5F9EA0" stroke-width="2" id="svg_48" stroke="#457B7D"/>
-  <text x="1737.11102" y="874.44451" class="section-title" font-family="Arial, sans-serif" font-size="32px" font-weight="bold" text-anchor="middle" fill="white" id="svg_49">HKUST NXT-Dual-WL Rear Board</text>
-  <rect x="1493.77775" y="914.44451" width="451.11095" height="70" class="bridge-module" rx="16" fill="#20B2AA" id="svg_50" stroke="#008B8B"/>
-  <text x="1727.11102" y="944.44451" class="section-title" font-family="Arial, sans-serif" font-size="32px" font-weight="bold" text-anchor="middle" fill="white" id="svg_51">uORB Proxy Hub</text>
-  <text x="1727.11102" y="974.44451" class="small-text" font-family="Arial, sans-serif" font-size="18px" text-anchor="middle" fill="white" id="svg_52">Message Router &amp; Distribution Hub</text>
-  <rect x="1104.88873" y="1014.44451" width="400" height="100" class="control-module" rx="16" fill="#A0522D" stroke="#8B4513" id="svg_53"/>
-  <text x="1304.88873" y="1054.44451" class="module-text" font-family="Arial, sans-serif" font-size="22px" text-anchor="middle" fill="white" font-weight="bold" id="svg_54">WheelControl</text>
-  <text x="1304.88873" y="1084.44451" class="small-text" font-family="Arial, sans-serif" font-size="18px" text-anchor="middle" fill="white" id="svg_55">Rear Drive System</text>
-  <rect x="1522.6665" y="1014.44451" width="400" height="100" class="control-module" rx="16" fill="#A0522D" stroke="#8B4513" id="svg_56"/>
-  <text x="1722.6665" y="1054.44451" class="module-text" font-family="Arial, sans-serif" font-size="22px" text-anchor="middle" fill="white" font-weight="bold" id="svg_57">BoomControl</text>
-  <text x="1722.6665" y="1084.44451" class="small-text" font-family="Arial, sans-serif" font-size="18px" text-anchor="middle" fill="white" id="svg_58">Boom Kinematics</text>
-  <text x="1409.33322" y="565.11096" class="module-text" font-family="Arial, sans-serif" font-size="22px" text-anchor="middle" fill="white" font-weight="bold" id="svg_60">BoomTrajectory</text>
-  <!-- Connection lines removed as requested -->
-  <!-- Trajectory Planning Layer -->
-  <rect x="722.66639" y="517.77765" width="450" height="80" class="trajectory-module" rx="16" fill="#6495ED" stroke="#4169E1" id="svg_80"/>
-  <text x="947.66639" y="550.77765" class="module-text" font-family="Arial, sans-serif" font-size="24px" text-anchor="middle" fill="white" font-weight="bold" id="svg_85">ChassisTrajectory</text>
-  <text x="947.66639" y="572.77765" class="small-text" font-family="Arial, sans-serif" font-size="16px" text-anchor="middle" fill="white" id="svg_chassis_note">Vehicle Path Planning &amp; Traction Control</text>
+<svg width="2800" height="1600" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Define gradients for better visual depth -->
+    <linearGradient id="domainGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#3A5F7D;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2C4A63;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="frontBoardGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#5A8FDB;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#4678C4;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="rearBoardGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#6FA8AA;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#5A9395;stop-opacity:1" />
+    </linearGradient>
+    <!-- Arrow markers for connections -->
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#FFD700" />
+    </marker>
+  </defs>
 
-  <rect x="1225.3332" y="513.33319" width="450" height="80" class="trajectory-module" rx="16" fill="#6495ED" stroke="#4169E1" id="svg_81"/>
-  <text x="1450.3332" y="546.33319" class="module-text" font-family="Arial, sans-serif" font-size="24px" text-anchor="middle" fill="white" font-weight="bold" id="svg_86">EndEffectorTrajectory</text>
-  <text x="1450.3332" y="568.33319" class="small-text" font-family="Arial, sans-serif" font-size="16px" text-anchor="middle" fill="white" id="svg_endeff_note">Bucket &amp; Boom Coordinated Motion</text>
-  <path fill="#A0522D" stroke="#8B4513" opacity="undefined" d="m1944.88879,1026.00006c0,-8.69406 7.30594,-16 16,-16l368,0c8.69406,0 16,7.30594 16,16l0,68c0,8.69406 -7.30594,16 -16,16l-368,0c-8.69406,0 -16,-7.30594 -16,-16l0,-68z" id="svg_88"/>
-  <text x="2144.88885" y="1050.00007" class="module-text" font-family="Arial, sans-serif" font-size="22px" text-anchor="middle" fill="white" font-weight="bold" id="svg_89">SteeringControl</text>
-  <text x="2144.88885" y="1080.00007" class="small-text" font-family="Arial, sans-serif" font-size="18px" text-anchor="middle" fill="white" id="svg_90">Articulated Kinematics</text>
-  <rect x="1124.66658" y="1174.44451" width="260" height="70" class="hardware-module" rx="10" fill="#D2B48C" stroke="#BC9A6A" id="svg_92"/>
-  <text x="1254.66658" y="1204.44451" class="small-text" font-family="Arial, sans-serif" font-size="22px" text-anchor="middle" fill="white" id="svg_93">H-Bridge</text>
-  <rect x="1414.66658" y="1174.44451" width="260" height="70" class="hardware-module" rx="10" fill="#D2B48C" stroke="#BC9A6A" id="svg_94"/>
-  <text x="1544.66658" y="1204.44451" class="small-text" font-family="Arial, sans-serif" font-size="22px" text-anchor="middle" fill="white" id="svg_95">Encoders</text>
-  <path fill="#D2B48C" stroke="#BC9A6A" opacity="undefined" d="m1704.66656,1184.44446c0,-5.43379 4.56621,-10 10,-10l240,0c5.43379,0 10,4.56621 10,10l0,50c0,5.43379 -4.56621,10 -10,10l-240,0c-5.43379,0 -10,-4.56621 -10,-10l0,-50z" id="svg_96"/>
-  <text x="1834.66658" y="1204.44451" class="small-text" font-family="Arial, sans-serif" font-size="22px" text-anchor="middle" fill="white" id="svg_97">Limit Sensors</text>
-  <path fill="#D2B48C" stroke="#BC9A6A" opacity="undefined" d="m1992.66656,1178.44446c0,-5.43379 4.56621,-10 10,-10l240,0c5.43379,0 10,4.56621 10,10l0,50c0,5.43379 -4.56621,10 -10,10l-240,0c-5.43379,0 -10,-4.56621 -10,-10l0,-50z" id="svg_99"/>
-  <text x="2122.66658" y="1198.44451" class="small-text" font-family="Arial, sans-serif" font-size="22px" text-anchor="middle" fill="white" id="svg_100">Servo Drive</text>
-  <path fill="#9370DB" stroke="#7B68EE" opacity="undefined" d="m24.66658,848c0,-8.69406 7.30594,-16 16,-16l268,0c8.69406,0 16,7.30594 16,16l0,134.00006c0,8.69406 -7.30594,16 -16,16l-268,0c-8.69406,0 -16,-7.30594 -16,-16l0,-134.00006z" id="svg_108"/>
-  <text x="174.66658" y="882" class="module-text" font-family="Arial, sans-serif" font-size="22px" text-anchor="middle" fill="white" font-weight="bold" id="svg_109">FrontKinematics</text>
-  <text x="174.66658" y="912" class="small-text" font-family="Arial, sans-serif" font-size="18px" text-anchor="middle" fill="white" id="svg_110">Extended Kalman</text>
-  <text x="174.66658" y="942" class="small-text" font-family="Arial, sans-serif" font-size="18px" text-anchor="middle" fill="white" id="svg_111">Filter</text>
-  <text x="174.66658" y="972" class="small-text" font-family="Arial, sans-serif" font-size="18px" text-anchor="middle" fill="white" id="svg_112">State Estimation</text>
-  <path fill="#9370DB" opacity="undefined" d="m2054.66658,828.77108c0,-9.11305 7.30593,-16.77108 16,-16.77108l268,0c8.69406,0 16,7.65803 16,16.77108l0,140.45789c0,9.11305 -7.30594,16.77108 -16,16.77108l-268,0c-8.69407,0 -16,-7.65803 -16,-16.77108l0,-140.45789z" id="svg_113" stroke="#7B68EE"/>
-  <text x="2204.66658" y="862" class="module-text" font-family="Arial, sans-serif" font-size="22px" text-anchor="middle" fill="white" font-weight="bold" id="svg_114">RearKinematics</text>
-  <text x="2204.66658" y="892" class="small-text" font-family="Arial, sans-serif" font-size="18px" text-anchor="middle" fill="white" id="svg_115">Extended Kalman</text>
-  <text x="2204.66658" y="922" class="small-text" font-family="Arial, sans-serif" font-size="18px" text-anchor="middle" fill="white" id="svg_116">Filter</text>
-  <text x="2204.66658" y="952" class="small-text" font-family="Arial, sans-serif" font-size="18px" text-anchor="middle" fill="white" id="svg_117">State Estimation</text>
- </g>
+  <!-- Background -->
+  <rect x="0" y="0" width="2800" height="1600" fill="#1E2329"/>
+
+  <!-- Title Section -->
+  <rect x="0" y="0" width="2800" height="100" fill="#0D1117"/>
+  <text x="1400" y="60" font-size="42" font-family="Arial, sans-serif" font-weight="bold" text-anchor="middle" fill="#FFFFFF">
+    X7WL Wheel Loader Robot - Distributed Control Architecture
+  </text>
+
+  <!-- Main Domain Controller Section -->
+  <g id="domain-controller">
+    <rect x="100" y="140" width="2600" height="680" rx="20" fill="url(#domainGrad)" stroke="#FFD700" stroke-width="3"/>
+    <text x="1400" y="185" font-size="32" font-family="Arial, sans-serif" font-weight="bold" text-anchor="middle" fill="#FFFFFF">
+      CUAV X7Plus-WL Domain Controller
+    </text>
+    <text x="1400" y="215" font-size="20" font-family="Arial, sans-serif" text-anchor="middle" fill="#B0C4DE">
+      Central Processing &amp; Decision Making Unit
+    </text>
+
+    <!-- Input Modules (Centered) -->
+    <g id="input-modules">
+      <rect x="800" y="250" width="400" height="100" rx="15" fill="#4A6FA5" stroke="#6B8FC7" stroke-width="2"/>
+      <text x="1000" y="285" font-size="24" font-weight="bold" text-anchor="middle" fill="#FFFFFF">VLA Proxy</text>
+      <text x="1000" y="310" font-size="16" text-anchor="middle" fill="#D0D0D0">Vision-Language-Action</text>
+      <text x="1000" y="330" font-size="16" text-anchor="middle" fill="#D0D0D0">AI Decision Interface</text>
+
+      <rect x="1300" y="250" width="400" height="100" rx="15" fill="#4A6FA5" stroke="#6B8FC7" stroke-width="2"/>
+      <text x="1500" y="285" font-size="24" font-weight="bold" text-anchor="middle" fill="#FFFFFF">RC Controller</text>
+      <text x="1500" y="310" font-size="16" text-anchor="middle" fill="#D0D0D0">Manual Override</text>
+      <text x="1500" y="330" font-size="16" text-anchor="middle" fill="#D0D0D0">Remote Control Input</text>
+    </g>
+
+    <!-- Central Processing (Vertically aligned below Input Modules) -->
+    <rect x="950" y="380" width="600" height="100" rx="15" fill="#5C4B8A" stroke="#7B68B8" stroke-width="2"/>
+    <text x="1250" y="415" font-size="24" font-weight="bold" text-anchor="middle" fill="#FFFFFF">Operation Mode Manager</text>
+    <text x="1250" y="440" font-size="16" text-anchor="middle" fill="#D0D0D0">State Machine: Auto ↔ Manual ↔ Emergency</text>
+    <text x="1250" y="460" font-size="16" text-anchor="middle" fill="#D0D0D0">Decision Logic &amp; Safety Monitoring</text>
+
+    <!-- Trajectory Planning (Vertically aligned below Central Processing) -->
+    <rect x="1000" y="510" width="500" height="100" rx="15" fill="#4A8B8C" stroke="#5FA0A1" stroke-width="2"/>
+    <text x="1250" y="545" font-size="24" font-weight="bold" text-anchor="middle" fill="#FFFFFF">Trajectory Planner</text>
+    <text x="1250" y="570" font-size="16" text-anchor="middle" fill="#D0D0D0">Chassis Path Planning</text>
+    <text x="1250" y="590" font-size="16" text-anchor="middle" fill="#D0D0D0">End-Effector Coordination</text>
+
+    <!-- Navigation EKF (Right side) -->
+    <rect x="2100" y="380" width="400" height="100" rx="15" fill="#8A6B9E" stroke="#A085B8" stroke-width="2"/>
+    <text x="2300" y="415" font-size="24" font-weight="bold" text-anchor="middle" fill="#FFFFFF">Navigation EKF</text>
+    <text x="2300" y="440" font-size="16" text-anchor="middle" fill="#D0D0D0">State Estimation</text>
+    <text x="2300" y="460" font-size="16" text-anchor="middle" fill="#D0D0D0">Sensor Fusion</text>
+
+    <!-- Communication Bridge (Vertically aligned at bottom) -->
+    <rect x="650" y="640" width="1200" height="100" rx="15" fill="#20B2AA" stroke="#40E0D0" stroke-width="2"/>
+    <text x="1250" y="680" font-size="26" font-weight="bold" text-anchor="middle" fill="#FFFFFF">uORB UART Bridge</text>
+    <text x="1250" y="710" font-size="18" text-anchor="middle" fill="#E0E0E0">High-Speed Message Router &amp; Cross-Board Communication Protocol</text>
+
+    <!-- Connection arrows within domain controller -->
+    <line x1="1000" y1="350" x2="1150" y2="380" stroke="#FFD700" stroke-width="2" marker-end="url(#arrowhead)"/>
+    <line x1="1500" y1="350" x2="1350" y2="380" stroke="#FFD700" stroke-width="2" marker-end="url(#arrowhead)"/>
+    <line x1="1250" y1="480" x2="1250" y2="510" stroke="#FFD700" stroke-width="2" marker-end="url(#arrowhead)"/>
+    <line x1="1250" y1="610" x2="1250" y2="640" stroke="#FFD700" stroke-width="2" marker-end="url(#arrowhead)"/>
+    <line x1="1550" y1="430" x2="2100" y2="430" stroke="#90EE90" stroke-width="2" stroke-dasharray="3,3"/>
+  </g>
+
+  <!-- NXT Front Board Section -->
+  <g id="nxt-front-board">
+    <rect x="100" y="860" width="1250" height="640" rx="20" fill="url(#frontBoardGrad)" stroke="#87CEEB" stroke-width="3"/>
+    <text x="725" y="910" font-size="30" font-weight="bold" text-anchor="middle" fill="#FFFFFF">
+      HKUST NXT-Dual-WL Front Board
+    </text>
+    <text x="725" y="940" font-size="18" text-anchor="middle" fill="#E0F0FF">
+      Front Actuation &amp; Sensor Processing Unit
+    </text>
+
+    <!-- uORB Proxy Hub -->
+    <rect x="300" y="970" width="750" height="70" rx="12" fill="#20B2AA" stroke="#40E0D0" stroke-width="2"/>
+    <text x="675" y="1000" font-size="22" font-weight="bold" text-anchor="middle" fill="#FFFFFF">uORB Proxy Hub</text>
+    <text x="675" y="1025" font-size="16" text-anchor="middle" fill="#E0E0E0">Local Message Distribution &amp; Synchronization</text>
+
+    <!-- Front Kinematics EKF -->
+    <rect x="200" y="1070" width="320" height="130" rx="12" fill="#7B68EE" stroke="#9370DB" stroke-width="2"/>
+    <text x="360" y="1105" font-size="22" font-weight="bold" text-anchor="middle" fill="#FFFFFF">Front Kinematics</text>
+    <text x="360" y="1130" font-size="16" text-anchor="middle" fill="#E0E0E0">Local EKF</text>
+    <text x="360" y="1150" font-size="16" text-anchor="middle" fill="#E0E0E0">Wheel Odometry</text>
+    <text x="360" y="1170" font-size="16" text-anchor="middle" fill="#E0E0E0">Slip Detection</text>
+
+    <!-- Control Modules -->
+    <rect x="570" y="1070" width="280" height="130" rx="12" fill="#CD853F" stroke="#DEB887" stroke-width="2"/>
+    <text x="710" y="1105" font-size="22" font-weight="bold" text-anchor="middle" fill="#FFFFFF">Wheel Control</text>
+    <text x="710" y="1130" font-size="16" text-anchor="middle" fill="#F0E0D0">Front Drive Motors</text>
+    <text x="710" y="1150" font-size="16" text-anchor="middle" fill="#F0E0D0">Traction Control</text>
+    <text x="710" y="1170" font-size="16" text-anchor="middle" fill="#F0E0D0">Speed Regulation</text>
+
+    <rect x="900" y="1070" width="280" height="130" rx="12" fill="#CD853F" stroke="#DEB887" stroke-width="2"/>
+    <text x="1040" y="1105" font-size="22" font-weight="bold" text-anchor="middle" fill="#FFFFFF">Bucket Control</text>
+    <text x="1040" y="1130" font-size="16" text-anchor="middle" fill="#F0E0D0">Dual-Link Actuator</text>
+    <text x="1040" y="1150" font-size="16" text-anchor="middle" fill="#F0E0D0">Force Control</text>
+    <text x="1040" y="1170" font-size="16" text-anchor="middle" fill="#F0E0D0">Position Tracking</text>
+
+    <!-- Sensor Modules -->
+    <rect x="200" y="1230" width="250" height="90" rx="10" fill="#8FBC8F" stroke="#90EE90" stroke-width="2"/>
+    <text x="325" y="1260" font-size="20" font-weight="bold" text-anchor="middle" fill="#FFFFFF">IMU/Gyro</text>
+    <text x="325" y="1285" font-size="16" text-anchor="middle" fill="#F0FFF0">6-DOF Sensing</text>
+    <text x="325" y="1305" font-size="16" text-anchor="middle" fill="#F0FFF0">Vibration Filter</text>
+
+    <!-- Hardware Interface -->
+    <rect x="200" y="1350" width="980" height="120" rx="10" fill="#2F4F4F" stroke="#556B6F" stroke-width="2"/>
+    <text x="690" y="1385" font-size="22" font-weight="bold" text-anchor="middle" fill="#FFFFFF">Hardware Interface Layer</text>
+
+    <rect x="250" y="1400" width="180" height="60" rx="8" fill="#D2B48C" stroke="#DEB887" stroke-width="1"/>
+    <text x="340" y="1425" font-size="16" text-anchor="middle" fill="#FFFFFF">H-Bridge</text>
+    <text x="340" y="1445" font-size="14" text-anchor="middle" fill="#F0E0D0">Motor Driver</text>
+
+    <rect x="480" y="1400" width="180" height="60" rx="8" fill="#D2B48C" stroke="#DEB887" stroke-width="1"/>
+    <text x="570" y="1425" font-size="16" text-anchor="middle" fill="#FFFFFF">Encoders</text>
+    <text x="570" y="1445" font-size="14" text-anchor="middle" fill="#F0E0D0">Position Feedback</text>
+
+    <rect x="710" y="1400" width="180" height="60" rx="8" fill="#D2B48C" stroke="#DEB887" stroke-width="1"/>
+    <text x="800" y="1425" font-size="16" text-anchor="middle" fill="#FFFFFF">Limit Switches</text>
+    <text x="800" y="1445" font-size="14" text-anchor="middle" fill="#F0E0D0">Safety Stops</text>
+  </g>
+
+  <!-- NXT Rear Board Section -->
+  <g id="nxt-rear-board">
+    <rect x="1450" y="860" width="1250" height="640" rx="20" fill="url(#rearBoardGrad)" stroke="#7FFFD4" stroke-width="3"/>
+    <text x="2075" y="910" font-size="30" font-weight="bold" text-anchor="middle" fill="#FFFFFF">
+      HKUST NXT-Dual-WL Rear Board
+    </text>
+    <text x="2075" y="940" font-size="18" text-anchor="middle" fill="#F0FFFF">
+      Rear Actuation &amp; Articulation Control Unit
+    </text>
+
+    <!-- uORB Proxy Hub -->
+    <rect x="1650" y="970" width="750" height="70" rx="12" fill="#20B2AA" stroke="#40E0D0" stroke-width="2"/>
+    <text x="2025" y="1000" font-size="22" font-weight="bold" text-anchor="middle" fill="#FFFFFF">uORB Proxy Hub</text>
+    <text x="2025" y="1025" font-size="16" text-anchor="middle" fill="#E0E0E0">Local Message Distribution &amp; Synchronization</text>
+
+    <!-- Rear Kinematics EKF -->
+    <rect x="1550" y="1070" width="320" height="130" rx="12" fill="#7B68EE" stroke="#9370DB" stroke-width="2"/>
+    <text x="1710" y="1105" font-size="22" font-weight="bold" text-anchor="middle" fill="#FFFFFF">Rear Kinematics</text>
+    <text x="1710" y="1130" font-size="16" text-anchor="middle" fill="#E0E0E0">Local EKF</text>
+    <text x="1710" y="1150" font-size="16" text-anchor="middle" fill="#E0E0E0">Articulation Angle</text>
+    <text x="1710" y="1170" font-size="16" text-anchor="middle" fill="#E0E0E0">Stability Monitor</text>
+
+    <!-- Control Modules -->
+    <rect x="1920" y="1070" width="280" height="130" rx="12" fill="#CD853F" stroke="#DEB887" stroke-width="2"/>
+    <text x="2060" y="1105" font-size="22" font-weight="bold" text-anchor="middle" fill="#FFFFFF">Wheel Control</text>
+    <text x="2060" y="1130" font-size="16" text-anchor="middle" fill="#F0E0D0">Rear Drive Motors</text>
+    <text x="2060" y="1150" font-size="16" text-anchor="middle" fill="#F0E0D0">Differential Lock</text>
+    <text x="2060" y="1170" font-size="16" text-anchor="middle" fill="#F0E0D0">Speed Sync</text>
+
+    <rect x="2250" y="1070" width="280" height="130" rx="12" fill="#CD853F" stroke="#DEB887" stroke-width="2"/>
+    <text x="2390" y="1105" font-size="22" font-weight="bold" text-anchor="middle" fill="#FFFFFF">Boom Control</text>
+    <text x="2390" y="1130" font-size="16" text-anchor="middle" fill="#F0E0D0">Lift Actuator</text>
+    <text x="2390" y="1150" font-size="16" text-anchor="middle" fill="#F0E0D0">Load Compensation</text>
+    <text x="2390" y="1170" font-size="16" text-anchor="middle" fill="#F0E0D0">Height Tracking</text>
+
+    <!-- Steering Module -->
+    <rect x="2000" y="1230" width="350" height="90" rx="10" fill="#B8860B" stroke="#DAA520" stroke-width="2"/>
+    <text x="2175" y="1260" font-size="20" font-weight="bold" text-anchor="middle" fill="#FFFFFF">Steering Control</text>
+    <text x="2175" y="1285" font-size="16" text-anchor="middle" fill="#FFF8DC">Articulated Joint</text>
+    <text x="2175" y="1305" font-size="16" text-anchor="middle" fill="#FFF8DC">Angle Feedback</text>
+
+    <!-- Sensor Modules -->
+    <rect x="1550" y="1230" width="250" height="90" rx="10" fill="#8FBC8F" stroke="#90EE90" stroke-width="2"/>
+    <text x="1675" y="1260" font-size="20" font-weight="bold" text-anchor="middle" fill="#FFFFFF">IMU/Gyro</text>
+    <text x="1675" y="1285" font-size="16" text-anchor="middle" fill="#F0FFF0">6-DOF Sensing</text>
+    <text x="1675" y="1305" font-size="16" text-anchor="middle" fill="#F0FFF0">Tilt Detection</text>
+
+    <!-- Hardware Interface -->
+    <rect x="1550" y="1350" width="980" height="120" rx="10" fill="#2F4F4F" stroke="#556B6F" stroke-width="2"/>
+    <text x="2040" y="1385" font-size="22" font-weight="bold" text-anchor="middle" fill="#FFFFFF">Hardware Interface Layer</text>
+
+    <rect x="1600" y="1400" width="180" height="60" rx="8" fill="#D2B48C" stroke="#DEB887" stroke-width="1"/>
+    <text x="1690" y="1425" font-size="16" text-anchor="middle" fill="#FFFFFF">H-Bridge</text>
+    <text x="1690" y="1445" font-size="14" text-anchor="middle" fill="#F0E0D0">Motor Driver</text>
+
+    <rect x="1830" y="1400" width="180" height="60" rx="8" fill="#D2B48C" stroke="#DEB887" stroke-width="1"/>
+    <text x="1920" y="1425" font-size="16" text-anchor="middle" fill="#FFFFFF">Encoders</text>
+    <text x="1920" y="1445" font-size="14" text-anchor="middle" fill="#F0E0D0">Position Feedback</text>
+
+    <rect x="2060" y="1400" width="180" height="60" rx="8" fill="#D2B48C" stroke="#DEB887" stroke-width="1"/>
+    <text x="2150" y="1425" font-size="16" text-anchor="middle" fill="#FFFFFF">Servo Drive</text>
+    <text x="2150" y="1445" font-size="14" text-anchor="middle" fill="#F0E0D0">Steering Motor</text>
+
+    <rect x="2290" y="1400" width="180" height="60" rx="8" fill="#D2B48C" stroke="#DEB887" stroke-width="1"/>
+    <text x="2380" y="1425" font-size="16" text-anchor="middle" fill="#FFFFFF">Angle Sensor</text>
+    <text x="2380" y="1445" font-size="14" text-anchor="middle" fill="#F0E0D0">Articulation</text>
+  </g>
+
+  <!-- Connection Lines -->
+  <!-- Domain to Front Board -->
+  <line x1="1050" y1="740" x2="675" y2="970" stroke="#FFD700" stroke-width="3" marker-end="url(#arrowhead)" stroke-dasharray="5,5"/>
+  <!-- Domain to Rear Board -->
+  <line x1="1450" y1="740" x2="2025" y2="970" stroke="#FFD700" stroke-width="3" marker-end="url(#arrowhead)" stroke-dasharray="5,5"/>
+  <!-- Inter-board communication -->
+  <line x1="1050" y1="1005" x2="1650" y2="1005" stroke="#00FF00" stroke-width="2" stroke-dasharray="3,3"/>
+
+  <!-- Legend -->
+  <g id="legend">
+    <rect x="2450" y="80" width="300" height="40" rx="5" fill="#2F4F4F" stroke="#556B6F" stroke-width="1"/>
+    <circle cx="2480" cy="100" r="5" fill="#FFD700"/>
+    <text x="2500" y="105" font-size="14" fill="#FFFFFF">Control Flow</text>
+    <circle cx="2600" cy="100" r="5" fill="#00FF00"/>
+    <text x="2620" y="105" font-size="14" fill="#FFFFFF">Data Exchange</text>
+  </g>
+
+  <!-- System Status Indicator -->
+  <g id="status">
+    <rect x="100" y="80" width="200" height="40" rx="5" fill="#2F4F4F" stroke="#556B6F" stroke-width="1"/>
+    <circle cx="130" cy="100" r="8" fill="#00FF00"/>
+    <text x="150" y="105" font-size="14" fill="#FFFFFF">System Active</text>
+  </g>
 </svg>
