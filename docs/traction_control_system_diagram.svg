@@ -1,4 +1,9 @@
-<svg viewBox="0 0 1400 1000" xmlns="http://www.w3.org/2000/svg">
+<svg width="1400" height="1000" viewBox="0 0 1400 1000" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <!-- High resolution SVG for full-quality copying and printing -->
+  <style>
+    text { font-family: 'Arial', 'Helvetica', sans-serif; }
+    .title { font-family: 'Arial Black', 'Helvetica', sans-serif; }
+  </style>
   <!-- Title -->
   <text x="700" y="30" font-size="24" font-weight="bold" text-anchor="middle" fill="#2c3e50">
     Advanced Traction Control System - Articulated Wheel Loader
