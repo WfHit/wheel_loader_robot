@@ -1,0 +1,290 @@
+<svg viewBox="0 0 1400 1000" xmlns="http://www.w3.org/2000/svg">
+  <!-- Title -->
+  <text x="700" y="30" font-size="24" font-weight="bold" text-anchor="middle" fill="#2c3e50">
+    Advanced Traction Control System - Articulated Wheel Loader
+  </text>
+
+  <!-- Input Sources Section -->
+  <g id="inputs">
+    <rect x="20" y="60" width="320" height="200" fill="#e8f4f8" stroke="#3498db" stroke-width="2" rx="5"/>
+    <text x="180" y="85" font-size="16" font-weight="bold" text-anchor="middle" fill="#2c3e50">Input Sources</text>
+
+    <!-- EKF -->
+    <rect x="40" y="100" width="130" height="40" fill="#fff" stroke="#3498db" stroke-width="1.5" rx="3"/>
+    <text x="105" y="125" font-size="12" text-anchor="middle">EKF/IMU</text>
+    <text x="105" y="135" font-size="10" text-anchor="middle" fill="#666">Vehicle Speed, Yaw Rate</text>
+
+    <!-- Encoders -->
+    <rect x="190" y="100" width="130" height="40" fill="#fff" stroke="#3498db" stroke-width="1.5" rx="3"/>
+    <text x="255" y="125" font-size="12" text-anchor="middle">Motor Encoders</text>
+    <text x="255" y="135" font-size="10" text-anchor="middle" fill="#666">Wheel Speeds</text>
+
+    <!-- Control Setpoint -->
+    <rect x="40" y="150" width="130" height="40" fill="#fff" stroke="#3498db" stroke-width="1.5" rx="3"/>
+    <text x="105" y="175" font-size="12" text-anchor="middle">Control Setpoint</text>
+    <text x="105" y="185" font-size="10" text-anchor="middle" fill="#666">Desired Motion</text>
+
+    <!-- Steering Feedback -->
+    <rect x="190" y="150" width="130" height="40" fill="#fff" stroke="#3498db" stroke-width="1.5" rx="3"/>
+    <text x="255" y="175" font-size="12" text-anchor="middle">Steering Feedback</text>
+    <text x="255" y="185" font-size="10" text-anchor="middle" fill="#666">Articulation Angle</text>
+
+    <!-- Drivetrain Status -->
+    <rect x="115" y="200" width="130" height="40" fill="#fff" stroke="#3498db" stroke-width="1.5" rx="3"/>
+    <text x="180" y="225" font-size="12" text-anchor="middle">Drivetrain Status</text>
+    <text x="180" y="235" font-size="10" text-anchor="middle" fill="#666">Motor Speed, Torque</text>
+  </g>
+
+  <!-- Slip Estimation Block -->
+  <g id="slip-estimation">
+    <rect x="380" y="60" width="280" height="200" fill="#fef5e7" stroke="#f39c12" stroke-width="2" rx="5"/>
+    <text x="520" y="85" font-size="16" font-weight="bold" text-anchor="middle" fill="#2c3e50">Slip Estimation</text>
+
+    <!-- Front Slip -->
+    <rect x="400" y="100" width="240" height="35" fill="#fff" stroke="#f39c12" stroke-width="1.5" rx="3"/>
+    <text x="520" y="120" font-size="11" text-anchor="middle">Front Slip = (ωf×R - Vf) / Vf</text>
+    <text x="520" y="130" font-size="9" text-anchor="middle" fill="#666">ωf: wheel speed, R: radius, Vf: vehicle speed</text>
+
+    <!-- Rear Slip -->
+    <rect x="400" y="145" width="240" height="35" fill="#fff" stroke="#f39c12" stroke-width="1.5" rx="3"/>
+    <text x="520" y="165" font-size="11" text-anchor="middle">Rear Slip = (ωr×R - Vr) / Vr</text>
+    <text x="520" y="175" font-size="9" text-anchor="middle" fill="#666">Adjusted for articulation kinematics</text>
+
+    <!-- Slip Detection -->
+    <rect x="400" y="190" width="240" height="50" fill="#fff5e6" stroke="#f39c12" stroke-width="1.5" rx="3"/>
+    <text x="520" y="210" font-size="11" text-anchor="middle" font-weight="bold">Slip Detection Thresholds</text>
+    <text x="520" y="225" font-size="10" text-anchor="middle">Normal: &lt;5% | Warning: 5-15%</text>
+    <text x="520" y="235" font-size="10" text-anchor="middle">Excessive: &gt;15% (triggers intervention)</text>
+  </g>
+
+  <!-- Surface Detection -->
+  <g id="surface-detection">
+    <rect x="700" y="60" width="260" height="200" fill="#e8f5e8" stroke="#27ae60" stroke-width="2" rx="5"/>
+    <text x="830" y="85" font-size="16" font-weight="bold" text-anchor="middle" fill="#2c3e50">Surface Detection</text>
+
+    <!-- Surface Types -->
+    <rect x="720" y="100" width="220" height="140" fill="#fff" stroke="#27ae60" stroke-width="1.5" rx="3"/>
+    <text x="830" y="120" font-size="12" font-weight="bold" text-anchor="middle">Surface Classification</text>
+
+    <text x="730" y="140" font-size="10">Slip &lt;5%: Hard Rock (μ=0.9)</text>
+    <text x="730" y="155" font-size="10">Slip 5-15%: Gravel (μ=0.7)</text>
+    <text x="730" y="170" font-size="10">Slip 15-30%: Loose Soil (μ=0.5)</text>
+    <text x="730" y="185" font-size="10">Slip &gt;30%: Mud (μ=0.3)</text>
+
+    <rect x="730" y="200" width="200" height="30" fill="#d4edda" stroke="#27ae60" stroke-width="1" rx="3"/>
+    <text x="830" y="220" font-size="11" text-anchor="middle">Friction Coefficient Estimation</text>
+  </g>
+
+  <!-- PID Controllers -->
+  <g id="pid-controllers">
+    <rect x="1000" y="60" width="380" height="200" fill="#fce4ec" stroke="#e91e63" stroke-width="2" rx="5"/>
+    <text x="1190" y="85" font-size="16" font-weight="bold" text-anchor="middle" fill="#2c3e50">PID Control System</text>
+
+    <!-- Front PID -->
+    <rect x="1020" y="100" width="160" height="45" fill="#fff" stroke="#e91e63" stroke-width="1.5" rx="3"/>
+    <text x="1100" y="120" font-size="11" font-weight="bold" text-anchor="middle">Front Slip PID</text>
+    <text x="1100" y="135" font-size="9" text-anchor="middle">Kp=1.0, Ki=0.2, Kd=0.1</text>
+
+    <!-- Rear PID -->
+    <rect x="1200" y="100" width="160" height="45" fill="#fff" stroke="#e91e63" stroke-width="1.5" rx="3"/>
+    <text x="1280" y="120" font-size="11" font-weight="bold" text-anchor="middle">Rear Slip PID</text>
+    <text x="1280" y="135" font-size="9" text-anchor="middle">Kp=1.0, Ki=0.2, Kd=0.1</text>
+
+    <!-- Yaw Rate PID -->
+    <rect x="1110" y="155" width="160" height="45" fill="#fff" stroke="#e91e63" stroke-width="1.5" rx="3"/>
+    <text x="1190" y="175" font-size="11" font-weight="bold" text-anchor="middle">Yaw Rate PID</text>
+    <text x="1190" y="190" font-size="9" text-anchor="middle">Kp=1.2, Ki=0.1, Kd=0.2</text>
+
+    <!-- Control Logic -->
+    <rect x="1020" y="210" width="340" height="30" fill="#ffebee" stroke="#e91e63" stroke-width="1" rx="3"/>
+    <text x="1190" y="230" font-size="10" text-anchor="middle">Error = Target Slip - Actual Slip → Velocity Correction</text>
+  </g>
+
+  <!-- Control Algorithm Section -->
+  <g id="control-algorithm">
+    <rect x="200" y="300" width="1000" height="280" fill="#f0f0f0" stroke="#34495e" stroke-width="2" rx="5"/>
+    <text x="700" y="325" font-size="18" font-weight="bold" text-anchor="middle" fill="#2c3e50">Traction Control Algorithm (50Hz Update Rate)</text>
+
+    <!-- Velocity Commands -->
+    <rect x="220" y="340" width="220" height="100" fill="#e3f2fd" stroke="#2196f3" stroke-width="1.5" rx="3"/>
+    <text x="330" y="360" font-size="12" font-weight="bold" text-anchor="middle">Velocity Commands</text>
+    <text x="330" y="380" font-size="10" text-anchor="middle">Base Velocity + PID Correction</text>
+    <text x="230" y="400" font-size="9">Vf = Vdesired × (1 + PIDf)</text>
+    <text x="230" y="415" font-size="9">Vr = Vdesired × (1 + PIDr)</text>
+    <text x="230" y="430" font-size="9">Max Diff: ±20% between F/R</text>
+
+    <!-- Force Distribution -->
+    <rect x="460" y="340" width="220" height="100" fill="#f3e5f5" stroke="#9c27b0" stroke-width="1.5" rx="3"/>
+    <text x="570" y="360" font-size="12" font-weight="bold" text-anchor="middle">Force Distribution</text>
+    <text x="570" y="380" font-size="10" text-anchor="middle">Dynamic Torque Allocation</text>
+    <text x="470" y="400" font-size="9">Default: 50/50 F/R</text>
+    <text x="470" y="415" font-size="9">If Front Slips: 20/80 F/R</text>
+    <text x="470" y="430" font-size="9">If Rear Slips: 80/20 F/R</text>
+
+    <!-- Steering Compensation -->
+    <rect x="700" y="340" width="240" height="100" fill="#fff3e0" stroke="#ff9800" stroke-width="1.5" rx="3"/>
+    <text x="820" y="360" font-size="12" font-weight="bold" text-anchor="middle">Steering Compensation</text>
+    <text x="820" y="380" font-size="10" text-anchor="middle">Articulation Control</text>
+    <text x="710" y="400" font-size="9">δ = atan(L × ψ̇ / V)</text>
+    <text x="710" y="415" font-size="9">+ Yaw Rate PID Correction</text>
+    <text x="710" y="430" font-size="9">Rate Limited for Stability</text>
+
+    <!-- Safety Features -->
+    <rect x="960" y="340" width="220" height="100" fill="#ffebee" stroke="#f44336" stroke-width="1.5" rx="3"/>
+    <text x="1070" y="360" font-size="12" font-weight="bold" text-anchor="middle">Safety Features</text>
+    <text x="970" y="380" font-size="9">• Stall Detection</text>
+    <text x="970" y="395" font-size="9">• Emergency Stop Override</text>
+    <text x="970" y="410" font-size="9">• Force/Torque Limiting</text>
+    <text x="970" y="425" font-size="9">• Slip Event Logging</text>
+
+    <!-- Control Flow -->
+    <g id="control-flow">
+      <rect x="220" y="460" width="960" height="100" fill="#fff" stroke="#607d8b" stroke-width="1.5" rx="3"/>
+      <text x="700" y="480" font-size="12" font-weight="bold" text-anchor="middle">Control Flow Sequence</text>
+
+      <!-- Flow boxes -->
+      <rect x="240" y="490" width="100" height="50" fill="#e1f5fe" stroke="#0288d1" stroke-width="1" rx="2"/>
+      <text x="290" y="510" font-size="9" text-anchor="middle">1. Read Sensors</text>
+      <text x="290" y="525" font-size="8" text-anchor="middle" fill="#666">(20ms cycle)</text>
+
+      <rect x="360" y="490" width="100" height="50" fill="#f1f8e9" stroke="#689f38" stroke-width="1" rx="2"/>
+      <text x="410" y="510" font-size="9" text-anchor="middle">2. Estimate Slip</text>
+      <text x="410" y="525" font-size="8" text-anchor="middle" fill="#666">(F/R drivetrains)</text>
+
+      <rect x="480" y="490" width="100" height="50" fill="#fef9e7" stroke="#fbc02d" stroke-width="1" rx="2"/>
+      <text x="530" y="510" font-size="9" text-anchor="middle">3. Detect Surface</text>
+      <text x="530" y="525" font-size="8" text-anchor="middle" fill="#666">(μ estimation)</text>
+
+      <rect x="600" y="490" width="100" height="50" fill="#fce4ec" stroke="#c2185b" stroke-width="1" rx="2"/>
+      <text x="650" y="510" font-size="9" text-anchor="middle">4. PID Control</text>
+      <text x="650" y="525" font-size="8" text-anchor="middle" fill="#666">(3 controllers)</text>
+
+      <rect x="720" y="490" width="100" height="50" fill="#f3e5f5" stroke="#7b1fa2" stroke-width="1" rx="2"/>
+      <text x="770" y="510" font-size="9" text-anchor="middle">5. Compute Cmds</text>
+      <text x="770" y="525" font-size="8" text-anchor="middle" fill="#666">(V, F, δ)</text>
+
+      <rect x="840" y="490" width="100" height="50" fill="#ffebee" stroke="#d32f2f" stroke-width="1" rx="2"/>
+      <text x="890" y="510" font-size="9" text-anchor="middle">6. Safety Check</text>
+      <text x="890" y="525" font-size="8" text-anchor="middle" fill="#666">(Limits, Stall)</text>
+
+      <rect x="960" y="490" width="100" height="50" fill="#e8f5e8" stroke="#388e3c" stroke-width="1" rx="2"/>
+      <text x="1010" y="510" font-size="9" text-anchor="middle">7. Publish Cmds</text>
+      <text x="1010" y="525" font-size="8" text-anchor="middle" fill="#666">(To actuators)</text>
+
+      <rect x="1080" y="490" width="80" height="50" fill="#fff3e0" stroke="#f57c00" stroke-width="1" rx="2"/>
+      <text x="1120" y="510" font-size="9" text-anchor="middle">8. Log Data</text>
+      <text x="1120" y="525" font-size="8" text-anchor="middle" fill="#666">(Performance)</text>
+
+      <!-- Arrows -->
+      <path d="M 340 515 L 360 515" stroke="#666" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+      <path d="M 460 515 L 480 515" stroke="#666" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+      <path d="M 580 515 L 600 515" stroke="#666" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+      <path d="M 700 515 L 720 515" stroke="#666" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+      <path d="M 820 515 L 840 515" stroke="#666" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+      <path d="M 940 515 L 960 515" stroke="#666" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+      <path d="M 1060 515 L 1080 515" stroke="#666" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+    </g>
+  </g>
+
+  <!-- Output Commands -->
+  <g id="outputs">
+    <rect x="100" y="620" width="1200" height="140" fill="#e8f8f5" stroke="#16a085" stroke-width="2" rx="5"/>
+    <text x="700" y="645" font-size="16" font-weight="bold" text-anchor="middle" fill="#2c3e50">Output Commands to Actuators</text>
+
+    <!-- Front Drivetrain -->
+    <rect x="120" y="660" width="280" height="80" fill="#fff" stroke="#16a085" stroke-width="1.5" rx="3"/>
+    <text x="260" y="680" font-size="12" font-weight="bold" text-anchor="middle">Front Drivetrain Commands</text>
+    <text x="130" y="700" font-size="10">• Speed: wheel_speed_rad_s</text>
+    <text x="130" y="715" font-size="10">• Torque: wheel_torque_nm</text>
+    <text x="130" y="730" font-size="10">• Mode: SPEED_CONTROL</text>
+
+    <!-- Rear Drivetrain -->
+    <rect x="420" y="660" width="280" height="80" fill="#fff" stroke="#16a085" stroke-width="1.5" rx="3"/>
+    <text x="560" y="680" font-size="12" font-weight="bold" text-anchor="middle">Rear Drivetrain Commands</text>
+    <text x="430" y="700" font-size="10">• Speed: wheel_speed_rad_s</text>
+    <text x="430" y="715" font-size="10">• Torque: wheel_torque_nm</text>
+    <text x="430" y="730" font-size="10">• Mode: SPEED_CONTROL</text>
+
+    <!-- Steering -->
+    <rect x="720" y="660" width="280" height="80" fill="#fff" stroke="#16a085" stroke-width="1.5" rx="3"/>
+    <text x="860" y="680" font-size="12" font-weight="bold" text-anchor="middle">Steering Commands</text>
+    <text x="730" y="700" font-size="10">• Angle: steering_angle_rad</text>
+    <text x="730" y="715" font-size="10">• Rate: steering_rate_rad_s</text>
+    <text x="730" y="730" font-size="10">• Compensation: Active</text>
+
+    <!-- Status -->
+    <rect x="1020" y="660" width="260" height="80" fill="#fff" stroke="#16a085" stroke-width="1.5" rx="3"/>
+    <text x="1150" y="680" font-size="12" font-weight="bold" text-anchor="middle">System Status</text>
+    <text x="1030" y="700" font-size="10">• Traction Control: ACTIVE</text>
+    <text x="1030" y="715" font-size="10">• Surface Type: Estimated</text>
+    <text x="1030" y="730" font-size="10">• Slip Events: Monitored</text>
+  </g>
+
+  <!-- Vehicle Diagram -->
+  <g id="vehicle-diagram">
+    <rect x="100" y="800" width="1200" height="180" fill="#f8f9fa" stroke="#495057" stroke-width="2" rx="5"/>
+    <text x="700" y="825" font-size="16" font-weight="bold" text-anchor="middle" fill="#2c3e50">Articulated Wheel Loader - Physical Layout</text>
+
+    <!-- Front Section -->
+    <rect x="400" y="850" width="200" height="80" fill="#ffecb3" stroke="#ff6f00" stroke-width="2" rx="3"/>
+    <text x="500" y="870" font-size="12" font-weight="bold" text-anchor="middle">Front Section</text>
+    <circle cx="440" cy="910" r="15" fill="#333" stroke="#000" stroke-width="2"/>
+    <circle cx="560" cy="910" r="15" fill="#333" stroke="#000" stroke-width="2"/>
+    <text x="500" y="895" font-size="10" text-anchor="middle">Front Drivetrain</text>
+    <text x="440" y="945" font-size="9" text-anchor="middle">FL</text>
+    <text x="560" y="945" font-size="9" text-anchor="middle">FR</text>
+
+    <!-- Articulation Joint -->
+    <circle cx="650" cy="890" r="20" fill="#9e9e9e" stroke="#424242" stroke-width="2"/>
+    <text x="650" y="895" font-size="10" text-anchor="middle" fill="white">Joint</text>
+    <path d="M 600 890 L 630 890" stroke="#424242" stroke-width="3"/>
+    <path d="M 670 890 L 700 890" stroke="#424242" stroke-width="3"/>
+
+    <!-- Rear Section -->
+    <rect x="700" y="850" width="200" height="80" fill="#c8e6c9" stroke="#2e7d32" stroke-width="2" rx="3"/>
+    <text x="800" y="870" font-size="12" font-weight="bold" text-anchor="middle">Rear Section</text>
+    <circle cx="740" cy="910" r="15" fill="#333" stroke="#000" stroke-width="2"/>
+    <circle cx="860" cy="910" r="15" fill="#333" stroke="#000" stroke-width="2"/>
+    <text x="800" y="895" font-size="10" text-anchor="middle">Rear Drivetrain</text>
+    <text x="740" y="945" font-size="9" text-anchor="middle">RL</text>
+    <text x="860" y="945" font-size="9" text-anchor="middle">RR</text>
+
+    <!-- Articulation Angle -->
+    <path d="M 650 870 L 650 850" stroke="#e91e63" stroke-width="1.5" stroke-dasharray="3,3"/>
+    <path d="M 650 870 L 670 855" stroke="#e91e63" stroke-width="1.5"/>
+    <path d="M 650 865 Q 655 860 660 858" stroke="#e91e63" stroke-width="1.5" fill="none"/>
+    <text x="680" y="855" font-size="10" fill="#e91e63">δ articulation</text>
+
+    <!-- Labels -->
+    <text x="200" y="890" font-size="11">Wheelbase (L)</text>
+    <path d="M 440 920 L 860 920" stroke="#666" stroke-width="1" stroke-dasharray="5,5"/>
+    <path d="M 440 920 L 440 925" stroke="#666" stroke-width="1"/>
+    <path d="M 860 920 L 860 925" stroke="#666" stroke-width="1"/>
+
+    <text x="200" y="910" font-size="11">Wheel Radius (R)</text>
+    <path d="M 440 910 L 455 910" stroke="#666" stroke-width="1"/>
+    <circle cx="440" cy="910" r="15" fill="none" stroke="#e91e63" stroke-width="1" stroke-dasharray="2,2"/>
+  </g>
+
+  <!-- Arrow marker definition -->
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#666"/>
+    </marker>
+
+    <!-- Connection arrows between main sections -->
+    <marker id="bluearrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#3498db"/>
+    </marker>
+  </defs>
+
+  <!-- Connection Arrows -->
+  <path d="M 340 160 L 380 160" stroke="#3498db" stroke-width="2" marker-end="url(#bluearrow)"/>
+  <path d="M 660 160 L 700 160" stroke="#f39c12" stroke-width="2" marker-end="url(#bluearrow)"/>
+  <path d="M 960 160 L 1000 160" stroke="#27ae60" stroke-width="2" marker-end="url(#bluearrow)"/>
+  <path d="M 180 260 L 350 300" stroke="#3498db" stroke-width="2" marker-end="url(#bluearrow)"/>
+  <path d="M 520 260 L 450 300" stroke="#f39c12" stroke-width="2" marker-end="url(#bluearrow)"/>
+  <path d="M 830 260 L 700 300" stroke="#27ae60" stroke-width="2" marker-end="url(#bluearrow)"/>
+  <path d="M 1190 260 L 1000 300" stroke="#e91e63" stroke-width="2" marker-end="url(#bluearrow)"/>
+  <path d="M 700 580 L 700 620" stroke="#16a085" stroke-width="2" marker-end="url(#bluearrow)"/>
+</svg>
