@@ -6,10 +6,11 @@
 set -e
 
 echo "Building cuav_x7plus-wl_default with Docker"
-echo "Using PX4_DOCKER_REPO: px4-dev:latest"
+PX4_DOCKER_REPO="px4io/px4-dev-nuttx-focal:2022-08-12"
+echo "Using PX4_DOCKER_REPO: $PX4_DOCKER_REPO"
 echo "Starting Docker build for Wheel Loader with WK2132 support..."
 
-docker run --rm -v "$(pwd):/workspace" -w /workspace px4-dev:latest bash -c "
+docker run --rm -v "$(pwd):/workspace" -w /workspace $PX4_DOCKER_REPO bash -c "
 set -e
 echo '[docker-entrypoint.sh] Starting'
 echo '[docker-entrypoint.sh] Building for CUAV X7Plus-WL (Wheel Loader)'
