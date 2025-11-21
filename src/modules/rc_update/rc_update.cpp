@@ -444,16 +444,17 @@ void RCUpdate::Run()
 		/* read out and scale values from raw message even if signal is invalid */
 		for (unsigned int i = 0; i < channel_count_limited; i++) {
 			// float conversions of uint16_t values
-			const float value = input_rc.values[i];
 			const float min = _parameters.min[i];
 			const float trim = _parameters.trim[i];
 			const float max = _parameters.max[i];
 			const float dz = _parameters.dz[i];
 
+			const float value = input_rc.values[i];
+
 			// piecewise linear function to apply RC calibration
 			_rc.channels[i] = math::interpolateNXY(value,
-			{min, trim - dz, trim + dz, max},
-			{-1.f, 0.f, 0.f, 1.f});
+								{min, trim - dz, trim + dz, max},
+								{-1.f, 0.f, 0.f, 1.f});
 
 			if (_parameters.rev[i]) {
 				_rc.channels[i] = -_rc.channels[i];

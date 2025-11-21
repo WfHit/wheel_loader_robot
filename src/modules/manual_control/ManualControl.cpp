@@ -116,7 +116,8 @@ void ManualControl::processInput(hrt_abstime now)
 		const float dt_s = (now - _timestamp_last_loop) / 1e6f;
 		const float minimum_stick_change = 0.01f * _param_com_rc_stick_ov.get();
 
-		_selector.setpoint().sticks_moving = (fabsf(_roll_diff.update(_selector.setpoint().roll, dt_s)) > minimum_stick_change)
+		_selector.setpoint().sticks_moving =
+								(fabsf(_roll_diff.update(_selector.setpoint().roll, dt_s)) > minimum_stick_change)
 						     || (fabsf(_pitch_diff.update(_selector.setpoint().pitch, dt_s)) > minimum_stick_change)
 						     || (fabsf(_yaw_diff.update(_selector.setpoint().yaw, dt_s)) > minimum_stick_change)
 						     || (fabsf(_throttle_diff.update(_selector.setpoint().throttle, dt_s)) > minimum_stick_change);
