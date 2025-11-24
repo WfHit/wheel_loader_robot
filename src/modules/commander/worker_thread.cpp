@@ -32,15 +32,15 @@
  ****************************************************************************/
 
 #include "worker_thread.hpp"
-#include "accelerometer_calibration.h"
-#include "airspeed_calibration.h"
-#include "calibration_routines.h"
-#include "baro_calibration.h"
-#include "esc_calibration.h"
-#include "gyro_calibration.h"
-#include "level_calibration.h"
-#include "mag_calibration.h"
-#include "rc_calibration.h"
+#include "calibration/accelerometer_calibration.h"
+#include "calibration/airspeed_calibration.h"
+#include "calibration/calibration_routines.h"
+#include "calibration/baro_calibration.h"
+#include "calibration/esc_calibration.h"
+#include "calibration/gyro_calibration.h"
+#include "calibration/level_calibration.h"
+#include "calibration/mag_calibration.h"
+#include "calibration/rc_calibration.h"
 
 #include <px4_platform_common/events.h>
 #include <px4_platform_common/log.h>

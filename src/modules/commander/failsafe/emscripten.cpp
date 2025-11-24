@@ -35,7 +35,7 @@
 #include <parameters/param.h>
 
 #include "failsafe.h"
-#include "../ModeUtil/mode_requirements.hpp"
+#include "../mode_util/mode_requirements.hpp"
 #include <uORB/topics/vehicle_status.h>
 
 #include <emscripten/emscripten.h>

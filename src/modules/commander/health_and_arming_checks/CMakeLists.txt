@@ -1,6 +1,6 @@
 ############################################################################
 #
-#   Copyright (c) 2018 PX4 Development Team. All rights reserved.
+#   Copyright (c) 2022 PX4 Development Team. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -31,6 +31,47 @@
 #
 ############################################################################
 
-px4_add_library(failure_detector
-	failure_detector.cpp
+px4_add_library(health_and_arming_checks
+	common.cpp
+	health_and_arming_checks.cpp
+
+	checks/accelerometer_check.cpp
+	checks/airspeed_check.cpp
+	checks/arm_permission_check.cpp
+	checks/baro_check.cpp
+	checks/battery_check.cpp
+	checks/cpu_resource_check.cpp
+	checks/distance_sensor_checks.cpp
+	checks/optical_flow_check.cpp
+	checks/esc_check.cpp
+	checks/estimator_check.cpp
+	checks/failure_detector_check.cpp
+	checks/flight_time_check.cpp
+	checks/geofence_check.cpp
+	checks/gyro_check.cpp
+	checks/home_position_check.cpp
+	checks/imu_consistency_check.cpp
+	checks/logger_check.cpp
+	checks/magnetometer_check.cpp
+	checks/manual_control_check.cpp
+	checks/mission_check.cpp
+	checks/mode_check.cpp
+	checks/navigator_check.cpp
+	checks/offboard_check.cpp
+	checks/open_drone_id_check.cpp
+	checks/parachute_check.cpp
+	checks/power_check.cpp
+	checks/rc_and_data_link_check.cpp
+	checks/rc_calibration_check.cpp
+	checks/sdcard_check.cpp
+	checks/system_check.cpp
+	checks/vtol_check.cpp
+	checks/wind_check.cpp
+
+	checks/external_checks.cpp
 )
+add_dependencies(health_and_arming_checks mode_util)
+
+px4_add_functional_gtest(SRC health_and_arming_checks_test.cpp
+	LINKLIBS health_and_arming_checks mode_util
+	)

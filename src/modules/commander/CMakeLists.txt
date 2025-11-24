@@ -31,40 +31,41 @@
 #
 ############################################################################
 
-add_subdirectory(Arming)
+add_subdirectory(arming)
+add_subdirectory(calibration)
 add_subdirectory(failsafe)
 add_subdirectory(failure_detector)
-add_subdirectory(HealthAndArmingChecks)
-add_subdirectory(ModeUtil)
-add_subdirectory(MulticopterThrowLaunch)
+add_subdirectory(health_and_arming_checks)
+add_subdirectory(mode_util)
+add_subdirectory(multicopter_throw_launch)
 
 px4_add_module(
 	MODULE modules__commander
 	MAIN commander
 	COMPILE_FLAGS
 	SRCS
-		accelerometer_calibration.cpp
-		airspeed_calibration.cpp
-		baro_calibration.cpp
-		calibration_routines.cpp
-		Commander.cpp
+		calibration/accelerometer_calibration.cpp
+		calibration/airspeed_calibration.cpp
+		calibration/baro_calibration.cpp
+		calibration/calibration_routines.cpp
+		commander.cpp
 		commander_helper.cpp
-		esc_calibration.cpp
-		factory_calibration_storage.cpp
-		gyro_calibration.cpp
-		HomePosition.cpp
-		ModeManagement.cpp
-		level_calibration.cpp
-		lm_fit.cpp
-		mag_calibration.cpp
-		rc_calibration.cpp
-		Safety.cpp
-		UserModeIntention.cpp
+		calibration/esc_calibration.cpp
+		calibration/factory_calibration_storage.cpp
+		calibration/gyro_calibration.cpp
+		home_position.cpp
+		mode_management.cpp
+		calibration/level_calibration.cpp
+		calibration/lm_fit.cpp
+		calibration/mag_calibration.cpp
+		calibration/rc_calibration.cpp
+		safety.cpp
+		user_mode_intention.cpp
 		worker_thread.cpp
 	MODULE_CONFIG
 		module.yaml
 	DEPENDS
-		ArmAuthorization
+		arm_authorization
 		circuit_breaker
 		failsafe
 		failure_detector
@@ -72,11 +73,11 @@ px4_add_module(
 		health_and_arming_checks
 		hysteresis
 		mode_util
-		MulticopterThrowLaunch
+		multicopter_throw_launch
 		sensor_calibration
 		world_magnetic_model
         atmosphere
 	)
 
-px4_add_unit_gtest(SRC mag_calibration_test.cpp LINKLIBS modules__commander)
-px4_add_functional_gtest(SRC ModeManagementTest.cpp LINKLIBS modules__commander)
+px4_add_unit_gtest(SRC calibration/mag_calibration_test.cpp LINKLIBS modules__commander)
+px4_add_functional_gtest(SRC mode_management_test.cpp LINKLIBS modules__commander)
