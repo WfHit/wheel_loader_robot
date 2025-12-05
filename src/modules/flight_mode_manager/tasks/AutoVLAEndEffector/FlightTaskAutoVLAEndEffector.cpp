@@ -62,28 +62,15 @@ bool FlightTaskAutoVLAEndEffector::activate(const trajectory_setpoint_s &last_se
 	_yaw_setpoint = _yaw;
 	_yawspeed_setpoint = 0.0f;
 
-	// Initialize position smoothing from last setpoint or current state
-	Vector3f vel_prev{last_setpoint.velocity};
-	Vector3f pos_prev{last_setpoint.position};
-	Vector3f accel_prev{last_setpoint.acceleration};
+	// Initialize chassis position smoothing from current state
+	// Note: We use current vehicle state, not last_setpoint, because this task
+	// uses VLA setpoint triplet for trajectory following, not trajectory_setpoint_s
+	_position_smoothing.reset(Vector3f(0.0f, 0.0f, 0.0f), _velocity, _position);
 
-	for (int i = 0; i < 3; i++) {
-		// If the position setpoint is unknown, set to the current position
-		if (!PX4_ISFINITE(pos_prev(i))) { pos_prev(i) = _position(i); }
-
-		// If the velocity setpoint is unknown, set to the current velocity
-		if (!PX4_ISFINITE(vel_prev(i))) { vel_prev(i) = _velocity(i); }
-
-		// No acceleration estimate available, set to zero if the setpoint is NAN
-		if (!PX4_ISFINITE(accel_prev(i))) { accel_prev(i) = 0.f; }
-	}
-
-	_position_smoothing.reset(accel_prev, vel_prev, pos_prev);
-
-	_yaw_sp_prev = PX4_ISFINITE(last_setpoint.yaw) ? last_setpoint.yaw : _yaw;
+	_yaw_sp_prev = _yaw;
 	_updateTrajConstraints();
 
-	// Reset VLA end effector setpoint triplet
+	// Reset VLA end effector setpoint triplet - will be updated from navigator
 	_vla_setpoint_triplet = {};
 	_last_vla_setpoint_update = 0;
 
@@ -92,14 +79,15 @@ bool FlightTaskAutoVLAEndEffector::activate(const trajectory_setpoint_s &last_se
 	_boom_setpoint = {};
 	_bucket_setpoint = {};
 
-	// Reset waypoints
+	// Reset waypoints to current position - will be updated from VLA setpoint triplet
 	_prev_wp = _position;
 	_target = _position;
 	_next_wp = _position;
 
 	_is_emergency_braking_active = false;
 
-	// Reset boom and bucket smoothing
+	// Reset boom and bucket smoothing to zero state
+	// Actual boom/bucket angles will come from VLA setpoint triplet
 	_boom_angle_prev = 0.0f;
 	_bucket_angle_prev = 0.0f;
 	_boom_velocity_prev = 0.0f;
