@@ -137,6 +137,16 @@ private:
 	matrix::Vector3f _target{}; /**< Target waypoint (local frame) */
 	matrix::Vector3f _next_wp{}; /**< Next waypoint (local frame) */
 
+	// Position smoothing for boom and bucket (1D smoothing using Vector3f with only x component)
+	PositionSmoothing _boom_smoothing;
+	PositionSmoothing _bucket_smoothing;
+	
+	// Boom and bucket smoothing state
+	float _boom_angle_prev{0.0f};
+	float _bucket_angle_prev{0.0f};
+	float _boom_velocity_prev{0.0f};
+	float _bucket_velocity_prev{0.0f};
+
 	// Emergency braking state
 	bool _is_emergency_braking_active{false};
 

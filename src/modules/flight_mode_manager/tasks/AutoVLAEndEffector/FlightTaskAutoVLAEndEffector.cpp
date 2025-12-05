@@ -99,6 +99,14 @@ bool FlightTaskAutoVLAEndEffector::activate(const trajectory_setpoint_s &last_se
 
 	_is_emergency_braking_active = false;
 
+	// Reset boom and bucket smoothing
+	_boom_angle_prev = 0.0f;
+	_bucket_angle_prev = 0.0f;
+	_boom_velocity_prev = 0.0f;
+	_bucket_velocity_prev = 0.0f;
+	_boom_smoothing.reset(Vector3f(0.0f, 0.0f, 0.0f), Vector3f(0.0f, 0.0f, 0.0f), Vector3f(0.0f, 0.0f, 0.0f));
+	_bucket_smoothing.reset(Vector3f(0.0f, 0.0f, 0.0f), Vector3f(0.0f, 0.0f, 0.0f), Vector3f(0.0f, 0.0f, 0.0f));
+
 	return ret;
 }
 
@@ -246,15 +254,19 @@ void FlightTaskAutoVLAEndEffector::_planChassisTrajectory()
 	_chassis_setpoint.y_velocity = _velocity_setpoint(1);
 	_chassis_setpoint.z_velocity = _velocity_setpoint(2);
 	_chassis_setpoint.yaw_rate = _yawspeed_setpoint;
+	
+	// Pass through wheel slip rates directly from VLA setpoint triplet
+	_chassis_setpoint.front_wheel_slip_rate = _vla_setpoint_triplet.front_wheel_slip_rate;
+	_chassis_setpoint.rear_wheel_slip_rate = _vla_setpoint_triplet.rear_wheel_slip_rate;
+	
 	_chassis_setpoint.valid = true;
-
-	// Note: Wheel slip rates are set from VLA setpoint in chassis controller
 }
 
 void FlightTaskAutoVLAEndEffector::_planEndEffectorTrajectories()
 {
-	// Motion planning for boom and bucket trajectories
+	// Motion planning for boom and bucket trajectories with position smoothing
 	// Decomposes VLA end effector bucket position into boom height and bucket angle
+	// Uses PositionSmoothing for jerk-limited angular trajectory generation
 
 	// Calculate bucket height and reach from bucket position
 	Vector3f bucket_pos(_vla_setpoint_triplet.current_bucket_x,
@@ -269,16 +281,51 @@ void FlightTaskAutoVLAEndEffector::_planEndEffectorTrajectories()
 	// Simple inverse kinematics: assume boom angle based on reach and height
 	// This is simplified - real implementation would use proper IK
 	float boom_reach = _param_autovla_ee_boom_reach.get();
-	float boom_angle = atan2f(bucket_height, math::min(bucket_reach, boom_reach));
+	float target_boom_angle = atan2f(bucket_height, math::min(bucket_reach, boom_reach));
 
 	// Bucket angle from VLA end effector orientation (pitch component)
-	float bucket_angle = _vla_setpoint_triplet.current_bucket_pitch;
+	float target_bucket_angle = _vla_setpoint_triplet.current_bucket_pitch;
+
+	// ===== Boom Smoothing =====
+	// Use PositionSmoothing for 1D angular smoothing (using only X component of Vector3f)
+	// Set up boom trajectory constraints
+	_boom_smoothing.setMaxVelocityXY(_param_autovla_ee_max_vel.get());
+	_boom_smoothing.setMaxVelocityZ(_param_autovla_ee_max_vel.get());
+	_boom_smoothing.setMaxAccelerationXY(_param_autovla_ee_max_acc.get());
+	_boom_smoothing.setMaxAccelerationZ(_param_autovla_ee_max_acc.get());
+	_boom_smoothing.setMaxJerk(_param_autovla_ee_jerk.get());
+	_boom_smoothing.setHorizontalTrajectoryGain(3.0f);
+
+	// Current boom state (use x component for 1D smoothing)
+	Vector3f boom_current_pos(_boom_angle_prev, 0.0f, 0.0f);
+	
+	// Waypoints for boom (no previous/next for now, just target)
+	Vector3f boom_waypoints[3];
+	boom_waypoints[0] = boom_current_pos; // Previous = current
+	boom_waypoints[1] = Vector3f(target_boom_angle, 0.0f, 0.0f); // Target
+	boom_waypoints[2] = Vector3f(target_boom_angle, 0.0f, 0.0f); // Next = target
+
+	// Generate smoothed boom setpoints
+	PositionSmoothing::PositionSmoothingSetpoints boom_smoothed;
+	Vector3f boom_current_vel(_boom_velocity_prev, 0.0f, 0.0f);
+	_boom_smoothing.generateSetpoints(
+		boom_current_pos,
+		boom_waypoints,
+		boom_current_vel,
+		_deltatime,
+		false, // Don't force zero velocity
+		boom_smoothed
+	);
+
+	// Update boom state for next iteration
+	_boom_angle_prev = boom_smoothed.position(0);
+	_boom_velocity_prev = boom_smoothed.velocity(0);
 
 	// Plan smooth boom trajectory
 	_boom_setpoint.timestamp = hrt_absolute_time();
-	_boom_setpoint.angle = boom_angle;
-	_boom_setpoint.angular_velocity = 0.0f; // Could be derived from trajectory
-	_boom_setpoint.angular_acceleration = 0.0f;
+	_boom_setpoint.angle = boom_smoothed.position(0);
+	_boom_setpoint.angular_velocity = boom_smoothed.velocity(0);
+	_boom_setpoint.angular_acceleration = boom_smoothed.acceleration(0);
 	_boom_setpoint.max_velocity = _param_autovla_ee_max_vel.get();
 	_boom_setpoint.max_acceleration = _param_autovla_ee_max_acc.get();
 	_boom_setpoint.control_mode = boom_trajectory_setpoint_s::MODE_POSITION;
@@ -287,12 +334,47 @@ void FlightTaskAutoVLAEndEffector::_planEndEffectorTrajectories()
 	_boom_setpoint.priority = 100;
 	_boom_setpoint.valid = true;
 
+	// ===== Bucket Smoothing =====
+	// Use PositionSmoothing for 1D angular smoothing (using only X component of Vector3f)
+	// Set up bucket trajectory constraints
+	_bucket_smoothing.setMaxVelocityXY(_param_autovla_ee_max_vel.get());
+	_bucket_smoothing.setMaxVelocityZ(_param_autovla_ee_max_vel.get());
+	_bucket_smoothing.setMaxAccelerationXY(_param_autovla_ee_max_acc.get());
+	_bucket_smoothing.setMaxAccelerationZ(_param_autovla_ee_max_acc.get());
+	_bucket_smoothing.setMaxJerk(_param_autovla_ee_jerk.get());
+	_bucket_smoothing.setHorizontalTrajectoryGain(3.0f);
+
+	// Current bucket state (use x component for 1D smoothing)
+	Vector3f bucket_current_pos(_bucket_angle_prev, 0.0f, 0.0f);
+	
+	// Waypoints for bucket (no previous/next for now, just target)
+	Vector3f bucket_waypoints[3];
+	bucket_waypoints[0] = bucket_current_pos; // Previous = current
+	bucket_waypoints[1] = Vector3f(target_bucket_angle, 0.0f, 0.0f); // Target
+	bucket_waypoints[2] = Vector3f(target_bucket_angle, 0.0f, 0.0f); // Next = target
+
+	// Generate smoothed bucket setpoints
+	PositionSmoothing::PositionSmoothingSetpoints bucket_smoothed;
+	Vector3f bucket_current_vel(_bucket_velocity_prev, 0.0f, 0.0f);
+	_bucket_smoothing.generateSetpoints(
+		bucket_current_pos,
+		bucket_waypoints,
+		bucket_current_vel,
+		_deltatime,
+		false, // Don't force zero velocity
+		bucket_smoothed
+	);
+
+	// Update bucket state for next iteration
+	_bucket_angle_prev = bucket_smoothed.position(0);
+	_bucket_velocity_prev = bucket_smoothed.velocity(0);
+
 	// Plan smooth bucket trajectory
 	_bucket_setpoint.timestamp = hrt_absolute_time();
 	_bucket_setpoint.control_mode = bucket_trajectory_setpoint_s::MODE_POSITION;
-	_bucket_setpoint.target_angle = bucket_angle;
-	_bucket_setpoint.angular_velocity = 0.0f; // Could be derived from trajectory
-	_bucket_setpoint.angular_acceleration = 0.0f;
+	_bucket_setpoint.target_angle = bucket_smoothed.position(0);
+	_bucket_setpoint.angular_velocity = bucket_smoothed.velocity(0);
+	_bucket_setpoint.angular_acceleration = bucket_smoothed.acceleration(0);
 	_bucket_setpoint.max_velocity = _param_autovla_ee_max_vel.get();
 	_bucket_setpoint.max_acceleration = _param_autovla_ee_max_acc.get();
 	_bucket_setpoint.trajectory_time = 0.0f;
