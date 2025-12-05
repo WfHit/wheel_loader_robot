@@ -47,12 +47,9 @@
 
 #include <px4_platform_common/module_params.h>
 #include <uORB/Subscription.hpp>
-#include <uORB/SubscriptionData.hpp>
 #include <uORB/Publication.hpp>
-#include <uORB/topics/vla_end_effector_trajectory.h>
 #include <uORB/topics/vla_end_effector_trajectory_item.h>
 #include <uORB/topics/vla_end_effector_setpoint_triplet.h>
-#include <dataman_client/DatamanClient.hpp>
 
 class Navigator;
 
@@ -69,58 +66,35 @@ void on_active() override;
 
 private:
 /**
- * Load VLA end effector trajectory item from dataman
+ * Update VLA end effector trajectory item from MAVLink
  */
-bool load_vla_trajectory_item(int index);
+void update_vla_trajectory_item();
 
 /**
- * Update VLA end effector trajectory from subscription
- */
-void update_vla_end_effector_trajectory();
-
-/**
- * Advance to next trajectory item
- */
-void advance_vla_trajectory();
-
-/**
- * Generate VLA end effector setpoint triplet from current trajectory items
+ * Generate VLA end effector setpoint triplet from received trajectory item
  */
 void generate_vla_setpoint_triplet();
 
 /**
- * Check if current trajectory item is reached
+ * Check if VLA end effector trajectory item is valid and recent
  */
-bool is_trajectory_item_reached() const;
+bool is_vla_trajectory_item_valid() const;
 
-/**
- * Check if VLA end effector trajectory is valid
- */
-bool is_vla_end_effector_trajectory_valid() const;
-
-// Subscriptions
-uORB::SubscriptionData<vla_end_effector_trajectory_s> _vla_end_effector_trajectory_sub{ORB_ID(vla_end_effector_trajectory)};
+// Subscriptions - receive trajectory items from MAVLink
+uORB::Subscription _vla_trajectory_item_sub{ORB_ID(vla_end_effector_trajectory_item)};
 
 // Publications
 uORB::Publication<vla_end_effector_setpoint_triplet_s> _vla_setpoint_triplet_pub{ORB_ID(vla_end_effector_setpoint_triplet)};
 
-// VLA end effector trajectory data
-vla_end_effector_trajectory_s _vla_trajectory{};
+// VLA end effector trajectory item received from MAVLink
 vla_end_effector_trajectory_item_s _current_trajectory_item{};
-vla_end_effector_trajectory_item_s _previous_trajectory_item{};
-vla_end_effector_trajectory_item_s _next_trajectory_item{};
 
-// Setpoint triplet
+// Setpoint triplet to publish
 vla_end_effector_setpoint_triplet_s _vla_setpoint_triplet{};
 
-// Dataman client for trajectory storage
-DatamanClient _dataman_client{};
-dm_item_t _dataman_id{DM_KEY_FENCE_POINTS}; // Using fence points storage for VLA trajectories
-
-// State tracking
-int _current_trajectory_index{-1};
-hrt_abstime _trajectory_item_start_time{0};
-bool _trajectory_item_reached{false};
+// Timing
+hrt_abstime _last_trajectory_item_update{0};
+static constexpr hrt_abstime VLA_ITEM_TIMEOUT{500000}; // 500ms timeout
 
 DEFINE_PARAMETERS(
 (ParamFloat<px4::params::NAV_AUTOVLA_EE_ACC>) _param_nav_autovla_ee_acc,
