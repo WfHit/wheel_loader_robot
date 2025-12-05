@@ -47,7 +47,8 @@ using namespace matrix;
 static constexpr float MIN_POSITION_THRESHOLD = 0.01f;  // Minimum distance threshold in meters
 
 FlightTaskAutoVLAEndEffector::FlightTaskAutoVLAEndEffector() :
-	FlightTask()
+	FlightTask(),
+	_yawspeed_filter(0.2f) // Initialize yaw speed filter with time constant
 {
 }
 
@@ -61,6 +62,27 @@ bool FlightTaskAutoVLAEndEffector::activate(const trajectory_setpoint_s &last_se
 	_yaw_setpoint = _yaw;
 	_yawspeed_setpoint = 0.0f;
 
+	// Initialize position smoothing from last setpoint or current state
+	Vector3f vel_prev{last_setpoint.velocity};
+	Vector3f pos_prev{last_setpoint.position};
+	Vector3f accel_prev{last_setpoint.acceleration};
+
+	for (int i = 0; i < 3; i++) {
+		// If the position setpoint is unknown, set to the current position
+		if (!PX4_ISFINITE(pos_prev(i))) { pos_prev(i) = _position(i); }
+
+		// If the velocity setpoint is unknown, set to the current velocity
+		if (!PX4_ISFINITE(vel_prev(i))) { vel_prev(i) = _velocity(i); }
+
+		// No acceleration estimate available, set to zero if the setpoint is NAN
+		if (!PX4_ISFINITE(accel_prev(i))) { accel_prev(i) = 0.f; }
+	}
+
+	_position_smoothing.reset(accel_prev, vel_prev, pos_prev);
+
+	_yaw_sp_prev = PX4_ISFINITE(last_setpoint.yaw) ? last_setpoint.yaw : _yaw;
+	_updateTrajConstraints();
+
 	// Reset VLA end effector setpoint triplet
 	_vla_setpoint_triplet = {};
 	_last_vla_setpoint_update = 0;
@@ -70,12 +92,22 @@ bool FlightTaskAutoVLAEndEffector::activate(const trajectory_setpoint_s &last_se
 	_boom_setpoint = {};
 	_bucket_setpoint = {};
 
+	// Reset waypoints
+	_prev_wp = _position;
+	_target = _position;
+	_next_wp = _position;
+
+	_is_emergency_braking_active = false;
+
 	return ret;
 }
 
 void FlightTaskAutoVLAEndEffector::reActivate()
 {
 	FlightTask::reActivate();
+
+	// On ground, reset acceleration and velocity to zero
+	_position_smoothing.reset({0.f, 0.f, 0.f}, {0.f, 0.f, 0.f}, _position);
 }
 
 bool FlightTaskAutoVLAEndEffector::updateInitialize()
@@ -95,6 +127,9 @@ bool FlightTaskAutoVLAEndEffector::update()
 {
 	bool ret = FlightTask::update();
 
+	// Always reset constraints because they might change
+	_setDefaultConstraints();
+
 	if (!_isVlaEndEffectorSetpointValid()) {
 		// No valid VLA end effector setpoint - hold current position
 		_position_setpoint = _position;
@@ -107,9 +142,16 @@ bool FlightTaskAutoVLAEndEffector::update()
 		_bucket_setpoint.valid = false;
 
 	} else {
-		// Process VLA end effector setpoint triplet with motion planning
+		// Process VLA end effector setpoint triplet
 		_processVlaEndEffectorSetpointTriplet();
+
+		// Check for emergency braking
+		_checkEmergencyBraking();
+
+		// Plan chassis trajectory with position smoothing
 		_planChassisTrajectory();
+
+		// Plan end effector trajectories
 		_planEndEffectorTrajectories();
 	}
 
@@ -129,60 +171,73 @@ void FlightTaskAutoVLAEndEffector::_processVlaEndEffectorSetpointTriplet()
 			       _vla_setpoint_triplet.current_bucket_y,
 			       _vla_setpoint_triplet.current_bucket_z);
 
-	// For now, use bucket XY position as chassis target position
-	// Z-component will be handled by boom/bucket kinematics
-	_position_setpoint(0) = bucket_target(0);
-	_position_setpoint(1) = bucket_target(1);
-	_position_setpoint(2) = _position(2); // Maintain current Z position (ground level)
+	// Set up waypoints for position smoothing
+	// Previous waypoint
+	if (_vla_setpoint_triplet.previous_valid) {
+		_prev_wp(0) = _vla_setpoint_triplet.previous_bucket_x;
+		_prev_wp(1) = _vla_setpoint_triplet.previous_bucket_y;
+		_prev_wp(2) = _position(2); // Z at ground level
+	} else {
+		_prev_wp = _position; // Use current position if no previous
+	}
 
-	// Set yaw from VLA end effector setpoint
+	// Current target waypoint
+	// For chassis control, use bucket XY position
+	// Z-component will be handled by boom/bucket kinematics
+	_target(0) = bucket_target(0);
+	_target(1) = bucket_target(1);
+	_target(2) = _position(2); // Maintain current Z position (ground level)
+
+	// Next waypoint
+	if (_vla_setpoint_triplet.next_valid) {
+		_next_wp(0) = _vla_setpoint_triplet.next_bucket_x;
+		_next_wp(1) = _vla_setpoint_triplet.next_bucket_y;
+		_next_wp(2) = _position(2); // Z at ground level
+	} else {
+		_next_wp = _target; // Use current target if no next
+	}
+
+	// Set position setpoint for trajectory generation
+	_position_setpoint = _target;
+
+	// Set yaw from VLA end effector bucket orientation
 	_yaw_setpoint = _vla_setpoint_triplet.current_bucket_yaw;
 	_yawspeed_setpoint = 0.0f;
 }
 
 void FlightTaskAutoVLAEndEffector::_planChassisTrajectory()
 {
-	// Motion planning for chassis trajectory
-	// Uses setpoint triplet (previous, current, next) for smooth trajectory generation
+	// Motion planning for chassis trajectory using PositionSmoothing library
+	// This provides jerk-limited trajectory generation similar to FlightTaskAuto
 
-	// Set velocity based on trajectory constraints
-	float max_vel = math::constrain(_vla_setpoint_triplet.max_velocity, 0.1f, _param_autovla_ee_max_vel.get());
-	float max_acc = math::constrain(_vla_setpoint_triplet.max_acceleration, 0.1f, _param_autovla_ee_max_acc.get());
+	// Update trajectory constraints
+	_updateTrajConstraints();
 
-	// Calculate desired velocity towards target using motion planning
-	Vector2f pos_error(_position_setpoint(0) - _position(0), _position_setpoint(1) - _position(1));
-	float distance = pos_error.norm();
+	// Prepare waypoints array for position smoothing [previous, current, next]
+	Vector3f waypoints[] = {_prev_wp, _position_setpoint, _next_wp};
 
-	if (distance > MIN_POSITION_THRESHOLD) {
-		Vector2f velocity_dir = pos_error.normalized();
-		
-		// Apply velocity planning based on distance and constraints
-		float desired_speed = math::min(distance, max_vel);
-		
-		// If we have a next setpoint, plan smoother trajectory
-		if (_vla_setpoint_triplet.next_valid) {
-			// Look-ahead planning: adjust speed based on upcoming trajectory
-			Vector2f next_pos(_vla_setpoint_triplet.next_bucket_x, _vla_setpoint_triplet.next_bucket_y);
-			Vector2f current_to_next = next_pos - Vector2f(_position_setpoint(0), _position_setpoint(1));
-			float next_distance = current_to_next.norm();
-			
-			// Reduce speed if we need to make a sharp turn
-			float direction_change = acosf(math::constrain(velocity_dir.dot(current_to_next.normalized()), -1.0f, 1.0f));
-			if (direction_change > M_PI_F / 4.0f) {  // > 45 degrees
-				desired_speed *= 0.7f;  // Reduce speed for turn
-			}
-		}
-		
-		_velocity_setpoint(0) = velocity_dir(0) * desired_speed;
-		_velocity_setpoint(1) = velocity_dir(1) * desired_speed;
-	} else {
-		_velocity_setpoint(0) = 0.0f;
-		_velocity_setpoint(1) = 0.0f;
-	}
+	// Check if emergency braking is active
+	const bool force_zero_velocity_setpoint = _is_emergency_braking_active;
 
-	_velocity_setpoint(2) = 0.0f;
+	// Generate smoothed setpoints using PositionSmoothing
+	PositionSmoothing::PositionSmoothingSetpoints smoothed_setpoints;
+	_position_smoothing.generateSetpoints(
+		_position,
+		waypoints,
+		_velocity_setpoint,
+		_deltatime,
+		force_zero_velocity_setpoint,
+		smoothed_setpoints
+	);
 
-	// Generate chassis trajectory setpoint with slip rates
+	// Apply smoothed setpoints
+	_jerk_setpoint = smoothed_setpoints.jerk;
+	_acceleration_setpoint = smoothed_setpoints.acceleration;
+	_velocity_setpoint = smoothed_setpoints.velocity;
+	_position_setpoint = smoothed_setpoints.position;
+	_unsmoothed_velocity_setpoint = smoothed_setpoints.unsmoothed_velocity;
+
+	// Generate chassis trajectory setpoint
 	_chassis_setpoint.timestamp = hrt_absolute_time();
 	_chassis_setpoint.x_position = _position_setpoint(0);
 	_chassis_setpoint.y_position = _position_setpoint(1);
@@ -192,9 +247,8 @@ void FlightTaskAutoVLAEndEffector::_planChassisTrajectory()
 	_chassis_setpoint.z_velocity = _velocity_setpoint(2);
 	_chassis_setpoint.yaw_rate = _yawspeed_setpoint;
 	_chassis_setpoint.valid = true;
-	
-	// Note: Wheel slip rates would be set in chassis controller based on VLA setpoint
-	// For now, we just ensure the setpoint structure is populated
+
+	// Note: Wheel slip rates are set from VLA setpoint in chassis controller
 }
 
 void FlightTaskAutoVLAEndEffector::_planEndEffectorTrajectories()
@@ -272,4 +326,94 @@ bool FlightTaskAutoVLAEndEffector::_isVlaEndEffectorSetpointValid() const
 	}
 
 	return false;
+}
+
+void FlightTaskAutoVLAEndEffector::_updateTrajConstraints()
+{
+	// Update trajectory constraints for position smoothing
+	// Based on wheel loader specific parameters
+
+	// Set maximum horizontal velocity
+	float max_velocity = _param_autovla_ee_max_vel.get();
+	
+	// Allow VLA setpoint to further constrain velocity if needed
+	if (_vla_setpoint_triplet.current_valid && _vla_setpoint_triplet.max_velocity > 0.1f) {
+		max_velocity = math::min(max_velocity, _vla_setpoint_triplet.max_velocity);
+	}
+
+	_position_smoothing.setMaxVelocityXY(max_velocity);
+	_position_smoothing.setMaxVelocityZ(max_velocity * 0.5f); // Slower vertical
+
+	// Set maximum horizontal acceleration
+	float max_acceleration = _param_autovla_ee_max_acc.get();
+	
+	// Allow VLA setpoint to further constrain acceleration if needed
+	if (_vla_setpoint_triplet.current_valid && _vla_setpoint_triplet.max_acceleration > 0.1f) {
+		max_acceleration = math::min(max_acceleration, _vla_setpoint_triplet.max_acceleration);
+	}
+
+	_position_smoothing.setMaxAccelerationXY(max_acceleration);
+	_position_smoothing.setMaxAccelerationZ(max_acceleration * 0.5f); // Slower vertical
+
+	// Set maximum jerk
+	_position_smoothing.setMaxJerk(_param_autovla_ee_jerk.get());
+
+	// Set trajectory P gain for position tracking
+	_position_smoothing.setHorizontalTrajectoryGain(3.0f); // Moderate tracking
+}
+
+void FlightTaskAutoVLAEndEffector::_checkEmergencyBraking()
+{
+	// Check if we need emergency braking based on position error
+	// This is a safety feature to prevent runaway
+
+	Vector2f pos_error_xy(_position_setpoint(0) - _position(0), _position_setpoint(1) - _position(1));
+	float distance_xy = pos_error_xy.norm();
+
+	// If position error exceeds maximum, activate emergency braking
+	if (distance_xy > _param_autovla_ee_xy_err_max.get()) {
+		if (!_is_emergency_braking_active) {
+			PX4_WARN("Emergency braking activated: position error %.2f m", (double)distance_xy);
+			_is_emergency_braking_active = true;
+		}
+	} else if (distance_xy < _param_autovla_ee_xy_err_max.get() * 0.5f) {
+		// Deactivate when error is reduced
+		if (_is_emergency_braking_active) {
+			PX4_INFO("Emergency braking deactivated");
+			_is_emergency_braking_active = false;
+		}
+	}
+}
+
+void FlightTaskAutoVLAEndEffector::_ekfResetHandlerPositionXY(const matrix::Vector2f &delta_xy)
+{
+	// Reset position setpoint on EKF position reset
+	_position_setpoint(0) += delta_xy(0);
+	_position_setpoint(1) += delta_xy(1);
+}
+
+void FlightTaskAutoVLAEndEffector::_ekfResetHandlerVelocityXY(const matrix::Vector2f &delta_vxy)
+{
+	// Reset velocity setpoint on EKF velocity reset
+	_velocity_setpoint(0) += delta_vxy(0);
+	_velocity_setpoint(1) += delta_vxy(1);
+}
+
+void FlightTaskAutoVLAEndEffector::_ekfResetHandlerPositionZ(float delta_z)
+{
+	// Reset Z position setpoint on EKF position Z reset
+	_position_setpoint(2) += delta_z;
+}
+
+void FlightTaskAutoVLAEndEffector::_ekfResetHandlerVelocityZ(float delta_vz)
+{
+	// Reset Z velocity setpoint on EKF velocity Z reset
+	_velocity_setpoint(2) += delta_vz;
+}
+
+void FlightTaskAutoVLAEndEffector::_ekfResetHandlerHeading(float delta_psi)
+{
+	// Reset yaw setpoint on EKF heading reset
+	_yaw_setpoint += delta_psi;
+	_yaw_sp_prev += delta_psi;
 }

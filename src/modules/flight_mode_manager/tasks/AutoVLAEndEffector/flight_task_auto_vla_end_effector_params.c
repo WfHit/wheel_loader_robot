@@ -84,3 +84,31 @@ PARAM_DEFINE_FLOAT(AUTOVLA_EE_MAX_ACC, 0.5f);
  * @group Flight Task
  */
 PARAM_DEFINE_FLOAT(AUTOVLA_EE_BOOM_REACH, 3.0f);
+
+/**
+ * AutoVLA End Effector maximum jerk
+ *
+ * Maximum jerk for VLA end effector trajectory smoothing.
+ *
+ * @unit m/s^3
+ * @min 1.0
+ * @max 20.0
+ * @decimal 1
+ * @increment 0.5
+ * @group Flight Task
+ */
+PARAM_DEFINE_FLOAT(AUTOVLA_EE_JERK, 5.0f);
+
+/**
+ * AutoVLA End Effector maximum position error
+ *
+ * Maximum allowed position error for trajectory tracking.
+ *
+ * @unit m
+ * @min 0.1
+ * @max 5.0
+ * @decimal 1
+ * @increment 0.1
+ * @group Flight Task
+ */
+PARAM_DEFINE_FLOAT(AUTOVLA_EE_XY_ERR_MAX, 2.0f);
