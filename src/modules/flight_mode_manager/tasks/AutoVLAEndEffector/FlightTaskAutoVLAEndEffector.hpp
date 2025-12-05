@@ -45,7 +45,8 @@
 #include "../FlightTask/FlightTask.hpp"
 #include <uORB/topics/vla_trajectory_setpoint.h>
 #include <uORB/topics/chassis_trajectory_setpoint.h>
-#include <uORB/topics/end_effector_trajectory_setpoint.h>
+#include <uORB/topics/boom_trajectory_setpoint.h>
+#include <uORB/topics/bucket_trajectory_setpoint.h>
 #include <uORB/Subscription.hpp>
 #include <uORB/Publication.hpp>
 #include <lib/mathlib/mathlib.h>
@@ -68,12 +69,12 @@ protected:
 	void _processVlaEndEffectorTrajectory();
 
 	/**
-	 * Decompose VLA end effector bucket position into chassis position and end effector angles
+	 * Decompose VLA end effector bucket position into chassis position, boom height, and bucket angle
 	 */
 	void _decomposeVlaEndEffectorSetpoint();
 
 	/**
-	 * Publish chassis and end effector setpoints
+	 * Publish chassis, boom, and bucket setpoints
 	 */
 	void _publishTrajectorySetpoints();
 
@@ -88,14 +89,16 @@ private:
 
 	// Publications for wheel loader specific setpoints
 	uORB::Publication<chassis_trajectory_setpoint_s> _pub_chassis_setpoint{ORB_ID(chassis_trajectory_setpoint)};
-	uORB::Publication<end_effector_trajectory_setpoint_s> _pub_end_effector_setpoint{ORB_ID(end_effector_trajectory_setpoint)};
+	uORB::Publication<boom_trajectory_setpoint_s> _pub_boom_setpoint{ORB_ID(boom_trajectory_setpoint)};
+	uORB::Publication<bucket_trajectory_setpoint_s> _pub_bucket_setpoint{ORB_ID(bucket_trajectory_setpoint)};
 
 	// VLA end effector trajectory data
 	vla_trajectory_setpoint_s _vla_end_effector_trajectory{};
 
 	// Generated setpoints
 	chassis_trajectory_setpoint_s _chassis_setpoint{};
-	end_effector_trajectory_setpoint_s _end_effector_setpoint{};
+	boom_trajectory_setpoint_s _boom_setpoint{};
+	bucket_trajectory_setpoint_s _bucket_setpoint{};
 
 	// Timing
 	hrt_abstime _last_vla_end_effector_update{0};

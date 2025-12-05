@@ -17,6 +17,10 @@ float32 time_from_start            # Time from start of trajectory [s]
 float32 max_velocity               # Maximum allowed velocity [m/s]
 float32 max_acceleration           # Maximum allowed acceleration [m/s^2]
 
+# Wheel slip control
+float32 front_wheel_slip_rate      # Target front wheel axis slip rate [0.0-1.0]
+float32 rear_wheel_slip_rate       # Target rear wheel axis slip rate [0.0-1.0]
+
 # Control flags
 bool enable_trajectory             # Enable trajectory following
 bool hold_position                # Hold current position when trajectory completes

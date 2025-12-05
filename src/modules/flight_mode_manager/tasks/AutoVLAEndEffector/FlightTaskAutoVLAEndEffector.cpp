@@ -65,7 +65,8 @@ bool FlightTaskAutoVLAEndEffector::activate(const trajectory_setpoint_s &last_se
 
 	// Reset setpoints
 	_chassis_setpoint = {};
-	_end_effector_setpoint = {};
+	_boom_setpoint = {};
+	_bucket_setpoint = {};
 
 	return ret;
 }
@@ -98,12 +99,13 @@ bool FlightTaskAutoVLAEndEffector::update()
 		_velocity_setpoint.setZero();
 		_yawspeed_setpoint = 0.0f;
 
-		// Set invalid setpoints for chassis and end effector
+		// Set invalid setpoints for chassis, boom, and bucket
 		_chassis_setpoint.valid = false;
-		_end_effector_setpoint.valid = false;
+		_boom_setpoint.valid = false;
+		_bucket_setpoint.valid = false;
 
 	} else {
-		// Process VLA end effector trajectory and decompose into chassis and end effector
+		// Process VLA end effector trajectory and decompose into chassis, boom, and bucket
 		_processVlaEndEffectorTrajectory();
 		_decomposeVlaEndEffectorSetpoint();
 	}
@@ -154,7 +156,7 @@ void FlightTaskAutoVLAEndEffector::_processVlaEndEffectorTrajectory()
 
 void FlightTaskAutoVLAEndEffector::_decomposeVlaEndEffectorSetpoint()
 {
-	// Decompose VLA end effector bucket position into chassis position and end effector angles
+	// Decompose VLA end effector bucket position into chassis position, boom height, and bucket angle
 	// This is a simplified kinematic decomposition
 
 	// Chassis setpoint (XY position and yaw)
@@ -168,7 +170,6 @@ void FlightTaskAutoVLAEndEffector::_decomposeVlaEndEffectorSetpoint()
 	_chassis_setpoint.yaw_rate = _yawspeed_setpoint;
 	_chassis_setpoint.valid = true;
 
-	// End effector setpoint (boom and bucket angles)
 	// Calculate bucket height and reach from bucket position
 	Vector3f bucket_pos(_vla_end_effector_trajectory.bucket_position_x,
 			    _vla_end_effector_trajectory.bucket_position_y,
@@ -184,21 +185,34 @@ void FlightTaskAutoVLAEndEffector::_decomposeVlaEndEffectorSetpoint()
 	float boom_reach = _param_autovla_ee_boom_reach.get();
 	float boom_angle = atan2f(bucket_height, math::min(bucket_reach, boom_reach));
 
+	// Boom setpoint (boom height control)
+	_boom_setpoint.timestamp = hrt_absolute_time();
+	_boom_setpoint.angle = boom_angle;
+	_boom_setpoint.angular_velocity = 0.0f; // Could be derived from trajectory
+	_boom_setpoint.angular_acceleration = 0.0f;
+	_boom_setpoint.max_velocity = _param_autovla_ee_max_vel.get();
+	_boom_setpoint.max_acceleration = _param_autovla_ee_max_acc.get();
+	_boom_setpoint.control_mode = boom_trajectory_setpoint_s::MODE_POSITION;
+	_boom_setpoint.trajectory_time = _vla_end_effector_trajectory.trajectory_time;
+	_boom_setpoint.time_from_start = _vla_end_effector_trajectory.time_from_start;
+	_boom_setpoint.priority = 100;
+	_boom_setpoint.valid = true;
+
 	// Bucket angle from VLA end effector orientation (pitch component)
 	float bucket_angle = _vla_end_effector_trajectory.bucket_orientation_pitch;
 
-	_end_effector_setpoint.timestamp = hrt_absolute_time();
-	_end_effector_setpoint.boom_angle = boom_angle;
-	_end_effector_setpoint.bucket_angle = bucket_angle;
-	_end_effector_setpoint.boom_angle_rate = 0.0f; // Could be derived from trajectory
-	_end_effector_setpoint.bucket_angle_rate = 0.0f;
-	_end_effector_setpoint.valid = true;
-	_end_effector_setpoint.priority = 100;
-	_end_effector_setpoint.hold_position = false;
-	_end_effector_setpoint.emergency_stop = _vla_end_effector_trajectory.emergency_stop;
-	_end_effector_setpoint.sequence_id = _vla_end_effector_trajectory.sequence_id;
-	_end_effector_setpoint.sequence_complete = _vla_end_effector_trajectory.sequence_complete;
-	_end_effector_setpoint.confidence_score = _vla_end_effector_trajectory.confidence_score;
+	// Bucket setpoint (bucket angle control)
+	_bucket_setpoint.timestamp = hrt_absolute_time();
+	_bucket_setpoint.control_mode = bucket_trajectory_setpoint_s::MODE_POSITION;
+	_bucket_setpoint.target_angle = bucket_angle;
+	_bucket_setpoint.angular_velocity = 0.0f; // Could be derived from trajectory
+	_bucket_setpoint.angular_acceleration = 0.0f;
+	_bucket_setpoint.max_velocity = _param_autovla_ee_max_vel.get();
+	_bucket_setpoint.max_acceleration = _param_autovla_ee_max_acc.get();
+	_bucket_setpoint.trajectory_time = _vla_end_effector_trajectory.trajectory_time;
+	_bucket_setpoint.time_from_start = _vla_end_effector_trajectory.time_from_start;
+	_bucket_setpoint.priority = 100;
+	_bucket_setpoint.valid = true;
 }
 
 void FlightTaskAutoVLAEndEffector::_publishTrajectorySetpoints()
@@ -206,8 +220,11 @@ void FlightTaskAutoVLAEndEffector::_publishTrajectorySetpoints()
 	// Publish chassis trajectory setpoint
 	_pub_chassis_setpoint.publish(_chassis_setpoint);
 
-	// Publish end effector trajectory setpoint
-	_pub_end_effector_setpoint.publish(_end_effector_setpoint);
+	// Publish boom trajectory setpoint (for bucket height control)
+	_pub_boom_setpoint.publish(_boom_setpoint);
+
+	// Publish bucket trajectory setpoint (for bucket angle control)
+	_pub_bucket_setpoint.publish(_bucket_setpoint);
 }
 
 bool FlightTaskAutoVLAEndEffector::_isVlaEndEffectorTrajectoryValid() const
