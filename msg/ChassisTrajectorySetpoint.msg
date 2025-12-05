@@ -14,5 +14,9 @@ float32 y_velocity      # Y velocity in world frame [m/s]
 float32 z_velocity      # Z velocity in world frame [m/s]
 float32 yaw_rate        # Yaw rate [rad/s]
 
+# Wheel slip control
+float32 front_wheel_slip_rate       # Target front wheel axis slip rate [0.0-1.0]
+float32 rear_wheel_slip_rate        # Target rear wheel axis slip rate [0.0-1.0]
+
 # Validity flag
 bool valid              # Validity flag
