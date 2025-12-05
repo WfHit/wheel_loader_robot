@@ -40,6 +40,7 @@
 
 #include "autovla.h"
 #include "navigator.h"
+#include <lib/geo/geo.h>
 
 AutoVLA::AutoVLA(Navigator *navigator) :
 	MissionBlock(navigator, vehicle_status_s::NAVIGATION_STATE_AUTO_VLA),
@@ -196,9 +197,7 @@ bool AutoVLA::is_vla_trajectory_valid() const
 	}
 
 	// Check if trajectory is recent
-	hrt_abstime now = hrt_absolute_time();
-	if (_vla_trajectory.timestamp > 0 && now >= _vla_trajectory.timestamp &&
-	    (now - _vla_trajectory.timestamp) < VLA_TIMEOUT) {
+	if (_vla_trajectory.timestamp > 0 && hrt_elapsed_time(&_vla_trajectory.timestamp) < VLA_TIMEOUT) {
 		return true;
 	}
 
