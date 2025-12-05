@@ -113,25 +113,16 @@ void AutoVLAEndEffector::on_active()
 		advance_vla_trajectory();
 	}
 
-	// Generate position setpoint from current VLA end effector trajectory item
+	// Generate VLA end effector setpoint triplet from current trajectory items
 	if (is_vla_end_effector_trajectory_valid()) {
-		generate_position_setpoint();
+		generate_vla_setpoint_triplet();
 	} else {
-		// No valid trajectory - hold current position
-		position_setpoint_triplet_s *pos_sp_triplet = _navigator->get_position_setpoint_triplet();
-
-		if (!_navigator->get_land_detected()->landed) {
-			// Hold current position
-			pos_sp_triplet->current.type = position_setpoint_s::SETPOINT_TYPE_LOITER;
-			pos_sp_triplet->current.loiter_radius = _navigator->get_loiter_radius();
-			pos_sp_triplet->current.lat = _navigator->get_global_position()->lat;
-			pos_sp_triplet->current.lon = _navigator->get_global_position()->lon;
-			pos_sp_triplet->current.alt = _navigator->get_global_position()->alt;
-			pos_sp_triplet->current.yaw = _navigator->get_local_position()->heading;
-			pos_sp_triplet->current.valid = true;
-
-			_navigator->set_position_setpoint_triplet_updated();
-		}
+		// No valid trajectory - publish invalid setpoint triplet
+		_vla_setpoint_triplet.timestamp = hrt_absolute_time();
+		_vla_setpoint_triplet.current_valid = false;
+		_vla_setpoint_triplet.previous_valid = false;
+		_vla_setpoint_triplet.next_valid = false;
+		_vla_setpoint_triplet_pub.publish(_vla_setpoint_triplet);
 	}
 }
 
@@ -150,6 +141,20 @@ bool AutoVLAEndEffector::load_vla_trajectory_item(int index)
 		_current_trajectory_index = index;
 		_trajectory_item_reached = false;
 		_trajectory_item_start_time = hrt_absolute_time();
+		
+		// Also load previous and next items for trajectory planning
+		if (index > 0) {
+			_dataman_client.readSync(_dataman_id, index - 1,
+						reinterpret_cast<uint8_t *>(&_previous_trajectory_item),
+						sizeof(vla_end_effector_trajectory_item_s));
+		}
+		
+		if (index + 1 < _vla_trajectory.count) {
+			_dataman_client.readSync(_dataman_id, index + 1,
+						reinterpret_cast<uint8_t *>(&_next_trajectory_item),
+						sizeof(vla_end_effector_trajectory_item_s));
+		}
+		
 		return true;
 	}
 
@@ -196,65 +201,61 @@ void AutoVLAEndEffector::advance_vla_trajectory()
 	load_vla_trajectory_item(next_index);
 }
 
-void AutoVLAEndEffector::generate_position_setpoint()
+void AutoVLAEndEffector::generate_vla_setpoint_triplet()
 {
-	position_setpoint_triplet_s *pos_sp_triplet = _navigator->get_position_setpoint_triplet();
+	_vla_setpoint_triplet.timestamp = hrt_absolute_time();
 
-	// Convert VLA end effector bucket position to global coordinates
-	double target_lat, target_lon;
-	float target_alt;
-
-	// Get current global position
-	double current_lat = _navigator->get_global_position()->lat;
-	double current_lon = _navigator->get_global_position()->lon;
-	float current_alt = _navigator->get_global_position()->alt;
-
-	// Get trajectory item position
-	float x_local = _current_trajectory_item.bucket_position_x;
-	float y_local = _current_trajectory_item.bucket_position_y;
-	float z_local = _current_trajectory_item.bucket_position_z;
-
-	// Validate coordinates
-	if (!PX4_ISFINITE(x_local) || !PX4_ISFINITE(y_local)) {
-		// Invalid coordinates - skip update
-		return;
-	}
-
-	// Use current position as reference and add offset
-	struct map_projection_reference_s ref;
-	if (map_projection_init(&ref, current_lat, current_lon) != 0) {
-		// Failed to initialize map projection
-		return;
-	}
-
-	if (map_projection_project(&ref, x_local, y_local, &target_lat, &target_lon) != 0) {
-		// Failed to project coordinates
-		return;
-	}
-
-	target_alt = current_alt; // Keep altitude at ground level for wheel loader
-
-	// Set position setpoint based on trajectory item type
-	if (_current_trajectory_item.item_type == vla_end_effector_trajectory_item_s::TYPE_LOITER) {
-		pos_sp_triplet->current.type = position_setpoint_s::SETPOINT_TYPE_LOITER;
-		pos_sp_triplet->current.loiter_radius = _current_trajectory_item.acceptance_radius;
+	// Fill in previous setpoint
+	if (_current_trajectory_index > 0) {
+		_vla_setpoint_triplet.previous_valid = true;
+		_vla_setpoint_triplet.previous_bucket_x = _previous_trajectory_item.bucket_position_x;
+		_vla_setpoint_triplet.previous_bucket_y = _previous_trajectory_item.bucket_position_y;
+		_vla_setpoint_triplet.previous_bucket_z = _previous_trajectory_item.bucket_position_z;
+		_vla_setpoint_triplet.previous_bucket_yaw = _previous_trajectory_item.bucket_orientation_yaw;
 	} else {
-		pos_sp_triplet->current.type = position_setpoint_s::SETPOINT_TYPE_POSITION;
+		_vla_setpoint_triplet.previous_valid = false;
 	}
 
-	pos_sp_triplet->current.lat = target_lat;
-	pos_sp_triplet->current.lon = target_lon;
-	pos_sp_triplet->current.alt = target_alt;
-	pos_sp_triplet->current.yaw = _current_trajectory_item.bucket_orientation_yaw;
-	pos_sp_triplet->current.valid = true;
+	// Fill in current setpoint
+	_vla_setpoint_triplet.current_valid = true;
+	_vla_setpoint_triplet.current_bucket_x = _current_trajectory_item.bucket_position_x;
+	_vla_setpoint_triplet.current_bucket_y = _current_trajectory_item.bucket_position_y;
+	_vla_setpoint_triplet.current_bucket_z = _current_trajectory_item.bucket_position_z;
+	_vla_setpoint_triplet.current_bucket_roll = _current_trajectory_item.bucket_orientation_roll;
+	_vla_setpoint_triplet.current_bucket_pitch = _current_trajectory_item.bucket_orientation_pitch;
+	_vla_setpoint_triplet.current_bucket_yaw = _current_trajectory_item.bucket_orientation_yaw;
 
-	// Set velocity constraints from trajectory item
-	pos_sp_triplet->current.cruising_speed = math::constrain(_current_trajectory_item.max_velocity,
+	// Fill in next setpoint
+	if (_current_trajectory_index + 1 < _vla_trajectory.count) {
+		_vla_setpoint_triplet.next_valid = true;
+		_vla_setpoint_triplet.next_bucket_x = _next_trajectory_item.bucket_position_x;
+		_vla_setpoint_triplet.next_bucket_y = _next_trajectory_item.bucket_position_y;
+		_vla_setpoint_triplet.next_bucket_z = _next_trajectory_item.bucket_position_z;
+		_vla_setpoint_triplet.next_bucket_yaw = _next_trajectory_item.bucket_orientation_yaw;
+	} else {
+		_vla_setpoint_triplet.next_valid = false;
+	}
+
+	// Set motion constraints from current trajectory item
+	_vla_setpoint_triplet.max_velocity = math::constrain(_current_trajectory_item.max_velocity,
+							     0.1f,
+							     _param_nav_autovla_ee_vel.get());
+	_vla_setpoint_triplet.max_acceleration = math::constrain(_current_trajectory_item.max_acceleration,
 								 0.1f,
-								 _param_nav_autovla_ee_vel.get());
+								 _param_nav_autovla_ee_acc.get());
+	_vla_setpoint_triplet.acceptance_radius = _current_trajectory_item.acceptance_radius;
 
-	// Mark triplet as updated
-	_navigator->set_position_setpoint_triplet_updated();
+	// Set wheel slip control
+	_vla_setpoint_triplet.front_wheel_slip_rate = _current_trajectory_item.front_wheel_slip_rate;
+	_vla_setpoint_triplet.rear_wheel_slip_rate = _current_trajectory_item.rear_wheel_slip_rate;
+
+	// Set trajectory item information
+	_vla_setpoint_triplet.item_type = _current_trajectory_item.item_type;
+	_vla_setpoint_triplet.autocontinue = _current_trajectory_item.autocontinue;
+	_vla_setpoint_triplet.loiter_radius = _current_trajectory_item.acceptance_radius;
+
+	// Publish the setpoint triplet
+	_vla_setpoint_triplet_pub.publish(_vla_setpoint_triplet);
 }
 
 bool AutoVLAEndEffector::is_trajectory_item_reached() const

@@ -48,8 +48,10 @@
 #include <px4_platform_common/module_params.h>
 #include <uORB/Subscription.hpp>
 #include <uORB/SubscriptionData.hpp>
+#include <uORB/Publication.hpp>
 #include <uORB/topics/vla_end_effector_trajectory.h>
 #include <uORB/topics/vla_end_effector_trajectory_item.h>
+#include <uORB/topics/vla_end_effector_setpoint_triplet.h>
 #include <dataman_client/DatamanClient.hpp>
 
 class Navigator;
@@ -82,9 +84,9 @@ void update_vla_end_effector_trajectory();
 void advance_vla_trajectory();
 
 /**
- * Generate position setpoint triplet from current VLA end effector trajectory item
+ * Generate VLA end effector setpoint triplet from current trajectory items
  */
-void generate_position_setpoint();
+void generate_vla_setpoint_triplet();
 
 /**
  * Check if current trajectory item is reached
@@ -99,9 +101,17 @@ bool is_vla_end_effector_trajectory_valid() const;
 // Subscriptions
 uORB::SubscriptionData<vla_end_effector_trajectory_s> _vla_end_effector_trajectory_sub{ORB_ID(vla_end_effector_trajectory)};
 
+// Publications
+uORB::Publication<vla_end_effector_setpoint_triplet_s> _vla_setpoint_triplet_pub{ORB_ID(vla_end_effector_setpoint_triplet)};
+
 // VLA end effector trajectory data
 vla_end_effector_trajectory_s _vla_trajectory{};
 vla_end_effector_trajectory_item_s _current_trajectory_item{};
+vla_end_effector_trajectory_item_s _previous_trajectory_item{};
+vla_end_effector_trajectory_item_s _next_trajectory_item{};
+
+// Setpoint triplet
+vla_end_effector_setpoint_triplet_s _vla_setpoint_triplet{};
 
 // Dataman client for trajectory storage
 DatamanClient _dataman_client{};

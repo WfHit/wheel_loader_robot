@@ -43,7 +43,7 @@
 #pragma once
 
 #include "../FlightTask/FlightTask.hpp"
-#include <uORB/topics/vla_trajectory_setpoint.h>
+#include <uORB/topics/vla_end_effector_setpoint_triplet.h>
 #include <uORB/topics/chassis_trajectory_setpoint.h>
 #include <uORB/topics/boom_trajectory_setpoint.h>
 #include <uORB/topics/bucket_trajectory_setpoint.h>
@@ -64,14 +64,19 @@ public:
 
 protected:
 	/**
-	 * Process VLA end effector trajectory setpoint and generate vehicle setpoints
+	 * Process VLA end effector setpoint triplet and perform motion planning
 	 */
-	void _processVlaEndEffectorTrajectory();
+	void _processVlaEndEffectorSetpointTriplet();
 
 	/**
-	 * Decompose VLA end effector bucket position into chassis position, boom height, and bucket angle
+	 * Generate chassis trajectory using motion planning
 	 */
-	void _decomposeVlaEndEffectorSetpoint();
+	void _planChassisTrajectory();
+
+	/**
+	 * Generate boom and bucket trajectories using motion planning
+	 */
+	void _planEndEffectorTrajectories();
 
 	/**
 	 * Publish chassis, boom, and bucket setpoints
@@ -79,21 +84,21 @@ protected:
 	void _publishTrajectorySetpoints();
 
 	/**
-	 * Check if VLA end effector trajectory is valid and recent
+	 * Check if VLA end effector setpoint triplet is valid
 	 */
-	bool _isVlaEndEffectorTrajectoryValid() const;
+	bool _isVlaEndEffectorSetpointValid() const;
 
 private:
 	// Subscriptions
-	uORB::Subscription _sub_vla_end_effector_trajectory_setpoint{ORB_ID(vla_trajectory_setpoint)};
+	uORB::Subscription _sub_vla_end_effector_setpoint_triplet{ORB_ID(vla_end_effector_setpoint_triplet)};
 
 	// Publications for wheel loader specific setpoints
 	uORB::Publication<chassis_trajectory_setpoint_s> _pub_chassis_setpoint{ORB_ID(chassis_trajectory_setpoint)};
 	uORB::Publication<boom_trajectory_setpoint_s> _pub_boom_setpoint{ORB_ID(boom_trajectory_setpoint)};
 	uORB::Publication<bucket_trajectory_setpoint_s> _pub_bucket_setpoint{ORB_ID(bucket_trajectory_setpoint)};
 
-	// VLA end effector trajectory data
-	vla_trajectory_setpoint_s _vla_end_effector_trajectory{};
+	// VLA end effector setpoint triplet data
+	vla_end_effector_setpoint_triplet_s _vla_setpoint_triplet{};
 
 	// Generated setpoints
 	chassis_trajectory_setpoint_s _chassis_setpoint{};
@@ -101,7 +106,7 @@ private:
 	bucket_trajectory_setpoint_s _bucket_setpoint{};
 
 	// Timing
-	hrt_abstime _last_vla_end_effector_update{0};
+	hrt_abstime _last_vla_setpoint_update{0};
 	static constexpr hrt_abstime VLA_EE_TIMEOUT{500000}; // 500ms timeout
 
 	// Wheel loader specific parameters
