@@ -42,7 +42,7 @@
 
 #pragma once
 
-#include "FlightTask.hpp"
+#include "../FlightTask/FlightTask.hpp"
 #include <uORB/topics/vla_trajectory_setpoint.h>
 #include <uORB/topics/chassis_trajectory_setpoint.h>
 #include <uORB/topics/end_effector_trajectory_setpoint.h>

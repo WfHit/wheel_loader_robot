@@ -41,6 +41,9 @@
 
 using namespace matrix;
 
+// Constants
+static constexpr float MIN_POSITION_THRESHOLD = 0.01f;  // Minimum distance threshold in meters
+
 FlightTaskAutoVLA::FlightTaskAutoVLA() :
 	FlightTask()
 {
@@ -132,7 +135,7 @@ void FlightTaskAutoVLA::_processVlaTrajectory()
 	Vector2f pos_error(bucket_target(0) - _position(0), bucket_target(1) - _position(1));
 	float distance = pos_error.norm();
 
-	if (distance > 0.01f) { // Avoid division by zero
+	if (distance > MIN_POSITION_THRESHOLD) { // Avoid division by zero
 		Vector2f velocity_dir = pos_error.normalized();
 		float desired_speed = math::min(distance, max_vel);
 		_velocity_setpoint(0) = velocity_dir(0) * desired_speed;
@@ -215,7 +218,8 @@ bool FlightTaskAutoVLA::_isVlaTrajectoryValid() const
 
 	// Check if trajectory is recent
 	hrt_abstime now = hrt_absolute_time();
-	if (_vla_trajectory.timestamp > 0 && (now - _vla_trajectory.timestamp) < VLA_TIMEOUT) {
+	if (_vla_trajectory.timestamp > 0 && now >= _vla_trajectory.timestamp &&
+	    (now - _vla_trajectory.timestamp) < VLA_TIMEOUT) {
 		return true;
 	}
 

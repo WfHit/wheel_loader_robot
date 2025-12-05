@@ -151,12 +151,25 @@ void AutoVLA::generate_position_setpoint()
 	float y_local = _vla_trajectory.bucket_position_y;
 	float z_local = _vla_trajectory.bucket_position_z;
 
+	// Validate coordinates
+	if (!PX4_ISFINITE(x_local) || !PX4_ISFINITE(y_local)) {
+		// Invalid coordinates - skip update
+		return;
+	}
+
 	// Use current position as reference and add offset
 	// This is a simplified conversion - proper implementation would use map projection
 	struct map_projection_reference_s ref;
-	map_projection_init(&ref, current_lat, current_lon);
+	if (map_projection_init(&ref, current_lat, current_lon) != 0) {
+		// Failed to initialize map projection
+		return;
+	}
 
-	map_projection_project(&ref, x_local, y_local, &target_lat, &target_lon);
+	if (map_projection_project(&ref, x_local, y_local, &target_lat, &target_lon) != 0) {
+		// Failed to project coordinates
+		return;
+	}
+
 	target_alt = current_alt; // Keep altitude at ground level for wheel loader
 
 	// Set position setpoint
@@ -184,7 +197,8 @@ bool AutoVLA::is_vla_trajectory_valid() const
 
 	// Check if trajectory is recent
 	hrt_abstime now = hrt_absolute_time();
-	if (_vla_trajectory.timestamp > 0 && (now - _vla_trajectory.timestamp) < VLA_TIMEOUT) {
+	if (_vla_trajectory.timestamp > 0 && now >= _vla_trajectory.timestamp &&
+	    (now - _vla_trajectory.timestamp) < VLA_TIMEOUT) {
 		return true;
 	}
 

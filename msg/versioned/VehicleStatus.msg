@@ -57,7 +57,6 @@ uint8 NAVIGATION_STATE_AUTO_PRECLAND = 20       # Precision land with landing ta
 uint8 NAVIGATION_STATE_ORBIT = 21               # Orbit in a circle
 uint8 NAVIGATION_STATE_AUTO_VTOL_TAKEOFF = 22   # Takeoff, transition, establish loiter
 uint8 NAVIGATION_STATE_AUTO_VLA = 23            # Auto VLA (Vision-Language-Action) trajectory following
-uint8 NAVIGATION_STATE_EXTERNAL1 = 23
 uint8 NAVIGATION_STATE_EXTERNAL2 = 24
 uint8 NAVIGATION_STATE_EXTERNAL3 = 25
 uint8 NAVIGATION_STATE_EXTERNAL4 = 26

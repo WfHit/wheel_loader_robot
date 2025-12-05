@@ -90,11 +90,9 @@ Navigator::Navigator() :
 	_navigation_mode_array[3] = &_takeoff;
 	_navigation_mode_array[4] = &_land;
 	_navigation_mode_array[5] = &_precland;
-#if CONFIG_MODE_NAVIGATOR_VTOL_TAKEOFF
-	_navigation_mode_array[6] = &_vtol_takeoff;
-	_navigation_mode_array[7] = &_autovla;
-#else
 	_navigation_mode_array[6] = &_autovla;
+#if CONFIG_MODE_NAVIGATOR_VTOL_TAKEOFF
+	_navigation_mode_array[7] = &_vtol_takeoff;
 #endif //CONFIG_MODE_NAVIGATOR_VTOL_TAKEOFF
 
 	/* iterate through navigation modes and initialize _mission_item for each */
