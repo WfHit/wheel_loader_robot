@@ -47,7 +47,10 @@
 
 #include <px4_platform_common/module_params.h>
 #include <uORB/Subscription.hpp>
-#include <uORB/topics/vla_trajectory_setpoint.h>
+#include <uORB/SubscriptionData.hpp>
+#include <uORB/topics/vla_end_effector_trajectory.h>
+#include <uORB/topics/vla_end_effector_trajectory_item.h>
+#include <dataman_client/DatamanClient.hpp>
 
 class Navigator;
 
@@ -64,29 +67,50 @@ void on_active() override;
 
 private:
 /**
- * Update VLA end effector trajectory setpoint
+ * Load VLA end effector trajectory item from dataman
+ */
+bool load_vla_trajectory_item(int index);
+
+/**
+ * Update VLA end effector trajectory from subscription
  */
 void update_vla_end_effector_trajectory();
 
 /**
- * Generate position setpoint triplet from VLA end effector trajectory
+ * Advance to next trajectory item
+ */
+void advance_vla_trajectory();
+
+/**
+ * Generate position setpoint triplet from current VLA end effector trajectory item
  */
 void generate_position_setpoint();
 
 /**
- * Check if VLA end effector trajectory is valid and recent
+ * Check if current trajectory item is reached
+ */
+bool is_trajectory_item_reached() const;
+
+/**
+ * Check if VLA end effector trajectory is valid
  */
 bool is_vla_end_effector_trajectory_valid() const;
 
-// Subscription to VLA end effector trajectory setpoint
-uORB::Subscription _vla_end_effector_trajectory_sub{ORB_ID(vla_trajectory_setpoint)};
+// Subscriptions
+uORB::SubscriptionData<vla_end_effector_trajectory_s> _vla_end_effector_trajectory_sub{ORB_ID(vla_end_effector_trajectory)};
 
 // VLA end effector trajectory data
-vla_trajectory_setpoint_s _vla_end_effector_trajectory{};
+vla_end_effector_trajectory_s _vla_trajectory{};
+vla_end_effector_trajectory_item_s _current_trajectory_item{};
 
-// Timing
-hrt_abstime _last_vla_end_effector_update{0};
-static constexpr hrt_abstime VLA_EE_TIMEOUT{500000}; // 500ms timeout
+// Dataman client for trajectory storage
+DatamanClient _dataman_client{};
+dm_item_t _dataman_id{DM_KEY_FENCE_POINTS}; // Using fence points storage for VLA trajectories
+
+// State tracking
+int _current_trajectory_index{-1};
+hrt_abstime _trajectory_item_start_time{0};
+bool _trajectory_item_reached{false};
 
 DEFINE_PARAMETERS(
 (ParamFloat<px4::params::NAV_AUTOVLA_EE_ACC>) _param_nav_autovla_ee_acc,
