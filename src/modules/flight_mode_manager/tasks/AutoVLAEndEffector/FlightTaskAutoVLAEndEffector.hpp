@@ -32,10 +32,10 @@
  ****************************************************************************/
 
 /**
- * @file FlightTaskAutoVLA.hpp
+ * @file FlightTaskAutoVLAEndEffector.hpp
  *
- * Flight task for autonomous VLA (Vision-Language-Action) trajectory following
- * for wheel loader robot. This task receives VLA trajectory setpoints from the
+ * Flight task for autonomous VLA (Vision-Language-Action) end effector trajectory following
+ * for wheel loader robot. This task receives VLA end effector trajectory setpoints from the
  * navigator and generates appropriate position/velocity setpoints for the vehicle
  * chassis control, along with bucket and boom angle setpoints.
  */
@@ -50,11 +50,11 @@
 #include <uORB/Publication.hpp>
 #include <lib/mathlib/mathlib.h>
 
-class FlightTaskAutoVLA : public FlightTask
+class FlightTaskAutoVLAEndEffector : public FlightTask
 {
 public:
-	FlightTaskAutoVLA();
-	virtual ~FlightTaskAutoVLA() = default;
+	FlightTaskAutoVLAEndEffector();
+	virtual ~FlightTaskAutoVLAEndEffector() = default;
 
 	bool activate(const trajectory_setpoint_s &last_setpoint) override;
 	void reActivate() override;
@@ -63,14 +63,14 @@ public:
 
 protected:
 	/**
-	 * Process VLA trajectory setpoint and generate vehicle setpoints
+	 * Process VLA end effector trajectory setpoint and generate vehicle setpoints
 	 */
-	void _processVlaTrajectory();
+	void _processVlaEndEffectorTrajectory();
 
 	/**
-	 * Decompose VLA bucket position into chassis position and end effector angles
+	 * Decompose VLA end effector bucket position into chassis position and end effector angles
 	 */
-	void _decomposeVlaSetpoint();
+	void _decomposeVlaEndEffectorSetpoint();
 
 	/**
 	 * Publish chassis and end effector setpoints
@@ -78,33 +78,33 @@ protected:
 	void _publishTrajectorySetpoints();
 
 	/**
-	 * Check if VLA trajectory is valid and recent
+	 * Check if VLA end effector trajectory is valid and recent
 	 */
-	bool _isVlaTrajectoryValid() const;
+	bool _isVlaEndEffectorTrajectoryValid() const;
 
 private:
 	// Subscriptions
-	uORB::Subscription _sub_vla_trajectory_setpoint{ORB_ID(vla_trajectory_setpoint)};
+	uORB::Subscription _sub_vla_end_effector_trajectory_setpoint{ORB_ID(vla_trajectory_setpoint)};
 
 	// Publications for wheel loader specific setpoints
 	uORB::Publication<chassis_trajectory_setpoint_s> _pub_chassis_setpoint{ORB_ID(chassis_trajectory_setpoint)};
 	uORB::Publication<end_effector_trajectory_setpoint_s> _pub_end_effector_setpoint{ORB_ID(end_effector_trajectory_setpoint)};
 
-	// VLA trajectory data
-	vla_trajectory_setpoint_s _vla_trajectory{};
+	// VLA end effector trajectory data
+	vla_trajectory_setpoint_s _vla_end_effector_trajectory{};
 
 	// Generated setpoints
 	chassis_trajectory_setpoint_s _chassis_setpoint{};
 	end_effector_trajectory_setpoint_s _end_effector_setpoint{};
 
 	// Timing
-	hrt_abstime _last_vla_update{0};
-	static constexpr hrt_abstime VLA_TIMEOUT{500000}; // 500ms timeout
+	hrt_abstime _last_vla_end_effector_update{0};
+	static constexpr hrt_abstime VLA_EE_TIMEOUT{500000}; // 500ms timeout
 
 	// Wheel loader specific parameters
 	DEFINE_PARAMETERS(
-		(ParamFloat<px4::params::AUTOVLA_MAX_VEL>) _param_autovla_max_vel,
-		(ParamFloat<px4::params::AUTOVLA_MAX_ACC>) _param_autovla_max_acc,
-		(ParamFloat<px4::params::AUTOVLA_BOOM_REACH>) _param_autovla_boom_reach
+		(ParamFloat<px4::params::AUTOVLA_EE_MAX_VEL>) _param_autovla_ee_max_vel,
+		(ParamFloat<px4::params::AUTOVLA_EE_MAX_ACC>) _param_autovla_ee_max_acc,
+		(ParamFloat<px4::params::AUTOVLA_EE_BOOM_REACH>) _param_autovla_ee_boom_reach
 	)
 };

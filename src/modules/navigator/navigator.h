@@ -49,7 +49,7 @@
 #include "navigator_mode.h"
 #include "rtl.h"
 #include "takeoff.h"
-#include "autovla.h"
+#include "auto_vla_end_effector.h"
 #if CONFIG_MODE_NAVIGATOR_VTOL_TAKEOFF
 #include "vtol_takeoff.h"
 #endif //CONFIG_MODE_NAVIGATOR_VTOL_TAKEOFF
@@ -369,7 +369,7 @@ private:
 	Land		_land;			/**< class for handling land commands */
 	PrecLand	_precland;			/**< class for handling precision land commands */
 	RTL 		_rtl;				/**< class that handles RTL */
-	AutoVLA		_autovla;			/**< class for handling autonomous VLA trajectory following */
+	AutoVLAEndEffector	_auto_vla_end_effector;	/**< class for handling autonomous VLA end effector trajectory following */
 #if CONFIG_NAVIGATOR_ADSB
 	AdsbConflict 	_adsb_conflict;			/**< class that handles ADSB conflict avoidance */
 	traffic_buffer_s _traffic_buffer{};

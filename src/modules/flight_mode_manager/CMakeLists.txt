@@ -40,7 +40,7 @@
 set(flight_tasks_all)
 list(APPEND flight_tasks_all
 	Auto
-	AutoVLA
+	AutoVLAEndEffector
 	Descend
 	Failsafe
 	ManualAcceleration

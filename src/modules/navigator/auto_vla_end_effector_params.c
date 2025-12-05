@@ -32,21 +32,21 @@
  ****************************************************************************/
 
 /**
- * @file autovla_params.c
+ * @file auto_vla_end_effector_params.c
  *
- * Parameters for AutoVLA navigator mode
+ * Parameters for AutoVLAEndEffector navigator mode
  *
  * @author PX4 Development Team
  */
 
 /*
- * AutoVLA mode parameters, accessible via MAVLink
+ * AutoVLAEndEffector mode parameters, accessible via MAVLink
  */
 
 /**
- * AutoVLA maximum velocity
+ * AutoVLA End Effector maximum velocity
  *
- * Maximum velocity for VLA trajectory following in AutoVLA mode.
+ * Maximum velocity for VLA end effector trajectory following in AutoVLAEndEffector mode.
  *
  * @unit m/s
  * @min 0.1
@@ -55,12 +55,12 @@
  * @increment 0.1
  * @group Navigator
  */
-PARAM_DEFINE_FLOAT(NAV_AUTOVLA_VEL, 1.0f);
+PARAM_DEFINE_FLOAT(NAV_AUTOVLA_EE_VEL, 1.0f);
 
 /**
- * AutoVLA maximum acceleration
+ * AutoVLA End Effector maximum acceleration
  *
- * Maximum acceleration for VLA trajectory following in AutoVLA mode.
+ * Maximum acceleration for VLA end effector trajectory following in AutoVLAEndEffector mode.
  *
  * @unit m/s^2
  * @min 0.1
@@ -69,4 +69,4 @@ PARAM_DEFINE_FLOAT(NAV_AUTOVLA_VEL, 1.0f);
  * @increment 0.1
  * @group Navigator
  */
-PARAM_DEFINE_FLOAT(NAV_AUTOVLA_ACC, 0.5f);
+PARAM_DEFINE_FLOAT(NAV_AUTOVLA_EE_ACC, 0.5f);

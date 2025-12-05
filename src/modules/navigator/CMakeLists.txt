@@ -49,7 +49,7 @@ set(NAVIGATOR_SOURCES
 	takeoff.cpp
 	land.cpp
 	precland.cpp
-	autovla.cpp
+	auto_vla_end_effector.cpp
 	mission_feasibility_checker.cpp
 	geofence.cpp)
 

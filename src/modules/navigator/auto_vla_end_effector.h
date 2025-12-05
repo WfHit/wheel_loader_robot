@@ -31,10 +31,10 @@
  *
  ****************************************************************************/
 /**
- * @file autovla.h
+ * @file auto_vla_end_effector.h
  *
- * Navigator mode for autonomous VLA (Vision-Language-Action) trajectory following
- * for wheel loader robot. Receives VLA trajectory setpoints and generates
+ * Navigator mode for autonomous VLA (Vision-Language-Action) end effector trajectory following
+ * for wheel loader robot. Receives VLA end effector trajectory setpoints and generates
  * position setpoints for the flight mode manager.
  *
  * @author PX4 Development Team
@@ -51,45 +51,45 @@
 
 class Navigator;
 
-class AutoVLA : public MissionBlock, public ModuleParams
+class AutoVLAEndEffector : public MissionBlock, public ModuleParams
 {
 public:
-	AutoVLA(Navigator *navigator);
-	~AutoVLA() = default;
+AutoVLAEndEffector(Navigator *navigator);
+~AutoVLAEndEffector() = default;
 
-	void initialize() override;
-	void on_inactive() override;
-	void on_activation() override;
-	void on_active() override;
+void initialize() override;
+void on_inactive() override;
+void on_activation() override;
+void on_active() override;
 
 private:
-	/**
-	 * Update VLA trajectory setpoint
-	 */
-	void update_vla_trajectory();
+/**
+ * Update VLA end effector trajectory setpoint
+ */
+void update_vla_end_effector_trajectory();
 
-	/**
-	 * Generate position setpoint triplet from VLA trajectory
-	 */
-	void generate_position_setpoint();
+/**
+ * Generate position setpoint triplet from VLA end effector trajectory
+ */
+void generate_position_setpoint();
 
-	/**
-	 * Check if VLA trajectory is valid and recent
-	 */
-	bool is_vla_trajectory_valid() const;
+/**
+ * Check if VLA end effector trajectory is valid and recent
+ */
+bool is_vla_end_effector_trajectory_valid() const;
 
-	// Subscription to VLA trajectory setpoint
-	uORB::Subscription _vla_trajectory_sub{ORB_ID(vla_trajectory_setpoint)};
+// Subscription to VLA end effector trajectory setpoint
+uORB::Subscription _vla_end_effector_trajectory_sub{ORB_ID(vla_trajectory_setpoint)};
 
-	// VLA trajectory data
-	vla_trajectory_setpoint_s _vla_trajectory{};
+// VLA end effector trajectory data
+vla_trajectory_setpoint_s _vla_end_effector_trajectory{};
 
-	// Timing
-	hrt_abstime _last_vla_update{0};
-	static constexpr hrt_abstime VLA_TIMEOUT{500000}; // 500ms timeout
+// Timing
+hrt_abstime _last_vla_end_effector_update{0};
+static constexpr hrt_abstime VLA_EE_TIMEOUT{500000}; // 500ms timeout
 
-	DEFINE_PARAMETERS(
-		(ParamFloat<px4::params::NAV_AUTOVLA_ACC>) _param_nav_autovla_acc,
-		(ParamFloat<px4::params::NAV_AUTOVLA_VEL>) _param_nav_autovla_vel
-	)
+DEFINE_PARAMETERS(
+(ParamFloat<px4::params::NAV_AUTOVLA_EE_ACC>) _param_nav_autovla_ee_acc,
+(ParamFloat<px4::params::NAV_AUTOVLA_EE_VEL>) _param_nav_autovla_ee_vel
+)
 };

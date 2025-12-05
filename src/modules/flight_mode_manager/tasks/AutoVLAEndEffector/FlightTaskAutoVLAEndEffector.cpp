@@ -32,10 +32,10 @@
  ****************************************************************************/
 
 /**
- * @file FlightTaskAutoVLA.cpp
+ * @file FlightTaskAutoVLAEndEffector.cpp
  */
 
-#include "FlightTaskAutoVLA.hpp"
+#include "FlightTaskAutoVLAEndEffector.hpp"
 #include <mathlib/mathlib.h>
 #include <float.h>
 
@@ -44,12 +44,12 @@ using namespace matrix;
 // Constants
 static constexpr float MIN_POSITION_THRESHOLD = 0.01f;  // Minimum distance threshold in meters
 
-FlightTaskAutoVLA::FlightTaskAutoVLA() :
+FlightTaskAutoVLAEndEffector::FlightTaskAutoVLAEndEffector() :
 	FlightTask()
 {
 }
 
-bool FlightTaskAutoVLA::activate(const trajectory_setpoint_s &last_setpoint)
+bool FlightTaskAutoVLAEndEffector::activate(const trajectory_setpoint_s &last_setpoint)
 {
 	bool ret = FlightTask::activate(last_setpoint);
 
@@ -59,9 +59,9 @@ bool FlightTaskAutoVLA::activate(const trajectory_setpoint_s &last_setpoint)
 	_yaw_setpoint = _yaw;
 	_yawspeed_setpoint = 0.0f;
 
-	// Reset VLA trajectory
-	_vla_trajectory = {};
-	_last_vla_update = 0;
+	// Reset VLA end effector trajectory
+	_vla_end_effector_trajectory = {};
+	_last_vla_end_effector_update = 0;
 
 	// Reset setpoints
 	_chassis_setpoint = {};
@@ -70,17 +70,17 @@ bool FlightTaskAutoVLA::activate(const trajectory_setpoint_s &last_setpoint)
 	return ret;
 }
 
-void FlightTaskAutoVLA::reActivate()
+void FlightTaskAutoVLAEndEffector::reActivate()
 {
 	FlightTask::reActivate();
 }
 
-bool FlightTaskAutoVLA::updateInitialize()
+bool FlightTaskAutoVLAEndEffector::updateInitialize()
 {
 	bool ret = FlightTask::updateInitialize();
 
-	// Update VLA trajectory subscription
-	_sub_vla_trajectory_setpoint.update(&_vla_trajectory);
+	// Update VLA end effector trajectory subscription
+	_sub_vla_end_effector_trajectory_setpoint.update(&_vla_end_effector_trajectory);
 
 	// Check if we have valid position and velocity
 	ret = ret && _position.isAllFinite() && _velocity.isAllFinite();
@@ -88,12 +88,12 @@ bool FlightTaskAutoVLA::updateInitialize()
 	return ret;
 }
 
-bool FlightTaskAutoVLA::update()
+bool FlightTaskAutoVLAEndEffector::update()
 {
 	bool ret = FlightTask::update();
 
-	if (!_isVlaTrajectoryValid()) {
-		// No valid VLA trajectory - hold current position
+	if (!_isVlaEndEffectorTrajectoryValid()) {
+		// No valid VLA end effector trajectory - hold current position
 		_position_setpoint = _position;
 		_velocity_setpoint.setZero();
 		_yawspeed_setpoint = 0.0f;
@@ -103,9 +103,9 @@ bool FlightTaskAutoVLA::update()
 		_end_effector_setpoint.valid = false;
 
 	} else {
-		// Process VLA trajectory and decompose into chassis and end effector
-		_processVlaTrajectory();
-		_decomposeVlaSetpoint();
+		// Process VLA end effector trajectory and decompose into chassis and end effector
+		_processVlaEndEffectorTrajectory();
+		_decomposeVlaEndEffectorSetpoint();
 	}
 
 	// Publish trajectory setpoints for wheel loader
@@ -114,13 +114,13 @@ bool FlightTaskAutoVLA::update()
 	return ret;
 }
 
-void FlightTaskAutoVLA::_processVlaTrajectory()
+void FlightTaskAutoVLAEndEffector::_processVlaEndEffectorTrajectory()
 {
-	// Extract bucket target position from VLA trajectory
+	// Extract bucket target position from VLA end effector trajectory
 	// VLA provides bucket position in world coordinates
-	Vector3f bucket_target(_vla_trajectory.bucket_position_x,
-			       _vla_trajectory.bucket_position_y,
-			       _vla_trajectory.bucket_position_z);
+	Vector3f bucket_target(_vla_end_effector_trajectory.bucket_position_x,
+			       _vla_end_effector_trajectory.bucket_position_y,
+			       _vla_end_effector_trajectory.bucket_position_z);
 
 	// For now, use bucket XY position as chassis target position
 	// Z-component will be handled by boom/bucket kinematics
@@ -129,7 +129,7 @@ void FlightTaskAutoVLA::_processVlaTrajectory()
 	_position_setpoint(2) = _position(2); // Maintain current Z position (ground level)
 
 	// Set velocity based on trajectory constraints
-	float max_vel = math::constrain(_vla_trajectory.max_velocity, 0.1f, _param_autovla_max_vel.get());
+	float max_vel = math::constrain(_vla_end_effector_trajectory.max_velocity, 0.1f, _param_autovla_ee_max_vel.get());
 
 	// Calculate desired velocity towards target
 	Vector2f pos_error(bucket_target(0) - _position(0), bucket_target(1) - _position(1));
@@ -147,14 +147,14 @@ void FlightTaskAutoVLA::_processVlaTrajectory()
 
 	_velocity_setpoint(2) = 0.0f;
 
-	// Set yaw from VLA trajectory
-	_yaw_setpoint = _vla_trajectory.bucket_orientation_yaw;
+	// Set yaw from VLA end effector trajectory
+	_yaw_setpoint = _vla_end_effector_trajectory.bucket_orientation_yaw;
 	_yawspeed_setpoint = 0.0f; // Could be derived from trajectory if needed
 }
 
-void FlightTaskAutoVLA::_decomposeVlaSetpoint()
+void FlightTaskAutoVLAEndEffector::_decomposeVlaEndEffectorSetpoint()
 {
-	// Decompose VLA bucket position into chassis position and end effector angles
+	// Decompose VLA end effector bucket position into chassis position and end effector angles
 	// This is a simplified kinematic decomposition
 
 	// Chassis setpoint (XY position and yaw)
@@ -170,9 +170,9 @@ void FlightTaskAutoVLA::_decomposeVlaSetpoint()
 
 	// End effector setpoint (boom and bucket angles)
 	// Calculate bucket height and reach from bucket position
-	Vector3f bucket_pos(_vla_trajectory.bucket_position_x,
-			    _vla_trajectory.bucket_position_y,
-			    _vla_trajectory.bucket_position_z);
+	Vector3f bucket_pos(_vla_end_effector_trajectory.bucket_position_x,
+			    _vla_end_effector_trajectory.bucket_position_y,
+			    _vla_end_effector_trajectory.bucket_position_z);
 
 	// Calculate relative bucket position from chassis
 	Vector2f bucket_relative(bucket_pos(0) - _position(0), bucket_pos(1) - _position(1));
@@ -181,11 +181,11 @@ void FlightTaskAutoVLA::_decomposeVlaSetpoint()
 
 	// Simple inverse kinematics: assume boom angle based on reach and height
 	// This is simplified - real implementation would use proper IK
-	float boom_reach = _param_autovla_boom_reach.get();
+	float boom_reach = _param_autovla_ee_boom_reach.get();
 	float boom_angle = atan2f(bucket_height, math::min(bucket_reach, boom_reach));
 
-	// Bucket angle from VLA orientation (pitch component)
-	float bucket_angle = _vla_trajectory.bucket_orientation_pitch;
+	// Bucket angle from VLA end effector orientation (pitch component)
+	float bucket_angle = _vla_end_effector_trajectory.bucket_orientation_pitch;
 
 	_end_effector_setpoint.timestamp = hrt_absolute_time();
 	_end_effector_setpoint.boom_angle = boom_angle;
@@ -195,13 +195,13 @@ void FlightTaskAutoVLA::_decomposeVlaSetpoint()
 	_end_effector_setpoint.valid = true;
 	_end_effector_setpoint.priority = 100;
 	_end_effector_setpoint.hold_position = false;
-	_end_effector_setpoint.emergency_stop = _vla_trajectory.emergency_stop;
-	_end_effector_setpoint.sequence_id = _vla_trajectory.sequence_id;
-	_end_effector_setpoint.sequence_complete = _vla_trajectory.sequence_complete;
-	_end_effector_setpoint.confidence_score = _vla_trajectory.confidence_score;
+	_end_effector_setpoint.emergency_stop = _vla_end_effector_trajectory.emergency_stop;
+	_end_effector_setpoint.sequence_id = _vla_end_effector_trajectory.sequence_id;
+	_end_effector_setpoint.sequence_complete = _vla_end_effector_trajectory.sequence_complete;
+	_end_effector_setpoint.confidence_score = _vla_end_effector_trajectory.confidence_score;
 }
 
-void FlightTaskAutoVLA::_publishTrajectorySetpoints()
+void FlightTaskAutoVLAEndEffector::_publishTrajectorySetpoints()
 {
 	// Publish chassis trajectory setpoint
 	_pub_chassis_setpoint.publish(_chassis_setpoint);
@@ -210,14 +210,14 @@ void FlightTaskAutoVLA::_publishTrajectorySetpoints()
 	_pub_end_effector_setpoint.publish(_end_effector_setpoint);
 }
 
-bool FlightTaskAutoVLA::_isVlaTrajectoryValid() const
+bool FlightTaskAutoVLAEndEffector::_isVlaEndEffectorTrajectoryValid() const
 {
-	if (!_vla_trajectory.valid_output || !_vla_trajectory.enable_trajectory) {
+	if (!_vla_end_effector_trajectory.valid_output || !_vla_end_effector_trajectory.enable_trajectory) {
 		return false;
 	}
 
 	// Check if trajectory is recent
-	if (_vla_trajectory.timestamp > 0 && hrt_elapsed_time(&_vla_trajectory.timestamp) < VLA_TIMEOUT) {
+	if (_vla_end_effector_trajectory.timestamp > 0 && hrt_elapsed_time(&_vla_end_effector_trajectory.timestamp) < VLA_EE_TIMEOUT) {
 		return true;
 	}
 

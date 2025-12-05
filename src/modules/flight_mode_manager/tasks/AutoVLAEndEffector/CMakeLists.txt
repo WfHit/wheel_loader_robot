@@ -31,9 +31,9 @@
 #
 ############################################################################
 
-px4_add_library(FlightTaskAutoVLA
-	FlightTaskAutoVLA.cpp
+px4_add_library(FlightTaskAutoVLAEndEffector
+	FlightTaskAutoVLAEndEffector.cpp
 )
 
-target_link_libraries(FlightTaskAutoVLA PUBLIC FlightTask)
-target_include_directories(FlightTaskAutoVLA PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(FlightTaskAutoVLAEndEffector PUBLIC FlightTask)
+target_include_directories(FlightTaskAutoVLAEndEffector PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

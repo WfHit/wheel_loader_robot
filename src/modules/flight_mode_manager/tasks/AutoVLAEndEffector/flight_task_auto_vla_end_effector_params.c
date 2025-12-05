@@ -32,21 +32,21 @@
  ****************************************************************************/
 
 /**
- * @file flight_task_autovla_params.c
+ * @file flight_task_auto_vla_end_effector_params.c
  *
- * Parameters for AutoVLA flight task
+ * Parameters for AutoVLAEndEffector flight task
  *
  * @author PX4 Development Team
  */
 
 /*
- * AutoVLA flight task parameters, accessible via MAVLink
+ * AutoVLAEndEffector flight task parameters, accessible via MAVLink
  */
 
 /**
- * AutoVLA maximum velocity
+ * AutoVLA End Effector maximum velocity
  *
- * Maximum velocity for VLA trajectory following.
+ * Maximum velocity for VLA end effector trajectory following.
  *
  * @unit m/s
  * @min 0.1
@@ -55,12 +55,12 @@
  * @increment 0.1
  * @group Flight Task
  */
-PARAM_DEFINE_FLOAT(AUTOVLA_MAX_VEL, 1.0f);
+PARAM_DEFINE_FLOAT(AUTOVLA_EE_MAX_VEL, 1.0f);
 
 /**
- * AutoVLA maximum acceleration
+ * AutoVLA End Effector maximum acceleration
  *
- * Maximum acceleration for VLA trajectory following.
+ * Maximum acceleration for VLA end effector trajectory following.
  *
  * @unit m/s^2
  * @min 0.1
@@ -69,10 +69,10 @@ PARAM_DEFINE_FLOAT(AUTOVLA_MAX_VEL, 1.0f);
  * @increment 0.1
  * @group Flight Task
  */
-PARAM_DEFINE_FLOAT(AUTOVLA_MAX_ACC, 0.5f);
+PARAM_DEFINE_FLOAT(AUTOVLA_EE_MAX_ACC, 0.5f);
 
 /**
- * AutoVLA boom reach
+ * AutoVLA End Effector boom reach
  *
  * Maximum reach of the boom for inverse kinematics calculations.
  *
@@ -83,4 +83,4 @@ PARAM_DEFINE_FLOAT(AUTOVLA_MAX_ACC, 0.5f);
  * @increment 0.1
  * @group Flight Task
  */
-PARAM_DEFINE_FLOAT(AUTOVLA_BOOM_REACH, 3.0f);
+PARAM_DEFINE_FLOAT(AUTOVLA_EE_BOOM_REACH, 3.0f);
