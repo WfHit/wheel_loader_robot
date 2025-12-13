@@ -137,9 +137,17 @@ void ModeManager::selectAndActivateMode()
 {
 	// Do not run any flight task for VTOLs in fixed-wing mode
 	if ((_vehicle_status_sub.get().vehicle_type == vehicle_status_s::VEHICLE_TYPE_FIXED_WING)
-	    || ((_vehicle_status_sub.get().operation_mode >= vehicle_status_s::OPERATION_MODE_EXTERNAL1)
+	    || ((_vehicle_status_sub.get().operation_mode >= vehicle_status_s::OPERATION_MODE_EXTERNAL3)
 		&& (_vehicle_status_sub.get().operation_mode <= vehicle_status_s::OPERATION_MODE_EXTERNAL8))) {
 		switchTask(ModeIndex::None);
+		return;
+	}
+
+	// Handle wheel loader specific mode selection
+	const bool is_wheel_loader = (_vehicle_status_sub.get().vehicle_type == vehicle_status_s::VEHICLE_TYPE_WHEEL_LOADER);
+
+	if (is_wheel_loader) {
+		selectWheelLoaderMode();
 		return;
 	}
 
@@ -489,6 +497,54 @@ int ModeManager::print_status()
 
 	perf_print_counter(_loop_perf);
 	return 0;
+}
+
+void ModeManager::selectWheelLoaderMode()
+{
+	// Wheel loader specific mode selection
+	// Priority: Emergency -> VLA Auto -> Manual
+
+	const uint8_t operation_mode = _vehicle_status_sub.get().operation_mode;
+	ModeError error = ModeError::NoError;
+
+	// VLA 7-DOF Trajectory Following (chassis + boom + tilt) - autonomous mode
+	if (operation_mode == vehicle_status_s::OPERATION_MODE_AUTO_VLA) {
+		error = switchTask(ModeIndex::VLA);
+
+		if (error != ModeError::NoError) {
+			PX4_WARN("VLA mode activation failed, falling back to manual");
+			error = switchTask(ModeIndex::ManualWheelLoader);
+		}
+
+		if (error == ModeError::NoError) {
+			return;
+		}
+	}
+
+	// Manual mode for wheel loader (default mode)
+	if (operation_mode == vehicle_status_s::OPERATION_MODE_MANUAL) {
+		error = switchTask(ModeIndex::ManualWheelLoader);
+
+		if (error == ModeError::NoError) {
+			return;
+		}
+	}
+
+	// Failsafe mode for wheel loader
+	if (error != ModeError::NoError) {
+		// Try failsafe as last resort
+		error = switchTask(ModeIndex::Failsafe);
+
+		if (error != ModeError::NoError) {
+			PX4_ERR("No valid mode available for wheel loader");
+			switchTask(ModeIndex::None);
+		}
+	}
+
+	// If no specific mode matched, default to manual for wheel loader
+	if (_current_task.index == ModeIndex::None) {
+		switchTask(ModeIndex::ManualWheelLoader);
+	}
 }
 
 int ModeManager::print_usage(const char *reason)
