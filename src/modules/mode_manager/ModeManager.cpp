@@ -526,11 +526,15 @@ void ModeManager::selectWheelLoaderMode()
 
 		if (error == ModeError::NoError) {
 			mode_activated = true;
+
+		} else {
+			PX4_WARN("Manual wheel loader mode activation failed");
 		}
 	}
 
 	// Failsafe mode if no other mode was successfully activated
 	if (!mode_activated) {
+		PX4_WARN("Entering failsafe mode for wheel loader");
 		error = switchTask(ModeIndex::Failsafe);
 
 		if (error != ModeError::NoError) {
