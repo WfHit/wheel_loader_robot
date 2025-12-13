@@ -49,10 +49,26 @@ namespace vehicle_type
  *
  * Wheel loaders are articulated ground vehicles with boom and bucket (tilt) control.
  * They support manual control and VLA (Vision-Language-Action) autonomous mode.
+ *
+ * Command Set:
+ * - Arm/disarm commands
+ * - Boom/bucket control commands
+ * - VLA trajectory commands
+ * - Basic navigation (no takeoff/land)
+ *
+ * Event Reactions:
+ * - RC loss: Emergency stop (ground vehicle safety)
+ * - Datalink loss: Continue current task
+ * - Obstacle detection: Stop
+ * - VLA timeout: Switch to manual
  */
 class WheelLoaderStrategy : public VehicleTypeStrategy
 {
 public:
+	//========================================================================
+	// Basic Vehicle Type Information
+	//========================================================================
+
 	uint8_t getVehicleType() const override
 	{
 		return vehicle_status_s::VEHICLE_TYPE_WHEEL_LOADER;
@@ -62,6 +78,10 @@ public:
 	{
 		return "Wheel Loader";
 	}
+
+	//========================================================================
+	// Mode Configuration
+	//========================================================================
 
 	uint32_t getAvailableModesMask() const override
 	{
@@ -89,6 +109,10 @@ public:
 		return vehicle_type_config_s::MODE_CHANGE_LOGIC_WHEEL_LOADER;
 	}
 
+	//========================================================================
+	// Control Capabilities and Safety
+	//========================================================================
+
 	ControlCapabilities getControlCapabilities() const override
 	{
 		ControlCapabilities caps{};
@@ -111,6 +135,118 @@ public:
 		limits.max_velocity = 3.0f;           // m/s (slow for safety)
 		limits.max_steering_rate = 0.5f;      // rad/s
 		return limits;
+	}
+
+	//========================================================================
+	// Command Set Configuration
+	//========================================================================
+
+	uint32_t getSupportedCommandsMask() const override
+	{
+		return (1u << vehicle_type_config_s::CMD_CATEGORY_ARM_DISARM) |
+		       (1u << vehicle_type_config_s::CMD_CATEGORY_ACTUATOR) |
+		       (1u << vehicle_type_config_s::CMD_CATEGORY_BOOM_BUCKET) |
+		       (1u << vehicle_type_config_s::CMD_CATEGORY_VLA);
+	}
+
+	bool isCommandSupported(uint16_t command) const override
+	{
+		switch (command) {
+		// Arm/disarm commands
+		case vehicle_command_s::VEHICLE_CMD_COMPONENT_ARM_DISARM:
+			return true;
+
+		// Actuator test
+		case vehicle_command_s::VEHICLE_CMD_ACTUATOR_TEST:
+			return true;
+
+		// Mode change (filtered by available modes)
+		case vehicle_command_s::VEHICLE_CMD_DO_SET_MODE:
+			return true;
+
+		// VLA-specific commands would go here
+		// case vehicle_command_s::VEHICLE_CMD_VLA_*:
+		//     return true;
+
+		// Takeoff/land not supported for ground vehicles
+		case vehicle_command_s::VEHICLE_CMD_NAV_TAKEOFF:
+		case vehicle_command_s::VEHICLE_CMD_NAV_LAND:
+		case vehicle_command_s::VEHICLE_CMD_NAV_VTOL_TAKEOFF:
+			return false;
+
+		default:
+			return false;
+		}
+	}
+
+	CommandResult handleCommand(const vehicle_command_s &command) const override
+	{
+		switch (command.command) {
+		// Wheel loader specific command handling would go here
+		// For now, delegate to default handler
+		default:
+			return CommandResult::Delegated;
+		}
+	}
+
+	//========================================================================
+	// Event Reaction Configuration
+	//========================================================================
+
+	uint32_t getEventReactionsMask() const override
+	{
+		return (1u << vehicle_type_config_s::EVENT_REACT_RC_LOSS_ESTOP) |
+		       (1u << vehicle_type_config_s::EVENT_REACT_DATALINK_LOSS_CONTINUE) |
+		       (1u << vehicle_type_config_s::EVENT_REACT_OBSTACLE_STOP);
+	}
+
+	EventAction getEventReaction(EventType event) const override
+	{
+		switch (event) {
+		case EventType::RcLoss:
+			// Ground vehicle safety: E-stop on RC loss
+			return EventAction::EmergencyStop;
+
+		case EventType::DatalinkLoss:
+			// Continue current task on datalink loss
+			return EventAction::ContinueMission;
+
+		case EventType::LowBattery:
+			// Switch to manual on low battery
+			return EventAction::SwitchToManual;
+
+		case EventType::CriticalBattery:
+			// Emergency stop on critical battery
+			return EventAction::EmergencyStop;
+
+		case EventType::ObstacleDetected:
+			// Stop immediately on obstacle detection
+			return EventAction::EmergencyStop;
+
+		case EventType::VlaTimeout:
+			// Fall back to manual on VLA timeout
+			return EventAction::SwitchToManual;
+
+		case EventType::BoomLimitReached:
+			// Just warn, operator handles it
+			return EventAction::Warn;
+
+		case EventType::EmergencyStop:
+			// Acknowledge E-stop
+			return EventAction::EmergencyStop;
+
+		default:
+			return EventAction::Warn;
+		}
+	}
+
+	//========================================================================
+	// RC Input Configuration
+	//========================================================================
+
+	uint8_t getRcInputMode() const override
+	{
+		return vehicle_type_config_s::RC_INPUT_MODE_WHEEL_LOADER;
 	}
 };
 

@@ -49,10 +49,26 @@ namespace vehicle_type
  *
  * Rovers are wheeled ground vehicles that support mission-based navigation,
  * position control, and return-to-launch capabilities.
+ *
+ * Command Set:
+ * - Arm/disarm commands
+ * - Navigation commands (waypoints, RTL)
+ * - Mission commands
+ * - Geofence commands
+ *
+ * Event Reactions:
+ * - RC loss: RTL or hold
+ * - Datalink loss: Continue mission
+ * - Geofence breach: Hold position
+ * - Obstacle detection: Stop
  */
 class RoverStrategy : public VehicleTypeStrategy
 {
 public:
+	//========================================================================
+	// Basic Vehicle Type Information
+	//========================================================================
+
 	uint8_t getVehicleType() const override
 	{
 		return vehicle_status_s::VEHICLE_TYPE_ROVER;
@@ -62,6 +78,10 @@ public:
 	{
 		return "Rover";
 	}
+
+	//========================================================================
+	// Mode Configuration
+	//========================================================================
 
 	uint32_t getAvailableModesMask() const override
 	{
@@ -94,6 +114,10 @@ public:
 		return vehicle_type_config_s::MODE_CHANGE_LOGIC_ROVER;
 	}
 
+	//========================================================================
+	// Control Capabilities and Safety
+	//========================================================================
+
 	ControlCapabilities getControlCapabilities() const override
 	{
 		ControlCapabilities caps{};
@@ -116,6 +140,111 @@ public:
 		limits.max_velocity = 10.0f;          // m/s
 		limits.max_steering_rate = 1.0f;      // rad/s
 		return limits;
+	}
+
+	//========================================================================
+	// Command Set Configuration
+	//========================================================================
+
+	uint32_t getSupportedCommandsMask() const override
+	{
+		return (1u << vehicle_type_config_s::CMD_CATEGORY_ARM_DISARM) |
+		       (1u << vehicle_type_config_s::CMD_CATEGORY_NAVIGATION) |
+		       (1u << vehicle_type_config_s::CMD_CATEGORY_MISSION) |
+		       (1u << vehicle_type_config_s::CMD_CATEGORY_GEOFENCE) |
+		       (1u << vehicle_type_config_s::CMD_CATEGORY_ACTUATOR);
+	}
+
+	bool isCommandSupported(uint16_t command) const override
+	{
+		switch (command) {
+		// Arm/disarm commands
+		case vehicle_command_s::VEHICLE_CMD_COMPONENT_ARM_DISARM:
+			return true;
+
+		// Navigation commands
+		case vehicle_command_s::VEHICLE_CMD_DO_REPOSITION:
+		case vehicle_command_s::VEHICLE_CMD_NAV_WAYPOINT:
+		case vehicle_command_s::VEHICLE_CMD_NAV_RETURN_TO_LAUNCH:
+		case vehicle_command_s::VEHICLE_CMD_NAV_LOITER_UNLIM:
+			return true;
+
+		// Mission commands
+		case vehicle_command_s::VEHICLE_CMD_MISSION_START:
+		case vehicle_command_s::VEHICLE_CMD_DO_PAUSE_CONTINUE:
+			return true;
+
+		// Mode change
+		case vehicle_command_s::VEHICLE_CMD_DO_SET_MODE:
+			return true;
+
+		// Actuator test
+		case vehicle_command_s::VEHICLE_CMD_ACTUATOR_TEST:
+			return true;
+
+		// Takeoff/land not supported for ground vehicles
+		case vehicle_command_s::VEHICLE_CMD_NAV_TAKEOFF:
+		case vehicle_command_s::VEHICLE_CMD_NAV_LAND:
+		case vehicle_command_s::VEHICLE_CMD_NAV_VTOL_TAKEOFF:
+			return false;
+
+		default:
+			return false;
+		}
+	}
+
+	//========================================================================
+	// Event Reaction Configuration
+	//========================================================================
+
+	uint32_t getEventReactionsMask() const override
+	{
+		return (1u << vehicle_type_config_s::EVENT_REACT_RC_LOSS_RTL) |
+		       (1u << vehicle_type_config_s::EVENT_REACT_DATALINK_LOSS_CONTINUE) |
+		       (1u << vehicle_type_config_s::EVENT_REACT_LOW_BATTERY_RTL) |
+		       (1u << vehicle_type_config_s::EVENT_REACT_GEOFENCE_HOLD) |
+		       (1u << vehicle_type_config_s::EVENT_REACT_OBSTACLE_STOP);
+	}
+
+	EventAction getEventReaction(EventType event) const override
+	{
+		switch (event) {
+		case EventType::RcLoss:
+			return EventAction::SwitchToRtl;
+
+		case EventType::DatalinkLoss:
+			return EventAction::ContinueMission;
+
+		case EventType::LowBattery:
+			return EventAction::SwitchToRtl;
+
+		case EventType::CriticalBattery:
+			return EventAction::EmergencyStop;
+
+		case EventType::GeofenceBreach:
+			return EventAction::SwitchToHold;
+
+		case EventType::ObstacleDetected:
+			return EventAction::EmergencyStop;
+
+		case EventType::PositionLoss:
+			return EventAction::SwitchToManual;
+
+		case EventType::EmergencyStop:
+			return EventAction::EmergencyStop;
+
+		default:
+			return EventAction::Warn;
+		}
+	}
+
+	//========================================================================
+	// RC Input Configuration
+	//========================================================================
+
+	uint8_t getRcInputMode() const override
+	{
+		return vehicle_type_config_s::RC_INPUT_MODE_ROVER;
 	}
 };
 

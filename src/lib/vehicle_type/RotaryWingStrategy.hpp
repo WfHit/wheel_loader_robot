@@ -49,10 +49,28 @@ namespace vehicle_type
  *
  * Rotary wing vehicles support full 3D flight capabilities including
  * altitude control, position hold, and various autonomous modes.
+ *
+ * Command Set:
+ * - Full aircraft command set
+ * - Takeoff/land commands
+ * - Navigation commands
+ * - Mission commands
+ * - Gimbal/camera commands
+ *
+ * Event Reactions:
+ * - RC loss: RTL
+ * - Datalink loss: RTL
+ * - Low battery: RTL
+ * - Geofence breach: RTL
+ * - Collision avoidance: Active
  */
 class RotaryWingStrategy : public VehicleTypeStrategy
 {
 public:
+	//========================================================================
+	// Basic Vehicle Type Information
+	//========================================================================
+
 	uint8_t getVehicleType() const override
 	{
 		return vehicle_status_s::VEHICLE_TYPE_ROTARY_WING;
@@ -62,6 +80,10 @@ public:
 	{
 		return "Rotary Wing";
 	}
+
+	//========================================================================
+	// Mode Configuration
+	//========================================================================
 
 	uint32_t getAvailableModesMask() const override
 	{
@@ -102,6 +124,10 @@ public:
 		return vehicle_type_config_s::MODE_CHANGE_LOGIC_STANDARD;
 	}
 
+	//========================================================================
+	// Control Capabilities and Safety
+	//========================================================================
+
 	ControlCapabilities getControlCapabilities() const override
 	{
 		ControlCapabilities caps{};
@@ -124,6 +150,124 @@ public:
 		limits.max_velocity = 20.0f;           // m/s
 		limits.max_steering_rate = 2.0f;       // rad/s
 		return limits;
+	}
+
+	//========================================================================
+	// Command Set Configuration
+	//========================================================================
+
+	uint32_t getSupportedCommandsMask() const override
+	{
+		return (1u << vehicle_type_config_s::CMD_CATEGORY_ARM_DISARM) |
+		       (1u << vehicle_type_config_s::CMD_CATEGORY_TAKEOFF_LAND) |
+		       (1u << vehicle_type_config_s::CMD_CATEGORY_NAVIGATION) |
+		       (1u << vehicle_type_config_s::CMD_CATEGORY_MISSION) |
+		       (1u << vehicle_type_config_s::CMD_CATEGORY_GEOFENCE) |
+		       (1u << vehicle_type_config_s::CMD_CATEGORY_GIMBAL) |
+		       (1u << vehicle_type_config_s::CMD_CATEGORY_ACTUATOR) |
+		       (1u << vehicle_type_config_s::CMD_CATEGORY_PAYLOAD);
+	}
+
+	bool isCommandSupported(uint16_t command) const override
+	{
+		switch (command) {
+		// Arm/disarm
+		case vehicle_command_s::VEHICLE_CMD_COMPONENT_ARM_DISARM:
+			return true;
+
+		// Takeoff/land
+		case vehicle_command_s::VEHICLE_CMD_NAV_TAKEOFF:
+		case vehicle_command_s::VEHICLE_CMD_NAV_LAND:
+		case vehicle_command_s::VEHICLE_CMD_NAV_VTOL_TAKEOFF:
+			return true;
+
+		// Navigation
+		case vehicle_command_s::VEHICLE_CMD_DO_REPOSITION:
+		case vehicle_command_s::VEHICLE_CMD_DO_CHANGE_ALTITUDE:
+		case vehicle_command_s::VEHICLE_CMD_NAV_WAYPOINT:
+		case vehicle_command_s::VEHICLE_CMD_NAV_RETURN_TO_LAUNCH:
+		case vehicle_command_s::VEHICLE_CMD_NAV_LOITER_UNLIM:
+			return true;
+
+		// Mission
+		case vehicle_command_s::VEHICLE_CMD_MISSION_START:
+		case vehicle_command_s::VEHICLE_CMD_DO_PAUSE_CONTINUE:
+			return true;
+
+		// Mode change
+		case vehicle_command_s::VEHICLE_CMD_DO_SET_MODE:
+			return true;
+
+		// Gimbal/Camera
+		case vehicle_command_s::VEHICLE_CMD_DO_GIMBAL_MANAGER_PITCHYAW:
+		case vehicle_command_s::VEHICLE_CMD_DO_GIMBAL_MANAGER_CONFIGURE:
+		case vehicle_command_s::VEHICLE_CMD_DO_TRIGGER_CONTROL:
+		case vehicle_command_s::VEHICLE_CMD_IMAGE_START_CAPTURE:
+		case vehicle_command_s::VEHICLE_CMD_IMAGE_STOP_CAPTURE:
+			return true;
+
+		// Actuator
+		case vehicle_command_s::VEHICLE_CMD_ACTUATOR_TEST:
+			return true;
+
+		default:
+			// Support most standard MAVLink commands
+			return true;
+		}
+	}
+
+	//========================================================================
+	// Event Reaction Configuration
+	//========================================================================
+
+	uint32_t getEventReactionsMask() const override
+	{
+		return (1u << vehicle_type_config_s::EVENT_REACT_RC_LOSS_RTL) |
+		       (1u << vehicle_type_config_s::EVENT_REACT_DATALINK_LOSS_RTL) |
+		       (1u << vehicle_type_config_s::EVENT_REACT_LOW_BATTERY_RTL) |
+		       (1u << vehicle_type_config_s::EVENT_REACT_GEOFENCE_RTL) |
+		       (1u << vehicle_type_config_s::EVENT_REACT_COLLISION_AVOID);
+	}
+
+	EventAction getEventReaction(EventType event) const override
+	{
+		switch (event) {
+		case EventType::RcLoss:
+			return EventAction::SwitchToRtl;
+
+		case EventType::DatalinkLoss:
+			return EventAction::SwitchToRtl;
+
+		case EventType::LowBattery:
+			return EventAction::SwitchToRtl;
+
+		case EventType::CriticalBattery:
+			return EventAction::SwitchToLand;
+
+		case EventType::GeofenceBreach:
+			return EventAction::SwitchToRtl;
+
+		case EventType::ObstacleDetected:
+			return EventAction::SwitchToHold;
+
+		case EventType::PositionLoss:
+			return EventAction::SwitchToLand;
+
+		case EventType::EmergencyStop:
+			return EventAction::Disarm;
+
+		default:
+			return EventAction::Warn;
+		}
+	}
+
+	//========================================================================
+	// RC Input Configuration
+	//========================================================================
+
+	uint8_t getRcInputMode() const override
+	{
+		return vehicle_type_config_s::RC_INPUT_MODE_STANDARD;
 	}
 };
 
