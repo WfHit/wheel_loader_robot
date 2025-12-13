@@ -353,7 +353,7 @@ public:
 		setRequirement(vehicle_status_s::OPERATION_MODE_AUTO_MISSION, flags.mode_req_local_position);
 		setRequirement(vehicle_status_s::OPERATION_MODE_AUTO_MISSION, flags.mode_req_global_position);
 		setRequirement(vehicle_status_s::OPERATION_MODE_AUTO_MISSION, flags.mode_req_local_alt);
-		setRequirement(vehicle_status_s::OPERATION_MODE_AUTO_MISSION, flags.mode_req_current_auto_mission);
+		setRequirement(vehicle_status_s::OPERATION_MODE_AUTO_MISSION, flags.mode_req_mission);
 		setRequirement(vehicle_status_s::OPERATION_MODE_AUTO_MISSION, flags.mode_req_wind_and_flight_time_compliance);
 
 		// OPERATION_MODE_AUTO_LOITER

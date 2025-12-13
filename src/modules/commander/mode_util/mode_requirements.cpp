@@ -52,7 +52,7 @@ void getModeRequirements(uint8_t vehicle_type, failsafe_flags_s &flags)
 	flags.mode_req_local_position_relaxed = 0;
 	flags.mode_req_global_position = 0;
 	flags.mode_req_local_alt = 0;
-	flags.mode_req_current_auto_mission = 0;
+	flags.mode_req_mission = 0;
 	flags.mode_req_offboard_signal = 0;
 	flags.mode_req_home_position = 0;
 	flags.mode_req_wind_and_flight_time_compliance = 0;
@@ -98,7 +98,7 @@ void getModeRequirements(uint8_t vehicle_type, failsafe_flags_s &flags)
 	setRequirement(vehicle_status_s::OPERATION_MODE_AUTO_MISSION, flags.mode_req_local_position);
 	setRequirement(vehicle_status_s::OPERATION_MODE_AUTO_MISSION, flags.mode_req_global_position);
 	setRequirement(vehicle_status_s::OPERATION_MODE_AUTO_MISSION, flags.mode_req_local_alt);
-	setRequirement(vehicle_status_s::OPERATION_MODE_AUTO_MISSION, flags.mode_req_current_auto_mission);
+	setRequirement(vehicle_status_s::OPERATION_MODE_AUTO_MISSION, flags.mode_req_mission);
 	setRequirement(vehicle_status_s::OPERATION_MODE_AUTO_MISSION, flags.mode_req_wind_and_flight_time_compliance);
 
 	// OPERATION_MODE_AUTO_LOITER
