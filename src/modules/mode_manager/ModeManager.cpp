@@ -509,24 +509,20 @@ bool ModeManager::selectModeForVehicleType(uint8_t vehicle_type)
 		return false;
 	}
 
-	// Check if this vehicle type has specialized mode selection
-	// Currently only wheel loader has vehicle-specific mode handling
-	if (vehicle_type == vehicle_status_s::VEHICLE_TYPE_WHEEL_LOADER) {
+	// Vehicle types that require specialized mode selection handling
+	// Wheel loader: Uses dedicated mode selection logic (VLA auto vs manual)
+	// Rotary wing: Uses default selectAndActivateMode() logic which is already optimized for aircraft
+	switch (vehicle_type) {
+	case vehicle_status_s::VEHICLE_TYPE_WHEEL_LOADER:
 		selectWheelLoaderMode();
 		return true;
-	}
 
-	// For other vehicle types, check if the current mode is supported
-	// If not supported by the strategy, let the default handling proceed
-	const uint8_t operation_mode = _vehicle_status_sub.get().operation_mode;
-
-	if (!strategy->isModeSupported(operation_mode)) {
-		// Mode not supported by this vehicle type strategy
-		// Fall through to default handling
+	default:
+		// For rotary wing and other aircraft, use the default selectAndActivateMode() logic
+		// which provides the full set of flight modes and transitions
+		// Return false to let selectAndActivateMode() handle mode selection
 		return false;
 	}
-
-	return false;
 }
 
 void ModeManager::selectWheelLoaderMode()
