@@ -763,64 +763,64 @@ void Automation::run()
 		geofence_breach_check();
 
 		/* Do stuff according to navigation state set by commander */
-		TaskBase *navigation_mode_new{nullptr};
+		TaskBase *task_new{nullptr};
 
 		switch (_vstatus.operation_mode) {
 
 		case vehicle_status_s::OPERATION_MODE_AUTO_MISSION:
 			_pos_sp_triplet_published_invalid_once = false;
 
-			navigation_mode_new = &_mission_task;
+			task_new = &_mission_task;
 
 			break;
 
 		case vehicle_status_s::OPERATION_MODE_AUTO_LOITER:
 			_pos_sp_triplet_published_invalid_once = false;
-			navigation_mode_new = &_loiter;
+			task_new = &_loiter;
 			break;
 
 		case vehicle_status_s::OPERATION_MODE_AUTO_RTL:
 
 			// If we are already in mission landing, do not switch.
 			if (_navigation_mode == &_mission_task && _mission_task.isLanding()) {
-				navigation_mode_new = &_mission_task;
+				task_new = &_mission_task;
 				break;
 
 			} else {
 				_pos_sp_triplet_published_invalid_once = false;
 			}
 
-			navigation_mode_new = &_rtl;
+			task_new = &_rtl;
 
 			break;
 
 		case vehicle_status_s::OPERATION_MODE_AUTO_TAKEOFF:
 			_pos_sp_triplet_published_invalid_once = false;
-			navigation_mode_new = &_takeoff;
+			task_new = &_takeoff;
 			break;
 
 #if CONFIG_MODE_NAVIGATOR_VTOL_TAKEOFF
 
 		case vehicle_status_s::OPERATION_MODE_AUTO_VTOL_TAKEOFF:
 			_pos_sp_triplet_published_invalid_once = false;
-			navigation_mode_new = &_vtol_takeoff;
+			task_new = &_vtol_takeoff;
 			break;
 #endif //CONFIG_MODE_NAVIGATOR_VTOL_TAKEOFF
 
 		case vehicle_status_s::OPERATION_MODE_AUTO_LAND:
 			_pos_sp_triplet_published_invalid_once = false;
-			navigation_mode_new = &_land;
+			task_new = &_land;
 			break;
 
 		case vehicle_status_s::OPERATION_MODE_AUTO_PRECLAND:
 			_pos_sp_triplet_published_invalid_once = false;
-			navigation_mode_new = &_precland;
+			task_new = &_precland;
 			_precland.set_mode(PrecLandMode::Required);
 			break;
 
 		case vehicle_status_s::OPERATION_MODE_AUTO_VLA:
 			_pos_sp_triplet_published_invalid_once = false;
-			navigation_mode_new = &_vla_trajectory_task;
+			task_new = &_vla_trajectory_task;
 			break;
 
 		case vehicle_status_s::OPERATION_MODE_MANUAL:
@@ -832,17 +832,17 @@ void Automation::run()
 		case vehicle_status_s::OPERATION_MODE_OFFBOARD:
 		case vehicle_status_s::OPERATION_MODE_STAB:
 		default:
-			navigation_mode_new = nullptr;
+			task_new = nullptr;
 			break;
 		}
 
 		// Do not execute any state machine while we are disarmed
 		if (_vstatus.arming_state != vehicle_status_s::ARMING_STATE_ARMED) {
-			navigation_mode_new = nullptr;
+			task_new = nullptr;
 		}
 
-		/* we have a new navigation mode: reset triplet */
-		if (_navigation_mode != navigation_mode_new) {
+/* we have a new task: reset triplet */
+		if (_navigation_mode != task_new) {
 			// We don't reset the triplet in the following two cases:
 			// 1)  if we just did an auto-takeoff and are now
 			// going to loiter. Otherwise, we lose the takeoff altitude and end up lower
@@ -854,13 +854,13 @@ void Automation::run()
 			// FIXME: a better solution would be to add reset where they are needed and remove
 			//        this general reset here.
 
-			const bool current_mode_is_takeoff = _navigation_mode == &_takeoff;
-			const bool new_mode_is_loiter = navigation_mode_new == &_loiter;
+			const bool current_task_is_takeoff = _navigation_mode == &_takeoff;
+			const bool new_task_is_loiter = task_new == &_loiter;
 			const bool valid_loiter_setpoint = (_pos_sp_triplet.current.valid
 							    && _pos_sp_triplet.current.type == position_setpoint_s::SETPOINT_TYPE_LOITER);
 
-			const bool did_not_switch_takeoff_to_loiter = !(current_mode_is_takeoff && new_mode_is_loiter);
-			const bool did_not_switch_to_loiter_with_valid_loiter_setpoint = !(new_mode_is_loiter && valid_loiter_setpoint);
+			const bool did_not_switch_takeoff_to_loiter = !(current_task_is_takeoff && new_task_is_loiter);
+			const bool did_not_switch_to_loiter_with_valid_loiter_setpoint = !(new_task_is_loiter && valid_loiter_setpoint);
 
 			if (did_not_switch_takeoff_to_loiter && did_not_switch_to_loiter_with_valid_loiter_setpoint) {
 				reset_triplets();
@@ -880,11 +880,7 @@ void Automation::run()
 				     "Transition to hover mode and descend");
 		}
 
-		_navigation_mode = navigation_mode_new;
-
-		if (_wait_for_vehicle_status_timestamp != 0 && _vstatus.timestamp > _wait_for_vehicle_status_timestamp) {
-			_wait_for_vehicle_status_timestamp = 0;
-		}
+		_navigation_mode = task_new;
 
 		/* iterate through navigation modes and set active/inactive for each */
 		for (unsigned int i = 0; i < NAVIGATOR_MODE_ARRAY_SIZE; i++) {

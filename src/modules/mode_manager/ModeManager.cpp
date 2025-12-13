@@ -510,7 +510,7 @@ void ModeManager::selectWheelLoaderMode()
 
 	// VLA 7-DOF Trajectory Following (chassis + boom + tilt) - autonomous mode
 	if (operation_mode == vehicle_status_s::OPERATION_MODE_AUTO_VLA) {
-		error = switchTask(ModeIndex::VLA);
+		error = switchMode(ModeIndex::VLA);
 
 		if (error == ModeError::NoError) {
 			mode_activated = true;
@@ -522,7 +522,7 @@ void ModeManager::selectWheelLoaderMode()
 
 	// Manual mode for wheel loader (default mode or fallback from VLA failure)
 	if (!mode_activated) {
-		error = switchTask(ModeIndex::ManualWheelLoader);
+		error = switchMode(ModeIndex::ManualWheelLoader);
 
 		if (error == ModeError::NoError) {
 			mode_activated = true;
@@ -535,11 +535,11 @@ void ModeManager::selectWheelLoaderMode()
 	// Failsafe mode if no other mode was successfully activated
 	if (!mode_activated) {
 		PX4_WARN("Entering failsafe mode for wheel loader");
-		error = switchTask(ModeIndex::Failsafe);
+		error = switchMode(ModeIndex::Failsafe);
 
 		if (error != ModeError::NoError) {
 			PX4_ERR("No valid mode available for wheel loader");
-			switchTask(ModeIndex::None);
+			switchMode(ModeIndex::None);
 		}
 	}
 }
