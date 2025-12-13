@@ -34,7 +34,7 @@
 #include "level_calibration.h"
 #include "calibration_messages.h"
 #include "calibration_routines.h"
-#include "../commander_helper.h"
+#include "../system_manager_helper.h"
 
 #include <px4_platform_common/defines.h>
 #include <px4_platform_common/posix.h>

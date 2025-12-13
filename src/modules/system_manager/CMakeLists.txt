@@ -40,16 +40,16 @@ add_subdirectory(mode_util)
 add_subdirectory(multicopter_throw_launch)
 
 px4_add_module(
-	MODULE modules__commander
-	MAIN commander
+	MODULE modules__system_manager
+	MAIN system_manager
 	COMPILE_FLAGS
 	SRCS
 		calibration/accelerometer_calibration.cpp
 		calibration/airspeed_calibration.cpp
 		calibration/baro_calibration.cpp
 		calibration/calibration_routines.cpp
-		commander.cpp
-		commander_helper.cpp
+		system_manager.cpp
+		system_manager_helper.cpp
 		calibration/esc_calibration.cpp
 		calibration/factory_calibration_storage.cpp
 		calibration/gyro_calibration.cpp
@@ -79,5 +79,5 @@ px4_add_module(
         atmosphere
 	)
 
-px4_add_unit_gtest(SRC calibration/mag_calibration_test.cpp LINKLIBS modules__commander)
-px4_add_functional_gtest(SRC mode_management_test.cpp LINKLIBS modules__commander)
+px4_add_unit_gtest(SRC calibration/mag_calibration_test.cpp LINKLIBS modules__system_manager)
+px4_add_functional_gtest(SRC mode_management_test.cpp LINKLIBS modules__system_manager)

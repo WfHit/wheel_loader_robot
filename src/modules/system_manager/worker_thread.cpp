@@ -104,7 +104,7 @@ void *WorkerThread::threadEntryTrampoline(void *arg)
 
 void WorkerThread::threadEntry()
 {
-	px4_prctl(PR_SET_NAME, "commander_low_prio", px4_getpid());
+	px4_prctl(PR_SET_NAME, "system_manager_low_prio", px4_getpid());
 
 	switch (_request) {
 	case Request::GyroCalibration:

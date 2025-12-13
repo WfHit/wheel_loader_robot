@@ -38,7 +38,7 @@
  */
 
 #include "mag_calibration.h"
-#include "../commander_helper.h"
+#include "../system_manager_helper.h"
 #include "calibration_routines.h"
 #include "lm_fit.hpp"
 #include "calibration_messages.h"

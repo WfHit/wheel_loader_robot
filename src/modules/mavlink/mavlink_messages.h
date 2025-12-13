@@ -44,7 +44,7 @@
 #include "mavlink_stream.h"
 
 #define DEFINE_GET_PX4_CUSTOM_MODE
-#include <commander/px4_custom_mode.h>
+#include <system_manager/px4_custom_mode.h>
 
 class StreamListItem
 {

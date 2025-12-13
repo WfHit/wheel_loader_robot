@@ -567,7 +567,7 @@ Module consuming manual_control_inputs publishing one manual_control_setpoint.
 
 int8_t ManualControl::navStateFromParam(int32_t param_value)
 {
-	// See src/modules/commander/module.yaml COM_FLTMODE${i}
+	// See src/modules/system_manager/module.yaml COM_FLTMODE${i}
 	switch(param_value) {
 		case 0: return vehicle_status_s::OPERATION_MODE_MANUAL;
 		case 1: return vehicle_status_s::OPERATION_MODE_ALTCTL;

@@ -106,7 +106,7 @@ public:
 	 * Get the output data
 	 * @return task output setpoints that get executed by the positon controller
 	 */
-	const trajectory_setpoint_s getTrajectorySetpoint();
+	const trajectory_setpoint_s getControlSetpoint();
 
 	/**
 	 * Get vehicle constraints.
@@ -125,7 +125,7 @@ public:
 	/**
 	 * All setpoints are set to NAN (uncontrolled), timestamp to zero
 	 */
-	static const trajectory_setpoint_s empty_trajectory_setpoint;
+	static const trajectory_setpoint_s empty_control_setpoint;
 
 	/**
 	 * All constraints are set to NAN, timestamp to zero

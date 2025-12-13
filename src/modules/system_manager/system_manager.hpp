@@ -96,17 +96,17 @@ using arm_disarm_reason_t = events::px4::enums::arm_disarm_reason_t;
 
 using namespace time_literals;
 
-class Commander : public ModuleBase<Commander>, public ModuleParams
+class SystemManager : public ModuleBase<SystemManager>, public ModuleParams
 {
 public:
-	Commander();
-	~Commander();
+	SystemManager();
+	~SystemManager();
 
 	/** @see ModuleBase */
 	static int task_spawn(int argc, char *argv[]);
 
 	/** @see ModuleBase */
-	static Commander *instantiate(int argc, char *argv[]);
+	static SystemManager *instantiate(int argc, char *argv[]);
 
 	/** @see ModuleBase */
 	static int custom_command(int argc, char *argv[]);
@@ -130,7 +130,7 @@ private:
 
 	void answer_command(const vehicle_command_s &cmd, uint8_t result);
 
-	transition_result_t arm(arm_disarm_reason_t calling_reason, bool run_preflight_checks = true);
+	transition_result_t arm(arm_disarm_reason_t calling_reason, bool run_prearm_checks = true);
 
 	transition_result_t disarm(arm_disarm_reason_t calling_reason, bool forced = false);
 
@@ -284,7 +284,7 @@ private:
 
 	vehicle_land_detected_s	_vehicle_land_detected{};
 
-	// commander publications
+	// system_manager publications
 	actuator_armed_s        _actuator_armed{};
 	vehicle_control_mode_s  _vehicle_control_mode{};
 	vtol_vehicle_status_s	_vtol_vehicle_status{};
@@ -323,7 +323,7 @@ private:
 	orb_advert_t _mavlink_log_pub{nullptr};
 
 	perf_counter_t _loop_perf{perf_alloc(PC_ELAPSED, MODULE_NAME": cycle")};
-	perf_counter_t _preflight_check_perf{perf_alloc(PC_ELAPSED, MODULE_NAME": preflight check")};
+	perf_counter_t _prearm_check_perf{perf_alloc(PC_ELAPSED, MODULE_NAME": prearm check")};
 
 	// optional parameters
 	param_t _param_mav_type{PARAM_INVALID};

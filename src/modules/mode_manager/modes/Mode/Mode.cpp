@@ -3,7 +3,7 @@
 #include <lib/geo/geo.h>
 
 constexpr uint64_t Mode::_timeout;
-const trajectory_setpoint_s Mode::empty_trajectory_setpoint = {0, {NAN, NAN, NAN}, {NAN, NAN, NAN}, {NAN, NAN, NAN}, {NAN, NAN, NAN}, NAN, NAN};
+const trajectory_setpoint_s Mode::empty_control_setpoint = {0, {NAN, NAN, NAN}, {NAN, NAN, NAN}, {NAN, NAN, NAN}, {NAN, NAN, NAN}, NAN, NAN};
 const vehicle_constraints_s Mode::empty_constraints = {0, NAN, NAN, false, {}};
 const landing_gear_s Mode::empty_landing_gear_default_keep = {0, landing_gear_s::GEAR_KEEP, {}};
 
@@ -20,7 +20,7 @@ bool Mode::activate(const trajectory_setpoint_s &last_setpoint)
 void Mode::reActivate()
 {
 	// Preserve vertical velocity while on the ground to allow descending by stick for reliable land detection
-	trajectory_setpoint_s setpoint_preserve_vertical{empty_trajectory_setpoint};
+	trajectory_setpoint_s setpoint_preserve_vertical{empty_control_setpoint};
 	setpoint_preserve_vertical.velocity[2] = _velocity_setpoint(2);
 	activate(setpoint_preserve_vertical);
 }
@@ -92,7 +92,7 @@ void Mode::_checkEkfResetCounters()
 	}
 }
 
-const trajectory_setpoint_s Mode::getTrajectorySetpoint()
+const trajectory_setpoint_s Mode::getControlSetpoint()
 {
 	trajectory_setpoint_s trajectory_setpoint{};
 	trajectory_setpoint.timestamp = hrt_absolute_time();

@@ -1,6 +1,6 @@
-module_name: Commander
+module_name: SystemManager
 parameters:
-    - group: Commander
+    - group: SystemManager
       definitions:
         COM_MODE${i}_HASH:
             description:

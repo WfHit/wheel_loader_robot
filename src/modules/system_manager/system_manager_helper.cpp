@@ -32,7 +32,7 @@
  ****************************************************************************/
 
 /**
- * @file commander_helper.cpp
+ * @file system_manager_helper.cpp
  * Commander helper functions implementations
  *
  * @author Thomas Gubler <thomasgubler@student.ethz.ch>
@@ -61,7 +61,7 @@
 #include <drivers/drv_hrt.h>
 #include <drivers/drv_tone_alarm.h>
 
-#include "commander_helper.h"
+#include "system_manager_helper.h"
 
 #define VEHICLE_TYPE_FIXED_WING 1
 #define VEHICLE_TYPE_QUADROTOR 2

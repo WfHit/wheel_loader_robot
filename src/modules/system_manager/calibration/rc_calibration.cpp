@@ -42,7 +42,7 @@
 #include <px4_platform_common/defines.h>
 
 #include "rc_calibration.h"
-#include "../commander_helper.h"
+#include "../system_manager_helper.h"
 
 #include <uORB/Subscription.hpp>
 #include <uORB/topics/manual_control_setpoint.h>

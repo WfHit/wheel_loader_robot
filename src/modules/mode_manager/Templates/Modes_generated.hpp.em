@@ -34,7 +34,7 @@
 /**
  * @@file Modes_generated.hpp
  *
- * Generated Header to list all required flight tasks
+ * Generated Header to list all required modes
  *
  * @@author Christoph Tobler <christoph@@px4.io>
  */
@@ -43,7 +43,7 @@
 
 // include all required headers
 #include "ModeManager.hpp"
-@# loop through all requested tasks
+@# loop through all requested modes
 @[if tasks]@
 @[for task in tasks]@
 #include "Mode@(task).hpp"
@@ -52,21 +52,21 @@
 
 enum class ModeIndex : int {
     None = -1,
-@# loop through all requested tasks
+@# loop through all requested modes
 @[if tasks]@
 @[for task in tasks]@
     @(task),
 @[end for]@
 @[end if]@
 
-    Count // number of tasks
+    Count // number of modes
 };
 
 union ModeUnion {
     ModeUnion() {}
     ~ModeUnion() {}
 
-@# loop through all requested tasks
+@# loop through all requested modes
 @[if tasks]@
 @[for task in tasks]@
     Mode@(task) @(task);

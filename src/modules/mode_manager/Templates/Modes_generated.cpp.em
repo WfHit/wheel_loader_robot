@@ -34,7 +34,7 @@
 /**
  * @@file Modes_generated.cpp
  *
- * Generated file to switch between all required flight tasks
+ * Generated file to switch between all required modes
  *
  * @@author Christoph Tobler <christoph@@px4.io>
  */
@@ -42,36 +42,36 @@
 #include "ModeManager.hpp"
 #include "Modes_generated.hpp"
 
-int ModeManager::_initTask(ModeIndex task_index)
+int ModeManager::_initMode(ModeIndex mode_index)
 {
 
-	// disable the old task if there is any
-	if (_current_task.task) {
-		_current_task.task->~Mode();
-		_current_task.task = nullptr;
-		_current_task.index = ModeIndex::None;
+	// disable the old mode if there is any
+	if (_current_mode.mode) {
+		_current_mode.mode->~Mode();
+		_current_mode.mode = nullptr;
+		_current_mode.index = ModeIndex::None;
 	}
 
-	switch (task_index) {
+	switch (mode_index) {
 	case ModeIndex::None:
-		// already disabled task
+		// already disabled mode
 		break;
 
-@# loop through all requested tasks
+@# loop through all requested modes
 @[if tasks]@
 @[for task in tasks]@
 	case ModeIndex::@(task):
-		_current_task.task = new (&_task_union.@(task)) Mode@(task)();
+		_current_mode.mode = new (&_mode_union.@(task)) Mode@(task)();
 		break;
 
 @[end for]@
 @[end if]@
 	default:
-		// invalid task
+		// invalid mode
 		return 1;
 	}
 
-	// task construction succeeded
-	_current_task.index = task_index;
+	// mode construction succeeded
+	_current_mode.index = mode_index;
 	return 0;
 }

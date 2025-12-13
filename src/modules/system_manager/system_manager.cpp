@@ -32,17 +32,17 @@
  ****************************************************************************/
 
 /**
- * @file Commander.cpp
+ * @file system_manager.cpp
  *
  * Main state machine / business logic
  *
  */
 
-#include "commander.hpp"
+#include "system_manager.hpp"
 
-/* commander module headers */
+/* system_manager module headers */
 #include "arming/arm_authorization/arm_authorization.h"
-#include "commander_helper.h"
+#include "system_manager_helper.h"
 #include "calibration/esc_calibration.h"
 #define DEFINE_GET_PX4_CUSTOM_MODE
 #include "px4_custom_mode.h"
@@ -120,7 +120,7 @@ static orb_advert_t power_button_state_pub = nullptr;
 static int power_button_state_notification_cb(board_power_button_state_notification_e request)
 {
 	// Note: this can be called from IRQ handlers, so we publish a message that will be handled
-	// on the main thread of commander.
+	// on the main thread of system_manager.
 	power_button_state_s button_state{};
 	button_state.timestamp = hrt_absolute_time();
 	const int ret = PWR_BUTTON_RESPONSE_SHUT_DOWN_PENDING;
@@ -230,7 +230,7 @@ static bool broadcast_vehicle_command(const uint32_t cmd, const float param1 = N
 }
 #endif
 
-int Commander::custom_command(int argc, char *argv[])
+int SystemManager::custom_command(int argc, char *argv[])
 {
 	if (!is_running()) {
 		print_usage("not running");
@@ -297,7 +297,7 @@ int Commander::custom_command(int argc, char *argv[])
 		send_vehicle_command(vehicle_command_s::VEHICLE_CMD_RUN_PREARM_CHECKS);
 
 		uORB::SubscriptionData<vehicle_status_s> vehicle_status_sub{ORB_ID(vehicle_status)};
-		PX4_INFO("Preflight check: %s", vehicle_status_sub.get().pre_flight_checks_pass ? "OK" : "FAILED");
+		PX4_INFO("Prearm check: %s", vehicle_status_sub.get().pre_flight_checks_pass ? "OK" : "FAILED");
 
 		return 0;
 	}
@@ -305,7 +305,7 @@ int Commander::custom_command(int argc, char *argv[])
 	if (!strcmp(argv[0], "arm")) {
 		float param2 = 0.f;
 
-		// 21196: force arming/disarming (e.g. allow arming to override preflight checks and disarming in flight)
+		// 21196: force arming/disarming (e.g. allow arming to override prearm checks and disarming in flight)
 		if (argc > 1 && !strcmp(argv[1], "-f")) {
 			param2 = 21196.f;
 		}
@@ -320,7 +320,7 @@ int Commander::custom_command(int argc, char *argv[])
 	if (!strcmp(argv[0], "disarm")) {
 		float param2 = 0.f;
 
-		// 21196: force arming/disarming (e.g. allow arming to override preflight checks and disarming in flight)
+		// 21196: force arming/disarming (e.g. allow arming to override prearm checks and disarming in flight)
 		if (argc > 1 && !strcmp(argv[1], "-f")) {
 			param2 = 21196.f;
 		}
@@ -431,7 +431,7 @@ int Commander::custom_command(int argc, char *argv[])
 	if (!strcmp(argv[0], "lockdown")) {
 
 		if (argc < 2) {
-			Commander::print_usage("not enough arguments, missing [on, off]");
+			SystemManager::print_usage("not enough arguments, missing [on, off]");
 			return 1;
 		}
 
@@ -481,7 +481,7 @@ int Commander::custom_command(int argc, char *argv[])
 	return print_usage("unknown command");
 }
 
-int Commander::print_status()
+int SystemManager::print_status()
 {
 	PX4_INFO("%s", isArmed() ? "Armed" : "Disarmed");
 	PX4_INFO("navigation mode: %s", mode_util::operation_mode_names[_vehicle_status.operation_mode]);
@@ -489,13 +489,13 @@ int Commander::print_status()
 	PX4_INFO("in failsafe: %s", _failsafe.inFailsafe() ? "yes" : "no");
 	_mode_management.printStatus();
 	perf_print_counter(_loop_perf);
-	perf_print_counter(_preflight_check_perf);
+	perf_print_counter(_prearm_check_perf);
 	return 0;
 }
 
-extern "C" __EXPORT int commander_main(int argc, char *argv[])
+extern "C" __EXPORT int system_manager_main(int argc, char *argv[])
 {
-	return Commander::main(argc, argv);
+	return SystemManager::main(argc, argv);
 }
 
 static constexpr const char *arm_disarm_reason_str(arm_disarm_reason_t calling_reason)
@@ -515,7 +515,7 @@ static constexpr const char *arm_disarm_reason_str(arm_disarm_reason_t calling_r
 
 	case arm_disarm_reason_t::auto_disarm_land: return "landing";
 
-	case arm_disarm_reason_t::auto_disarm_preflight: return "auto preflight disarming";
+	case arm_disarm_reason_t::auto_disarm_prearm: return "auto prearm disarming";
 
 	case arm_disarm_reason_t::kill_switch: return "kill-switch";
 
@@ -535,7 +535,7 @@ static constexpr const char *arm_disarm_reason_str(arm_disarm_reason_t calling_r
 	return "";
 };
 
-transition_result_t Commander::arm(arm_disarm_reason_t calling_reason, bool run_preflight_checks)
+transition_result_t SystemManager::arm(arm_disarm_reason_t calling_reason, bool run_prearm_checks)
 {
 	if (isArmed()) {
 		return TRANSITION_NOT_CHANGED;
@@ -552,14 +552,14 @@ transition_result_t Commander::arm(arm_disarm_reason_t calling_reason, bool run_
 		return TRANSITION_DENIED;
 	}
 
-	// allow a grace period for re-arming: preflight checks don't need to pass during that time, for example for accidental in-air disarming
+	// allow a grace period for re-arming: prearm checks don't need to pass during that time, for example for accidental in-air disarming
 	if (calling_reason == arm_disarm_reason_t::rc_switch
 	    && ((_last_disarmed_timestamp != 0) && (hrt_elapsed_time(&_last_disarmed_timestamp) < 5_s))) {
 
-		run_preflight_checks = false;
+		run_prearm_checks = false;
 	}
 
-	if (run_preflight_checks) {
+	if (run_prearm_checks) {
 		if (_vehicle_control_mode.flag_control_manual_enabled) {
 
 			if (_vehicle_control_mode.flag_control_climb_rate_enabled &&
@@ -622,7 +622,7 @@ transition_result_t Commander::arm(arm_disarm_reason_t calling_reason, bool run_
 	return TRANSITION_CHANGED;
 }
 
-transition_result_t Commander::disarm(arm_disarm_reason_t calling_reason, bool forced)
+transition_result_t SystemManager::disarm(arm_disarm_reason_t calling_reason, bool forced)
 {
 	if (!isArmed()) {
 		return TRANSITION_NOT_CHANGED;
@@ -679,7 +679,7 @@ transition_result_t Commander::disarm(arm_disarm_reason_t calling_reason, bool f
 	return TRANSITION_CHANGED;
 }
 
-Commander::Commander() :
+SystemManager::SystemManager() :
 	ModuleParams(nullptr)
 {
 	_vehicle_land_detected.landed = true;
@@ -717,17 +717,17 @@ Commander::Commander() :
 
 	updateParameters();
 
-	_failsafe.setOnNotifyUserCallback(&Commander::onFailsafeNotifyUserTrampoline, this);
+	_failsafe.setOnNotifyUserCallback(&SystemManager::onFailsafeNotifyUserTrampoline, this);
 }
 
-Commander::~Commander()
+SystemManager::~SystemManager()
 {
 	perf_free(_loop_perf);
-	perf_free(_preflight_check_perf);
+	perf_free(_prearm_check_perf);
 }
 
 bool
-Commander::handle_command(const vehicle_command_s &cmd)
+SystemManager::handle_command(const vehicle_command_s &cmd)
 {
 	/* only handle commands that are meant to be handled by this system and component, or broadcast */
 	if (((cmd.target_system != _vehicle_status.system_id) && (cmd.target_system != 0))
@@ -1535,13 +1535,13 @@ Commander::handle_command(const vehicle_command_s &cmd)
 	return true;
 }
 
-ModeChangeSource Commander::getSourceFromCommand(const vehicle_command_s &cmd)
+ModeChangeSource SystemManager::getSourceFromCommand(const vehicle_command_s &cmd)
 {
 	return cmd.source_component >= vehicle_command_s::COMPONENT_MODE_EXECUTOR_START ? ModeChangeSource::ModeExecutor :
 	       ModeChangeSource::User;
 }
 
-void Commander::handleCommandsFromModeExecutors()
+void SystemManager::handleCommandsFromModeExecutors()
 {
 	if (_vehicle_command_mode_executor_sub.updated()) {
 		const unsigned last_generation = _vehicle_command_mode_executor_sub.get_last_generation();
@@ -1572,7 +1572,7 @@ void Commander::handleCommandsFromModeExecutors()
 	}
 }
 
-unsigned Commander::handleCommandActuatorTest(const vehicle_command_s &cmd)
+unsigned SystemManager::handleCommandActuatorTest(const vehicle_command_s &cmd)
 {
 	if (isArmed() || (_safety.isButtonAvailable() && !_safety.isSafetyOff())) {
 		return vehicle_command_ack_s::VEHICLE_CMD_RESULT_DENIED;
@@ -1627,7 +1627,7 @@ unsigned Commander::handleCommandActuatorTest(const vehicle_command_s &cmd)
 	return vehicle_command_ack_s::VEHICLE_CMD_RESULT_ACCEPTED;
 }
 
-void Commander::executeActionRequest(const action_request_s &action_request)
+void SystemManager::executeActionRequest(const action_request_s &action_request)
 {
 	arm_disarm_reason_t arm_disarm_reason{};
 
@@ -1705,7 +1705,7 @@ void Commander::executeActionRequest(const action_request_s &action_request)
 }
 
 
-void Commander::updateParameters()
+void SystemManager::updateParameters()
 {
 	// update parameters from storage
 	updateParams();
@@ -1746,7 +1746,7 @@ void Commander::updateParameters()
 
 }
 
-void Commander::run()
+void SystemManager::run()
 {
 	/* initialize */
 	led_init();
@@ -1840,7 +1840,7 @@ void Commander::run()
 		if ((now >= _last_health_and_arming_check + 100_ms) || _status_changed || operation_mode_or_failsafe_changed) {
 			_last_health_and_arming_check = now;
 
-			perf_begin(_preflight_check_perf);
+			perf_begin(_prearm_check_perf);
 			_health_and_arming_checks.update();
 			bool pre_flight_checks_pass = _health_and_arming_checks.canArm(_vehicle_status.operation_mode);
 
@@ -1849,7 +1849,7 @@ void Commander::run()
 				_status_changed = true;
 			}
 
-			perf_end(_preflight_check_perf);
+			perf_end(_prearm_check_perf);
 			checkAndInformReadyForTakeoff();
 		}
 
@@ -1915,7 +1915,7 @@ void Commander::run()
 			// update and publish vehicle_control_mode
 			updateControlMode();
 
-			// vehicle_status publish (after prearm/preflight updates above)
+			// vehicle_status publish (after prearm updates above)
 			_mode_management.getModeStatus(_vehicle_status.valid_operation_modes_mask, _vehicle_status.can_set_operation_modes_mask);
 			_vehicle_status.timestamp = hrt_absolute_time();
 			_vehicle_status_pub.publish(_vehicle_status);
@@ -1962,7 +1962,7 @@ void Commander::run()
 	buzzer_deinit();
 }
 
-void Commander::checkForMissionUpdate()
+void SystemManager::checkForMissionUpdate()
 {
 	if (_mission_result_sub.updated()) {
 		const mission_result_s &mission_result = _mission_result_sub.get();
@@ -2019,7 +2019,7 @@ void Commander::checkForMissionUpdate()
 	}
 }
 
-bool Commander::getPrearmState() const
+bool SystemManager::getPrearmState() const
 {
 	if (_vehicle_status.calibration_enabled) {
 		return false;
@@ -2050,7 +2050,7 @@ bool Commander::getPrearmState() const
 	return false;
 }
 
-void Commander::handlePowerButtonState()
+void SystemManager::handlePowerButtonState()
 {
 #if defined(BOARD_HAS_POWER_CONTROL)
 
@@ -2070,7 +2070,7 @@ void Commander::handlePowerButtonState()
 #endif // BOARD_HAS_POWER_CONTROL
 }
 
-void Commander::systemPowerUpdate()
+void SystemManager::systemPowerUpdate()
 {
 	system_power_s system_power;
 
@@ -2090,7 +2090,7 @@ void Commander::systemPowerUpdate()
 	}
 }
 
-void Commander::landDetectorUpdate()
+void SystemManager::landDetectorUpdate()
 {
 	if (_vehicle_land_detected_sub.updated()) {
 		const bool was_landed = _vehicle_land_detected.landed;
@@ -2125,7 +2125,7 @@ void Commander::landDetectorUpdate()
 	}
 }
 
-void Commander::safetyButtonUpdate()
+void SystemManager::safetyButtonUpdate()
 {
 	const bool safety_changed = _safety.safetyButtonHandler();
 	_vehicle_status.safety_button_available = _safety.isButtonAvailable();
@@ -2146,7 +2146,7 @@ void Commander::safetyButtonUpdate()
 	}
 }
 
-void Commander::vtolStatusUpdate()
+void SystemManager::vtolStatusUpdate()
 {
 	// Make sure that this is only adjusted if vehicle really is of type vtol
 	if (_vtol_vehicle_status_sub.update(&_vtol_vehicle_status) && is_vtol(_vehicle_status)) {
@@ -2181,7 +2181,7 @@ void Commander::vtolStatusUpdate()
 	}
 }
 
-void Commander::updateTunes()
+void SystemManager::updateTunes()
 {
 	// play arming and battery warning tunes
 	if (!_arm_tune_played && isArmed()) {
@@ -2224,7 +2224,7 @@ void Commander::updateTunes()
 	}
 }
 
-void Commander::checkWorkerThread()
+void SystemManager::checkWorkerThread()
 {
 	// check if the worker has finished
 	if (_worker_thread.hasResult()) {
@@ -2244,7 +2244,7 @@ void Commander::checkWorkerThread()
 	}
 }
 
-void Commander::handleAutoDisarm()
+void SystemManager::handleAutoDisarm()
 {
 	// Auto disarm when landed or kill switch engaged
 	if (isArmed()) {
@@ -2272,7 +2272,7 @@ void Commander::handleAutoDisarm()
 					disarm(arm_disarm_reason_t::auto_disarm_land);
 
 				} else {
-					disarm(arm_disarm_reason_t::auto_disarm_preflight);
+					disarm(arm_disarm_reason_t::auto_disarm_prearm);
 				}
 			}
 		}
@@ -2306,7 +2306,7 @@ void Commander::handleAutoDisarm()
 	}
 }
 
-bool Commander::handleModeIntentionAndFailsafe()
+bool SystemManager::handleModeIntentionAndFailsafe()
 {
 	const uint8_t prev_operation_mode = _vehicle_status.operation_mode;
 	const FailsafeBase::Action prev_failsafe_action = _failsafe.selectedAction();
@@ -2381,7 +2381,7 @@ bool Commander::handleModeIntentionAndFailsafe()
 	       prev_failsafe_defer_state != _vehicle_status.failsafe_defer_state;
 }
 
-void Commander::checkAndInformReadyForTakeoff()
+void SystemManager::checkAndInformReadyForTakeoff()
 {
 #ifdef CONFIG_ARCH_BOARD_PX4_SITL
 	static bool ready_for_takeoff_printed = false;
@@ -2398,7 +2398,7 @@ void Commander::checkAndInformReadyForTakeoff()
 #endif // CONFIG_ARCH_BOARD_PX4_SITL
 }
 
-void Commander::modeManagementUpdate()
+void SystemManager::modeManagementUpdate()
 {
 	ModeManagement::UpdateRequest mode_management_update{};
 	_mode_management.update(isArmed(), _vehicle_status.operation_mode_user_intention,
@@ -2413,7 +2413,7 @@ void Commander::modeManagementUpdate()
 	}
 }
 
-void Commander::control_status_leds(bool changed, const uint8_t battery_warning)
+void SystemManager::control_status_leds(bool changed, const uint8_t battery_warning)
 {
 	switch (blink_msg_state()) {
 	case 1:
@@ -2566,7 +2566,7 @@ void Commander::control_status_leds(bool changed, const uint8_t battery_warning)
 	}
 }
 
-void Commander::updateControlMode()
+void SystemManager::updateControlMode()
 {
 	_vehicle_control_mode = {};
 
@@ -2586,7 +2586,7 @@ void Commander::updateControlMode()
 	_vehicle_control_mode_pub.publish(_vehicle_control_mode);
 }
 
-void Commander::printRejectMode(uint8_t nav_state)
+void SystemManager::printRejectMode(uint8_t nav_state)
 {
 	if (hrt_elapsed_time(&_last_print_mode_reject_time) > 1_s) {
 
@@ -2608,7 +2608,7 @@ void Commander::printRejectMode(uint8_t nav_state)
 	}
 }
 
-void Commander::answer_command(const vehicle_command_s &cmd, uint8_t result)
+void SystemManager::answer_command(const vehicle_command_s &cmd, uint8_t result)
 {
 	switch (result) {
 	case vehicle_command_ack_s::VEHICLE_CMD_RESULT_ACCEPTED:
@@ -2649,9 +2649,9 @@ void Commander::answer_command(const vehicle_command_s &cmd, uint8_t result)
 	_vehicle_command_ack_pub.publish(command_ack);
 }
 
-int Commander::task_spawn(int argc, char *argv[])
+int SystemManager::task_spawn(int argc, char *argv[])
 {
-	_task_id = px4_task_spawn_cmd("commander",
+	_task_id = px4_task_spawn_cmd("system_manager",
 				      SCHED_DEFAULT,
 				      SCHED_PRIORITY_DEFAULT + 40,
 				      PX4_STACK_ADJUSTED(3250),
@@ -2672,9 +2672,9 @@ int Commander::task_spawn(int argc, char *argv[])
 	return 0;
 }
 
-Commander *Commander::instantiate(int argc, char *argv[])
+SystemManager *SystemManager::instantiate(int argc, char *argv[])
 {
-	Commander *instance = new Commander();
+	SystemManager *instance = new Commander();
 
 	if (instance) {
 		if (argc >= 2 && !strcmp(argv[1], "-h")) {
@@ -2685,12 +2685,12 @@ Commander *Commander::instantiate(int argc, char *argv[])
 	return instance;
 }
 
-void Commander::enable_hil()
+void SystemManager::enable_hil()
 {
 	_vehicle_status.hil_state = vehicle_status_s::HIL_STATE_ON;
 }
 
-void Commander::dataLinkCheck()
+void SystemManager::dataLinkCheck()
 {
 	// high latency data link
 	iridiumsbd_status_s iridium_status;
@@ -2861,7 +2861,7 @@ void Commander::dataLinkCheck()
 	}
 }
 
-void Commander::battery_status_check()
+void SystemManager::battery_status_check()
 {
 	// Handle shutdown request from emergency battery action
 	if (_battery_warning != _failsafe_flags.battery_warning) {
@@ -2892,7 +2892,7 @@ void Commander::battery_status_check()
 	_battery_warning = _failsafe_flags.battery_warning;
 }
 
-void Commander::manualControlCheck()
+void SystemManager::manualControlCheck()
 {
 	manual_control_setpoint_s manual_control_setpoint;
 	const bool manual_control_updated = _manual_control_setpoint_sub.update(&manual_control_setpoint);
@@ -2949,7 +2949,7 @@ void Commander::manualControlCheck()
 	}
 }
 
-void Commander::offboardControlCheck()
+void SystemManager::offboardControlCheck()
 {
 	if (_offboard_control_mode_sub.update()) {
 		if (_failsafe_flags.offboard_control_signal_lost) {
@@ -2959,7 +2959,7 @@ void Commander::offboardControlCheck()
 	}
 }
 
-void Commander::send_parachute_command()
+void SystemManager::send_parachute_command()
 {
 	vehicle_command_s vcmd{};
 	vcmd.command = vehicle_command_s::VEHICLE_CMD_DO_PARACHUTE;
@@ -2977,13 +2977,13 @@ void Commander::send_parachute_command()
 	set_tune_override(tune_control_s::TUNE_ID_PARACHUTE_RELEASE);
 }
 
-void Commander::onFailsafeNotifyUserTrampoline(void *arg)
+void SystemManager::onFailsafeNotifyUserTrampoline(void *arg)
 {
-	Commander *commander = static_cast<Commander *>(arg);
-	commander->onFailsafeNotifyUser();
+	SystemManager *system_manager = static_cast<SystemManager *>(arg);
+	system_manager->onFailsafeNotifyUser();
 }
 
-void Commander::onFailsafeNotifyUser()
+void SystemManager::onFailsafeNotifyUser()
 {
 	// If we are about to inform about a failsafe, we need to ensure any pending health report is sent out first,
 	// as the failsafe message might reference that. This is only needed in case the report is currently rate-limited,
@@ -2991,7 +2991,7 @@ void Commander::onFailsafeNotifyUser()
 	_health_and_arming_checks.reportIfUnreportedDifferences();
 }
 
-int Commander::print_usage(const char *reason)
+int SystemManager::print_usage(const char *reason)
 {
 	if (reason) {
 		PX4_INFO("%s", reason);
@@ -3000,19 +3000,19 @@ int Commander::print_usage(const char *reason)
 	PRINT_MODULE_DESCRIPTION(
 		R"DESCR_STR(
 ### Description
-The commander module contains the state machine for mode switching and failsafe behavior.
+The system_manager module contains the state machine for mode switching and failsafe behavior.
 )DESCR_STR");
 
-	PRINT_MODULE_USAGE_NAME("commander", "system");
+	PRINT_MODULE_USAGE_NAME("system_manager", "system");
 	PRINT_MODULE_USAGE_COMMAND("start");
 	PRINT_MODULE_USAGE_PARAM_FLAG('h', "Enable HIL mode", true);
 #ifndef CONSTRAINED_FLASH
 	PRINT_MODULE_USAGE_COMMAND_DESCR("calibrate", "Run sensor calibration");
 	PRINT_MODULE_USAGE_ARG("mag|baro|accel|gyro|level|esc|airspeed", "Calibration type", false);
 	PRINT_MODULE_USAGE_ARG("quick", "Quick calibration [mag, accel (not recommended)]", false);
-	PRINT_MODULE_USAGE_COMMAND_DESCR("check", "Run preflight checks");
+	PRINT_MODULE_USAGE_COMMAND_DESCR("check", "Run prearm checks");
 	PRINT_MODULE_USAGE_COMMAND("arm");
-	PRINT_MODULE_USAGE_PARAM_FLAG('f', "Force arming (do not run preflight checks)", true);
+	PRINT_MODULE_USAGE_PARAM_FLAG('f', "Force arming (do not run prearm checks)", true);
 	PRINT_MODULE_USAGE_COMMAND("disarm");
 	PRINT_MODULE_USAGE_PARAM_FLAG('f', "Force disarming (disarm in air)", true);
 	PRINT_MODULE_USAGE_COMMAND("takeoff");

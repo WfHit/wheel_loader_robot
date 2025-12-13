@@ -32,7 +32,7 @@
  ****************************************************************************/
 
 /**
- * @file commander_helper.h
+ * @file system_manager_helper.h
  * Commander helper functions definitions
  *
  * @author Thomas Gubler <thomasgubler@student.ethz.ch>

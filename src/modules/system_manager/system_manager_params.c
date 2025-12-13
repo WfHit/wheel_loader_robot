@@ -32,9 +32,9 @@
  ****************************************************************************/
 
 /**
- * @file commander_params.c
+ * @file system_manager_params.c
  *
- * Parameters definition for Commander.
+ * Parameters definition for SystemManager.
  *
  * @author Lorenz Meier <lorenz@px4.io>
  * @author Thomas Gubler <thomas@px4.io>
@@ -88,7 +88,7 @@ PARAM_DEFINE_FLOAT(TRIM_YAW, 0.0f);
  *
  * After this amount of seconds without datalink, the GCS connection lost mode triggers
  *
- * @group Commander
+ * @group SystemManager
  * @unit s
  * @min 5
  * @max 300
@@ -102,7 +102,7 @@ PARAM_DEFINE_INT32(COM_DL_LOSS_T, 10);
  *
  * After this amount of seconds without datalink the data link lost mode triggers
  *
- * @group Commander
+ * @group SystemManager
  * @unit s
  * @min 60
  * @max 3600
@@ -115,7 +115,7 @@ PARAM_DEFINE_INT32(COM_HLDL_LOSS_T, 120);
  * After a data link loss: after this number of seconds with a healthy datalink the 'datalink loss'
  * flag is set back to false
  *
- * @group Commander
+ * @group SystemManager
  * @unit s
  * @min 0
  * @max 60
@@ -128,7 +128,7 @@ PARAM_DEFINE_INT32(COM_HLDL_REG_T, 0);
  * The time in seconds without a new setpoint from RC or Joystick, after which the connection is considered lost.
  * This must be kept short as the vehicle will use the last supplied setpoint until the timeout triggers.
  *
- * @group Commander
+ * @group SystemManager
  * @unit s
  * @min 0
  * @max 35
@@ -142,7 +142,7 @@ PARAM_DEFINE_FLOAT(COM_RC_LOSS_T, 0.5f);
  *
  * Set home position automatically if possible.
  *
- * @group Commander
+ * @group SystemManager
  * @reboot_required true
  * @boolean
  */
@@ -156,7 +156,7 @@ PARAM_DEFINE_INT32(COM_HOME_EN, 1);
  * If no local position is available, home is set to the current position.
  *
  * @boolean
- * @group Commander
+ * @group SystemManager
  */
 PARAM_DEFINE_INT32(COM_HOME_IN_AIR, 0);
 
@@ -169,7 +169,7 @@ PARAM_DEFINE_INT32(COM_HOME_IN_AIR, 0);
  * A value of 3 allows either input from RC or joystick. The first available source is selected and used until reboot.
  * A value of 4 ignores any stick input.
  *
- * @group Commander
+ * @group SystemManager
  * @min 0
  * @max 4
  * @value 0 RC Transmitter only
@@ -185,7 +185,7 @@ PARAM_DEFINE_INT32(COM_RC_IN_MODE, 3);
  *
  * The default value of 1000 requires the stick to be held in the arm or disarm position for 1 second.
  *
- * @group Commander
+ * @group SystemManager
  * @min 100
  * @max 1500
  * @unit ms
@@ -200,7 +200,7 @@ PARAM_DEFINE_INT32(COM_RC_ARM_HYST, 1000);
  *
  * A zero or negative value means that automatic disarming triggered by landing detection is disabled.
  *
- * @group Commander
+ * @group SystemManager
  * @unit s
  * @decimal 1
  * @increment 0.1
@@ -217,7 +217,7 @@ PARAM_DEFINE_FLOAT(COM_DISARM_LAND, 2.0f);
  *
  * A negative value disables autmoatic disarming triggered by a pre-takeoff timeout.
  *
- * @group Commander
+ * @group SystemManager
  * @unit s
  * @decimal 1
  * @increment 0.1
@@ -229,7 +229,7 @@ PARAM_DEFINE_FLOAT(COM_DISARM_PRFLT, 10.0f);
  *
  * Measures taken when a check defined by EKF2_GPS_CHECK is failing.
  *
- * @group Commander
+ * @group SystemManager
  * @value 0 Deny arming
  * @value 1 Warning only
  * @value 2 Disabled
@@ -243,7 +243,7 @@ PARAM_DEFINE_INT32(COM_ARM_WO_GPS, 1);
  * 1: Arming/disarming triggers when holding the momentary button down
  * for COM_RC_ARM_HYST like the stick gesture.
  *
- * @group Commander
+ * @group SystemManager
  * @boolean
  */
 PARAM_DEFINE_INT32(COM_ARM_SWISBTN, 0);
@@ -256,7 +256,7 @@ PARAM_DEFINE_INT32(COM_ARM_SWISBTN, 0);
  * the thrust is directly controlled by thr throttle stick
  * e.g. Stabilized, Acro
  *
- * @group Commander
+ * @group SystemManager
  * @boolean
  */
 PARAM_DEFINE_INT32(COM_DISARM_MAN, 1);
@@ -267,7 +267,7 @@ PARAM_DEFINE_INT32(COM_DISARM_MAN, 1);
  * Action the system takes at critical battery. See also BAT_CRIT_THR and BAT_EMERGEN_THR
  * for definition of battery states.
  *
- * @group Commander
+ * @group SystemManager
  * @value 0 Warning
  * @value 2 Land mode
  * @value 3 Return at critical level, land at emergency level
@@ -284,7 +284,7 @@ PARAM_DEFINE_INT32(COM_LOW_BAT_ACT, 0);
  *
  * A zero value disables the delay and the user cannot take over via stick movements (switching modes is still allowed).
  *
- * @group Commander
+ * @group SystemManager
  * @unit s
  * @min 0.0
  * @max 25.0
@@ -298,7 +298,7 @@ PARAM_DEFINE_FLOAT(COM_FAIL_ACT_T, 5.f);
  * Action the system takes when an imbalanced propeller is detected by the failure detector.
  * See also FD_IMB_PROP_THR to set the failure threshold.
  *
- * @group Commander
+ * @group SystemManager
  *
  * @value -1 Disabled
  * @value 0 Warning
@@ -313,7 +313,7 @@ PARAM_DEFINE_INT32(COM_IMB_PROP_ACT, 0);
  *
  * See COM_OBL_RC_ACT to configure action.
  *
- * @group Commander
+ * @group SystemManager
  * @unit s
  * @min 0
  * @max 60
@@ -328,7 +328,7 @@ PARAM_DEFINE_FLOAT(COM_OF_LOSS_T, 1.0f);
  * @value  0 Return mode
  * @value  1 Land mode
  * @value  2 Hold mode
- * @group Commander
+ * @group SystemManager
  */
 PARAM_DEFINE_INT32(COM_QC_ACT, 0);
 
@@ -346,14 +346,14 @@ PARAM_DEFINE_INT32(COM_QC_ACT, 0);
  * @value 5 Hold mode
  * @value 6 Terminate
  * @value 7 Disarm
- * @group Commander
+ * @group SystemManager
  */
 PARAM_DEFINE_INT32(COM_OBL_RC_ACT, 0);
 
 /**
  * Time-out to wait when onboard computer connection is lost before warning about loss connection.
  *
- * @group Commander
+ * @group SystemManager
  * @unit s
  * @min 0
  * @max 60
@@ -364,7 +364,7 @@ PARAM_DEFINE_FLOAT(COM_OBC_LOSS_T, 5.0f);
 /**
  * Maximum accelerometer inconsistency between IMU units that will allow arming
  *
- * @group Commander
+ * @group SystemManager
  * @unit m/s^2
  * @min 0.1
  * @max 1.0
@@ -376,7 +376,7 @@ PARAM_DEFINE_FLOAT(COM_ARM_IMU_ACC, 0.7f);
 /**
  * Maximum rate gyro inconsistency between IMU units that will allow arming
  *
- * @group Commander
+ * @group SystemManager
  * @unit rad/s
  * @min 0.02
  * @max 0.3
@@ -390,7 +390,7 @@ PARAM_DEFINE_FLOAT(COM_ARM_IMU_GYR, 0.25f);
  *
  * Set -1 to disable the check.
  *
- * @group Commander
+ * @group SystemManager
  * @unit deg
  * @min 3
  * @max 180
@@ -407,7 +407,7 @@ PARAM_DEFINE_INT32(COM_ARM_MAG_ANG, 60);
  * @value 1 Deny arming
  * @value 2 Warning only
  *
- * @group Commander
+ * @group SystemManager
  */
 PARAM_DEFINE_INT32(COM_ARM_MAG_STR, 2);
 
@@ -423,7 +423,7 @@ PARAM_DEFINE_INT32(COM_ARM_MAG_STR, 2);
  * @max 3
  * @bit 0 Enable override during auto modes (except for in critical battery reaction)
  * @bit 1 Enable override during offboard mode
- * @group Commander
+ * @group SystemManager
  */
 PARAM_DEFINE_INT32(COM_RC_OVERRIDE, 1);
 
@@ -433,7 +433,7 @@ PARAM_DEFINE_INT32(COM_RC_OVERRIDE, 1);
  * If COM_RC_OVERRIDE is enabled and the joystick input is moved more than this threshold
  * the autopilot the pilot takes over control.
  *
- * @group Commander
+ * @group SystemManager
  * @unit %
  * @min 5
  * @max 80
@@ -447,7 +447,7 @@ PARAM_DEFINE_FLOAT(COM_RC_STICK_OV, 30.0f);
  *
  * The default allows to arm the vehicle without a valid mission.
  *
- * @group Commander
+ * @group SystemManager
  * @boolean
  */
 PARAM_DEFINE_INT32(COM_ARM_MIS_REQ, 0);
@@ -460,7 +460,7 @@ PARAM_DEFINE_INT32(COM_ARM_MIS_REQ, 0);
  * @value 0 Altitude mode
  * @value 1 Land mode (descend)
  *
- * @group Commander
+ * @group SystemManager
  */
 PARAM_DEFINE_INT32(COM_POSCTL_NAVL, 0);
 
@@ -469,7 +469,7 @@ PARAM_DEFINE_INT32(COM_POSCTL_NAVL, 0);
  *
  * By default off. The default allows to arm the vehicle without a arm authorization.
  *
- * @group Commander
+ * @group SystemManager
  * @boolean
  */
 PARAM_DEFINE_INT32(COM_ARM_AUTH_REQ, 0);
@@ -479,7 +479,7 @@ PARAM_DEFINE_INT32(COM_ARM_AUTH_REQ, 0);
  *
  * Used if arm authorization is requested by COM_ARM_AUTH_REQ.
  *
- * @group Commander
+ * @group SystemManager
  */
 PARAM_DEFINE_INT32(COM_ARM_AUTH_ID, 10);
 
@@ -493,7 +493,7 @@ PARAM_DEFINE_INT32(COM_ARM_AUTH_ID, 10);
  *
  * Used if arm authorization is requested by COM_ARM_AUTH_REQ.
  *
- * @group Commander
+ * @group SystemManager
  * @value 0 one arm
  * @value 1 two step arm
  */
@@ -505,7 +505,7 @@ PARAM_DEFINE_INT32(COM_ARM_AUTH_MET, 0);
  * Timeout for authorizer answer.
  * Used if arm authorization is requested by COM_ARM_AUTH_REQ.
  *
- * @group Commander
+ * @group SystemManager
  * @unit s
  * @decimal 1
  * @increment 0.1
@@ -526,7 +526,7 @@ PARAM_DEFINE_FLOAT(COM_ARM_AUTH_TO, 1);
  * @min -1
  * @max 400
  * @decimal 1
- * @group Commander
+ * @group SystemManager
  */
 PARAM_DEFINE_FLOAT(COM_POS_FS_EPH, 5.f);
 
@@ -541,7 +541,7 @@ PARAM_DEFINE_FLOAT(COM_POS_FS_EPH, 5.f);
  * @unit m/s
  * @min 0
  * @decimal 1
- * @group Commander
+ * @group SystemManager
  */
 PARAM_DEFINE_FLOAT(COM_VEL_FS_EVH, 1.f);
 
@@ -552,7 +552,7 @@ PARAM_DEFINE_FLOAT(COM_VEL_FS_EVH, 1.f);
  * disarming in order to remember the next flight UUID.
  * The first flight is 0.
  *
- * @group Commander
+ * @group SystemManager
  * @category system
  * @volatile
  * @min 0
@@ -566,7 +566,7 @@ PARAM_DEFINE_INT32(COM_FLIGHT_UUID, 0);
  *
  * @value 0 Hold
  * @value 1 Mission (if valid)
- * @group Commander
+ * @group SystemManager
  */
 PARAM_DEFINE_INT32(COM_TAKEOFF_ACT, 0);
 
@@ -586,7 +586,7 @@ PARAM_DEFINE_INT32(COM_TAKEOFF_ACT, 0);
  * @min 0
  * @max 6
  *
- * @group Commander
+ * @group SystemManager
  */
 PARAM_DEFINE_INT32(NAV_DLL_ACT, 0);
 
@@ -605,7 +605,7 @@ PARAM_DEFINE_INT32(NAV_DLL_ACT, 0);
  * @min 1
  * @max 6
  *
- * @group Commander
+ * @group SystemManager
  */
 PARAM_DEFINE_INT32(NAV_RCL_ACT, 2);
 
@@ -619,7 +619,7 @@ PARAM_DEFINE_INT32(NAV_RCL_ACT, 2);
  * @bit 0 Mission
  * @bit 1 Hold
  * @bit 2 Offboard
- * @group Commander
+ * @group SystemManager
  */
 PARAM_DEFINE_INT32(COM_RCL_EXCEPT, 0);
 
@@ -633,7 +633,7 @@ PARAM_DEFINE_INT32(COM_RCL_EXCEPT, 0);
  * @bit 0 Mission
  * @bit 1 Hold
  * @bit 2 Offboard
- * @group Commander
+ * @group SystemManager
  */
 PARAM_DEFINE_INT32(COM_DLL_EXCEPT, 0);
 
@@ -650,7 +650,7 @@ PARAM_DEFINE_INT32(COM_DLL_EXCEPT, 0);
  * @value 2 Land mode
  * @value 3 Return mode
  * @value 4 Terminate
- * @group Commander
+ * @group SystemManager
  */
 PARAM_DEFINE_INT32(COM_ACT_FAIL_ACT, 0);
 
@@ -658,7 +658,7 @@ PARAM_DEFINE_INT32(COM_ACT_FAIL_ACT, 0);
  * Expect and require a healthy MAVLink parachute system
  *
  * @boolean
- * @group Commander
+ * @group SystemManager
  */
 PARAM_DEFINE_INT32(COM_PARACHUTE, 0);
 
@@ -674,7 +674,7 @@ PARAM_DEFINE_INT32(COM_PARACHUTE, 0);
  * @value 200 Flight Tester
  * @value 300 Developer
  *
- * @group Commander
+ * @group SystemManager
  */
 PARAM_DEFINE_INT32(COM_FLT_PROFILE, 0);
 
@@ -684,7 +684,7 @@ PARAM_DEFINE_INT32(COM_FLT_PROFILE, 0);
  * If this parameter is set, the system will check ESC's online status and failures.
  * This param is specific for ESCs reporting status. It shall be used only if ESCs support telemetry.
  *
- * @group Commander
+ * @group SystemManager
  * @boolean
  */
 PARAM_DEFINE_INT32(COM_ARM_CHK_ESCS, 0);
@@ -699,7 +699,7 @@ PARAM_DEFINE_INT32(COM_ARM_CHK_ESCS, 0);
  * @value 1 Safety button
  * @value 2 Always
  *
- * @group Commander
+ * @group SystemManager
  */
 PARAM_DEFINE_INT32(COM_PREARM_MODE, 0);
 
@@ -709,7 +709,7 @@ PARAM_DEFINE_INT32(COM_PREARM_MODE, 0);
  * Force safety when the vehicle disarms
  *
  * @boolean
- * @group Commander
+ * @group SystemManager
  */
 PARAM_DEFINE_INT32(COM_FORCE_SAFETY, 0);
 
@@ -720,14 +720,14 @@ PARAM_DEFINE_INT32(COM_FORCE_SAFETY, 0);
  * allows spinning the motors and moving the servos for testing purposes.
  *
  * @boolean
- * @group Commander
+ * @group SystemManager
  */
 PARAM_DEFINE_INT32(COM_MOT_TEST_EN, 1);
 
 /**
  * Timeout value for disarming when kill switch is engaged
  *
- * @group Commander
+ * @group SystemManager
  * @unit s
  * @min 0.0
  * @max 30.0
@@ -742,7 +742,7 @@ PARAM_DEFINE_FLOAT(COM_KILL_DISARM, 5.0f);
  *
  * A negative value disables the check.
  *
- * @group Commander
+ * @group SystemManager
  * @unit %
  * @min -1
  * @max 100
@@ -757,7 +757,7 @@ PARAM_DEFINE_FLOAT(COM_CPU_MAX, 95.0f);
  *
  * A negative value disables the check.
  *
- * @group Commander
+ * @group SystemManager
  * @unit %
  * @min -1
  * @max 100
@@ -771,7 +771,7 @@ PARAM_DEFINE_FLOAT(COM_RAM_MAX, 95.0f);
  * This configures a check to verify the expected number of 5V rail power supplies are present. By default only one is expected.
  * Note: CBRK_SUPPLY_CHK disables all power checks including this one.
  *
- * @group Commander
+ * @group SystemManager
  * @min 0
  * @max 4
  */
@@ -785,7 +785,7 @@ PARAM_DEFINE_INT32(COM_POWER_COUNT, 1);
  * The check is not executed for flight modes that do support acrobatic maneuvers, e.g: Acro (MC/FW) and Manual (FW).
  * A zero or negative value means that the check is disabled.
  *
- * @group Commander
+ * @group SystemManager
  * @unit s
  * @min -1.0
  * @max 5.0
@@ -800,7 +800,7 @@ PARAM_DEFINE_FLOAT(COM_LKDOWN_TKO, 3.0f);
  * Depending on the value of the parameter, the check can be
  * disabled, warn only or deny arming.
  *
- * @group Commander
+ * @group SystemManager
  * @value 0 Disabled
  * @value 1 Warning only
  * @value 2 Enforce SD card presence
@@ -813,7 +813,7 @@ PARAM_DEFINE_INT32(COM_ARM_SDCARD, 1);
  * This check detects if there are hardfault files present on the
  * SD card. If so, and the parameter is enabled, arming is prevented.
  *
- * @group Commander
+ * @group SystemManager
  * @boolean
  */
 PARAM_DEFINE_INT32(COM_ARM_HFLT_CHK, 1);
@@ -825,7 +825,7 @@ PARAM_DEFINE_INT32(COM_ARM_HFLT_CHK, 1);
  * Depending on the value of the parameter, the check can be
  * disabled, warn only or deny arming.
  *
- * @group Commander
+ * @group SystemManager
  * @value 0 Disabled
  * @value 1 Warning only
  * @value 2 Enforce Open Drone ID system presence
@@ -841,7 +841,7 @@ PARAM_DEFINE_INT32(COM_ARM_ODID, 0);
  * - Timeout for ESCs and smart batteries to successfulyy do failure checks
  *   e.g. for stuck rotors before the vehicle is off the ground
  *
- * @group Commander
+ * @group SystemManager
  * @min 0
  * @max 30
  * @decimal 1
@@ -861,7 +861,7 @@ PARAM_DEFINE_FLOAT(COM_SPOOLUP_TIME, 1.0f);
  * @min -1
  * @decimal 1
  * @increment 0.1
- * @group Commander
+ * @group SystemManager
  * @unit m/s
  */
 PARAM_DEFINE_FLOAT(COM_WIND_WARN, -1.f);
@@ -881,7 +881,7 @@ PARAM_DEFINE_FLOAT(COM_WIND_WARN, -1.f);
  *
  * @unit s
  * @min -1
- * @group Commander
+ * @group SystemManager
  */
 PARAM_DEFINE_INT32(COM_FLT_TIME_MAX, -1);
 
@@ -894,7 +894,7 @@ PARAM_DEFINE_INT32(COM_FLT_TIME_MAX, -1);
  * @min -1
  * @decimal 1
  * @increment 0.1
- * @group Commander
+ * @group SystemManager
  * @unit m/s
  */
 PARAM_DEFINE_FLOAT(COM_WIND_MAX, -1.f);
@@ -908,7 +908,7 @@ PARAM_DEFINE_FLOAT(COM_WIND_MAX, -1.f);
  * RTL or Land if this threshold is exceeded. Taking over in any manual
  * mode is still possible.
  *
- * @group Commander
+ * @group SystemManager
  *
  * @value 0 None
  * @value 1 Warning
@@ -931,7 +931,7 @@ PARAM_DEFINE_INT32(COM_WIND_MAX_ACT, 0);
  *
  * @min -1
  * @max 1000
- * @group Commander
+ * @group SystemManager
  * @unit m
  */
 PARAM_DEFINE_FLOAT(COM_POS_LOW_EPH, -1.0f);
@@ -944,7 +944,7 @@ PARAM_DEFINE_FLOAT(COM_POS_LOW_EPH, -1.0f);
  * The failsafe action is only executed if the vehicle is in auto mission or auto loiter mode,
  * otherwise it is only a warning.
  *
- * @group Commander
+ * @group SystemManager
  *
  * @value 0 None
  * @value 1 Warning
@@ -964,7 +964,7 @@ PARAM_DEFINE_INT32(COM_POS_LOW_ACT, 3);
  * @boolean
  * @value 0 Disallow arming
  * @value 1 Allow arming
- * @group Commander
+ * @group SystemManager
  */
 PARAM_DEFINE_INT32(COM_ARMABLE, 1);
 
@@ -980,7 +980,7 @@ PARAM_DEFINE_INT32(COM_ARMABLE, 1);
  * @max 0.9
  * @decimal 2
  * @increment 0.01
- * @group Commander
+ * @group SystemManager
  */
 PARAM_DEFINE_FLOAT(COM_ARM_BAT_MIN, -1.f);
 
@@ -989,7 +989,7 @@ PARAM_DEFINE_FLOAT(COM_ARM_BAT_MIN, -1.f);
  *
  * Allows to start the vehicle by throwing it into the air.
  *
- * @group Commander
+ * @group SystemManager
  * @boolean
  */
 PARAM_DEFINE_INT32(COM_THROW_EN, 0);
@@ -1003,7 +1003,7 @@ PARAM_DEFINE_INT32(COM_THROW_EN, 0);
  *
  * Set to 0 to disable.
  *
- * @group Commander
+ * @group SystemManager
  * @min 0
  * @decimal 1
  * @increment 0.1
@@ -1017,7 +1017,7 @@ PARAM_DEFINE_FLOAT(COM_THROW_SPEED, 5);
  * Action the system takes when the remaining flight time is below
  * the estimated time it takes to reach the RTL destination.
  *
- * @group Commander
+ * @group SystemManager
  * @value 0 None
  * @value 1 Warning
  * @value 3 Return
@@ -1030,7 +1030,7 @@ PARAM_DEFINE_INT32(COM_FLTT_LOW_ACT, 3);
  *
  * By default disabled for safety reasons
  *
- * @group Commander
+ * @group SystemManager
  * @boolean
  *
  */

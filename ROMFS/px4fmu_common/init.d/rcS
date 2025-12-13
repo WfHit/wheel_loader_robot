@@ -414,7 +414,7 @@ else
 
 	#
 	# RC update (map raw RC input to calibrate manual control)
-	#  start before commander
+	#  start before system_manager
 	#
 	rc_update start
 	manual_control start
@@ -450,7 +450,7 @@ else
 	#
 	if param greater SYS_HITL 0
 	then
-		commander start -h
+		system_manager start -h
 
 		if ! pwm_out_sim start -m hil
 		then
@@ -458,7 +458,7 @@ else
 		fi
 
 	else
-		commander start
+		system_manager start
 
 		dshot start
 		pwm_out start
