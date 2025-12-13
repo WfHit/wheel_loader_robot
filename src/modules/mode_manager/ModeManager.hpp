@@ -56,6 +56,7 @@
 #include <uORB/topics/vehicle_local_position.h>
 #include <uORB/topics/vehicle_local_position_setpoint.h>
 #include <uORB/topics/vehicle_status.h>
+#include <uORB/topics/vehicle_type_config.h>
 
 #include <new>
 
@@ -97,6 +98,19 @@ private:
 	 * Handles VLA autonomous and manual modes for articulated wheel loaders
 	 */
 	void selectWheelLoaderMode();
+
+	/**
+	 * Rover specific mode selection
+	 * Uses mode_change_logic from vehicle_type_config
+	 */
+	void selectRoverMode();
+
+	/**
+	 * Check if the requested mode is available for the current vehicle type
+	 * @param operation_mode Operation mode to check
+	 * @return true if mode is available, false otherwise
+	 */
+	bool isModeAvailableForVehicleType(uint8_t operation_mode) const;
 
 	/**
 	 * Switch to a specific task (for normal usage)
@@ -154,6 +168,7 @@ private:
 	uORB::SubscriptionCallbackWorkItem _vehicle_local_position_sub{this, ORB_ID(vehicle_local_position)};
 
 	uORB::SubscriptionData<vehicle_status_s> _vehicle_status_sub{ORB_ID(vehicle_status)};
+	uORB::SubscriptionData<vehicle_type_config_s> _vehicle_type_config_sub{ORB_ID(vehicle_type_config)};
 
 	uORB::Publication<landing_gear_s> _landing_gear_pub{ORB_ID(landing_gear)};
 	uORB::Publication<trajectory_setpoint_s> _control_setpoint_pub{ORB_ID(trajectory_setpoint)};

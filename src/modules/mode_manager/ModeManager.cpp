@@ -135,6 +135,9 @@ void ModeManager::updateParams()
 
 void ModeManager::selectAndActivateMode()
 {
+	// Update vehicle type configuration subscription
+	_vehicle_type_config_sub.update();
+
 	// Do not run any mode for VTOLs in fixed-wing mode
 	if ((_vehicle_status_sub.get().vehicle_type == vehicle_status_s::VEHICLE_TYPE_FIXED_WING)
 	    || ((_vehicle_status_sub.get().operation_mode >= vehicle_status_s::OPERATION_MODE_EXTERNAL3)
@@ -143,12 +146,32 @@ void ModeManager::selectAndActivateMode()
 		return;
 	}
 
-	// Handle wheel loader specific mode selection
-	const bool is_wheel_loader = (_vehicle_status_sub.get().vehicle_type == vehicle_status_s::VEHICLE_TYPE_WHEEL_LOADER);
+	// Use vehicle-type-specific mode selection based on mode_change_logic from vehicle_type_config
+	const vehicle_type_config_s &vtc = _vehicle_type_config_sub.get();
 
-	if (is_wheel_loader) {
-		selectWheelLoaderMode();
-		return;
+	if (vtc.config_valid) {
+		switch (vtc.mode_change_logic) {
+		case vehicle_type_config_s::MODE_CHANGE_LOGIC_WHEEL_LOADER:
+			selectWheelLoaderMode();
+			return;
+
+		case vehicle_type_config_s::MODE_CHANGE_LOGIC_ROVER:
+			selectRoverMode();
+			return;
+
+		case vehicle_type_config_s::MODE_CHANGE_LOGIC_STANDARD:
+		default:
+			// Fall through to standard mode selection
+			break;
+		}
+	} else {
+		// Fallback: Handle wheel loader specific mode selection using vehicle_type
+		const bool is_wheel_loader = (_vehicle_status_sub.get().vehicle_type == vehicle_status_s::VEHICLE_TYPE_WHEEL_LOADER);
+
+		if (is_wheel_loader) {
+			selectWheelLoaderMode();
+			return;
+		}
 	}
 
 	// Only run transition flight task if altitude control is enabled (e.g. in Altitdue, Position, Auto flight mode)
@@ -508,6 +531,11 @@ void ModeManager::selectWheelLoaderMode()
 	ModeError error = ModeError::NoError;
 	bool mode_activated = false;
 
+	// Check if requested mode is available using vehicle_type_config
+	if (!isModeAvailableForVehicleType(operation_mode)) {
+		PX4_WARN("Requested mode %d not available for wheel loader", operation_mode);
+	}
+
 	// VLA 7-DOF Trajectory Following (chassis + boom + tilt) - autonomous mode
 	if (operation_mode == vehicle_status_s::OPERATION_MODE_AUTO_VLA) {
 		error = switchMode(ModeIndex::VLA);
@@ -542,6 +570,76 @@ void ModeManager::selectWheelLoaderMode()
 			switchMode(ModeIndex::None);
 		}
 	}
+}
+
+void ModeManager::selectRoverMode()
+{
+	// Rover specific mode selection
+	// Uses vehicle_type_config for available modes
+
+	const uint8_t operation_mode = _vehicle_status_sub.get().operation_mode;
+	ModeError error = ModeError::NoError;
+	bool mode_activated = false;
+
+	// Check if requested mode is available
+	if (!isModeAvailableForVehicleType(operation_mode)) {
+		PX4_WARN("Requested mode %d not available for rover", operation_mode);
+	}
+
+	// Manual mode
+	if (operation_mode == vehicle_status_s::OPERATION_MODE_MANUAL) {
+		error = switchMode(ModeIndex::ManualPosition);
+
+		if (error == ModeError::NoError) {
+			mode_activated = true;
+		}
+	}
+
+	// Position control mode
+	if (!mode_activated && operation_mode == vehicle_status_s::OPERATION_MODE_POSCTL) {
+		error = switchMode(ModeIndex::ManualAcceleration);
+
+		if (error == ModeError::NoError) {
+			mode_activated = true;
+		}
+	}
+
+	// Auto modes (mission, loiter, RTL)
+	if (!mode_activated && _vehicle_control_mode_sub.get().flag_control_auto_enabled) {
+		error = switchMode(ModeIndex::Auto);
+
+		if (error == ModeError::NoError) {
+			mode_activated = true;
+		}
+	}
+
+	// Failsafe mode if no other mode was successfully activated
+	if (!mode_activated) {
+		// For rover, default to manual position control as failsafe
+		error = switchMode(ModeIndex::ManualPosition);
+
+		if (error != ModeError::NoError) {
+			PX4_ERR("No valid mode available for rover");
+			switchMode(ModeIndex::None);
+		}
+	}
+}
+
+bool ModeManager::isModeAvailableForVehicleType(uint8_t operation_mode) const
+{
+	const vehicle_type_config_s &vtc = _vehicle_type_config_sub.get();
+
+	if (!vtc.config_valid) {
+		// If config is not valid, allow all modes (fallback behavior)
+		return true;
+	}
+
+	// Check if the mode bit is set in the available_modes_mask
+	if (operation_mode < 32) {
+		return (vtc.available_modes_mask & (1u << operation_mode)) != 0;
+	}
+
+	return false;
 }
 
 int ModeManager::print_usage(const char *reason)

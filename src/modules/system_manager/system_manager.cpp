@@ -1934,6 +1934,9 @@ void SystemManager::run()
 			fd_status.motor_failure_mask = _failure_detector.getMotorFailures();
 			fd_status.timestamp = hrt_absolute_time();
 			_failure_detector_status_pub.publish(fd_status);
+
+			// Update and publish vehicle type configuration
+			updateVehicleTypeConfig();
 		}
 
 		checkWorkerThread();
@@ -2989,6 +2992,187 @@ void SystemManager::onFailsafeNotifyUser()
 	// as the failsafe message might reference that. This is only needed in case the report is currently rate-limited,
 	// i.e. it had a recent previous change already.
 	_health_and_arming_checks.reportIfUnreportedDifferences();
+}
+
+void SystemManager::updateVehicleTypeConfig()
+{
+	const uint8_t vehicle_type = _vehicle_status.vehicle_type;
+
+	// Only update if vehicle type changed or first time
+	static uint8_t last_vehicle_type = UINT8_MAX;
+
+	if (vehicle_type == last_vehicle_type && _vehicle_type_config.config_valid) {
+		// No change needed, just republish at normal rate
+		_vehicle_type_config.timestamp = hrt_absolute_time();
+		_vehicle_type_config_pub.publish(_vehicle_type_config);
+		return;
+	}
+
+	last_vehicle_type = vehicle_type;
+	_vehicle_type_config.config_version++;
+
+	// Set vehicle type
+	_vehicle_type_config.vehicle_type = vehicle_type;
+
+	// Configure based on vehicle type
+	switch (vehicle_type) {
+	case vehicle_status_s::VEHICLE_TYPE_WHEEL_LOADER:
+		// Wheel loader configuration
+		_vehicle_type_config.available_modes_mask =
+			(1u << vehicle_status_s::OPERATION_MODE_MANUAL) |
+			(1u << vehicle_status_s::OPERATION_MODE_AUTO_VLA);
+
+		_vehicle_type_config.default_mode = vehicle_status_s::OPERATION_MODE_MANUAL;
+		_vehicle_type_config.failsafe_mode = vehicle_status_s::OPERATION_MODE_MANUAL;
+
+		_vehicle_type_config.available_automation_tasks_mask =
+			(1u << vehicle_type_config_s::AUTOMATION_TASK_VLA_TRAJECTORY);
+
+		_vehicle_type_config.mode_change_logic = vehicle_type_config_s::MODE_CHANGE_LOGIC_WHEEL_LOADER;
+
+		// Control capabilities
+		_vehicle_type_config.supports_altitude_control = false;
+		_vehicle_type_config.supports_position_control = true;
+		_vehicle_type_config.supports_velocity_control = true;
+		_vehicle_type_config.supports_attitude_control = false;
+		_vehicle_type_config.supports_manual_control = true;
+		_vehicle_type_config.supports_autonomous_control = true;
+		_vehicle_type_config.supports_boom_control = true;
+		_vehicle_type_config.supports_tilt_control = true;
+		_vehicle_type_config.supports_articulated_steering = true;
+
+		// Safety configuration
+		_vehicle_type_config.emergency_stop_decel = 5.0f; // m/s^2
+		_vehicle_type_config.max_velocity = 3.0f; // m/s
+		_vehicle_type_config.max_steering_rate = 0.5f; // rad/s
+		break;
+
+	case vehicle_status_s::VEHICLE_TYPE_ROVER:
+		// Rover configuration
+		_vehicle_type_config.available_modes_mask =
+			(1u << vehicle_status_s::OPERATION_MODE_MANUAL) |
+			(1u << vehicle_status_s::OPERATION_MODE_POSCTL) |
+			(1u << vehicle_status_s::OPERATION_MODE_AUTO_MISSION) |
+			(1u << vehicle_status_s::OPERATION_MODE_AUTO_RTL) |
+			(1u << vehicle_status_s::OPERATION_MODE_AUTO_LOITER);
+
+		_vehicle_type_config.default_mode = vehicle_status_s::OPERATION_MODE_MANUAL;
+		_vehicle_type_config.failsafe_mode = vehicle_status_s::OPERATION_MODE_AUTO_RTL;
+
+		_vehicle_type_config.available_automation_tasks_mask =
+			(1u << vehicle_type_config_s::AUTOMATION_TASK_MISSION) |
+			(1u << vehicle_type_config_s::AUTOMATION_TASK_LOITER) |
+			(1u << vehicle_type_config_s::AUTOMATION_TASK_RTL);
+
+		_vehicle_type_config.mode_change_logic = vehicle_type_config_s::MODE_CHANGE_LOGIC_ROVER;
+
+		// Control capabilities
+		_vehicle_type_config.supports_altitude_control = false;
+		_vehicle_type_config.supports_position_control = true;
+		_vehicle_type_config.supports_velocity_control = true;
+		_vehicle_type_config.supports_attitude_control = false;
+		_vehicle_type_config.supports_manual_control = true;
+		_vehicle_type_config.supports_autonomous_control = true;
+		_vehicle_type_config.supports_boom_control = false;
+		_vehicle_type_config.supports_tilt_control = false;
+		_vehicle_type_config.supports_articulated_steering = false;
+
+		// Safety configuration
+		_vehicle_type_config.emergency_stop_decel = 3.0f;
+		_vehicle_type_config.max_velocity = 10.0f;
+		_vehicle_type_config.max_steering_rate = 1.0f;
+		break;
+
+	case vehicle_status_s::VEHICLE_TYPE_ROTARY_WING:
+		// Rotary wing (multicopter) configuration
+		_vehicle_type_config.available_modes_mask =
+			(1u << vehicle_status_s::OPERATION_MODE_MANUAL) |
+			(1u << vehicle_status_s::OPERATION_MODE_ALTCTL) |
+			(1u << vehicle_status_s::OPERATION_MODE_POSCTL) |
+			(1u << vehicle_status_s::OPERATION_MODE_AUTO_MISSION) |
+			(1u << vehicle_status_s::OPERATION_MODE_AUTO_RTL) |
+			(1u << vehicle_status_s::OPERATION_MODE_AUTO_LOITER) |
+			(1u << vehicle_status_s::OPERATION_MODE_AUTO_TAKEOFF) |
+			(1u << vehicle_status_s::OPERATION_MODE_AUTO_LAND) |
+			(1u << vehicle_status_s::OPERATION_MODE_ORBIT) |
+			(1u << vehicle_status_s::OPERATION_MODE_DESCEND);
+
+		_vehicle_type_config.default_mode = vehicle_status_s::OPERATION_MODE_POSCTL;
+		_vehicle_type_config.failsafe_mode = vehicle_status_s::OPERATION_MODE_AUTO_RTL;
+
+		_vehicle_type_config.available_automation_tasks_mask =
+			(1u << vehicle_type_config_s::AUTOMATION_TASK_MISSION) |
+			(1u << vehicle_type_config_s::AUTOMATION_TASK_LOITER) |
+			(1u << vehicle_type_config_s::AUTOMATION_TASK_RTL) |
+			(1u << vehicle_type_config_s::AUTOMATION_TASK_TAKEOFF) |
+			(1u << vehicle_type_config_s::AUTOMATION_TASK_LAND) |
+			(1u << vehicle_type_config_s::AUTOMATION_TASK_PRECLAND);
+
+		_vehicle_type_config.mode_change_logic = vehicle_type_config_s::MODE_CHANGE_LOGIC_STANDARD;
+
+		// Control capabilities
+		_vehicle_type_config.supports_altitude_control = true;
+		_vehicle_type_config.supports_position_control = true;
+		_vehicle_type_config.supports_velocity_control = true;
+		_vehicle_type_config.supports_attitude_control = true;
+		_vehicle_type_config.supports_manual_control = true;
+		_vehicle_type_config.supports_autonomous_control = true;
+		_vehicle_type_config.supports_boom_control = false;
+		_vehicle_type_config.supports_tilt_control = false;
+		_vehicle_type_config.supports_articulated_steering = false;
+
+		// Safety configuration
+		_vehicle_type_config.emergency_stop_decel = 10.0f;
+		_vehicle_type_config.max_velocity = 20.0f;
+		_vehicle_type_config.max_steering_rate = 2.0f;
+		break;
+
+	case vehicle_status_s::VEHICLE_TYPE_FIXED_WING:
+	default:
+		// Fixed wing / default configuration
+		_vehicle_type_config.available_modes_mask =
+			(1u << vehicle_status_s::OPERATION_MODE_MANUAL) |
+			(1u << vehicle_status_s::OPERATION_MODE_ALTCTL) |
+			(1u << vehicle_status_s::OPERATION_MODE_POSCTL) |
+			(1u << vehicle_status_s::OPERATION_MODE_AUTO_MISSION) |
+			(1u << vehicle_status_s::OPERATION_MODE_AUTO_RTL) |
+			(1u << vehicle_status_s::OPERATION_MODE_AUTO_LOITER) |
+			(1u << vehicle_status_s::OPERATION_MODE_AUTO_TAKEOFF) |
+			(1u << vehicle_status_s::OPERATION_MODE_AUTO_LAND);
+
+		_vehicle_type_config.default_mode = vehicle_status_s::OPERATION_MODE_POSCTL;
+		_vehicle_type_config.failsafe_mode = vehicle_status_s::OPERATION_MODE_AUTO_RTL;
+
+		_vehicle_type_config.available_automation_tasks_mask =
+			(1u << vehicle_type_config_s::AUTOMATION_TASK_MISSION) |
+			(1u << vehicle_type_config_s::AUTOMATION_TASK_LOITER) |
+			(1u << vehicle_type_config_s::AUTOMATION_TASK_RTL) |
+			(1u << vehicle_type_config_s::AUTOMATION_TASK_TAKEOFF) |
+			(1u << vehicle_type_config_s::AUTOMATION_TASK_LAND);
+
+		_vehicle_type_config.mode_change_logic = vehicle_type_config_s::MODE_CHANGE_LOGIC_STANDARD;
+
+		// Control capabilities
+		_vehicle_type_config.supports_altitude_control = true;
+		_vehicle_type_config.supports_position_control = true;
+		_vehicle_type_config.supports_velocity_control = true;
+		_vehicle_type_config.supports_attitude_control = true;
+		_vehicle_type_config.supports_manual_control = true;
+		_vehicle_type_config.supports_autonomous_control = true;
+		_vehicle_type_config.supports_boom_control = false;
+		_vehicle_type_config.supports_tilt_control = false;
+		_vehicle_type_config.supports_articulated_steering = false;
+
+		// Safety configuration
+		_vehicle_type_config.emergency_stop_decel = 5.0f;
+		_vehicle_type_config.max_velocity = 50.0f;
+		_vehicle_type_config.max_steering_rate = 1.0f;
+		break;
+	}
+
+	_vehicle_type_config.config_valid = true;
+	_vehicle_type_config.timestamp = hrt_absolute_time();
+	_vehicle_type_config_pub.publish(_vehicle_type_config);
 }
 
 int SystemManager::print_usage(const char *reason)
