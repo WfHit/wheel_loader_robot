@@ -2999,16 +2999,14 @@ void SystemManager::updateVehicleTypeConfig()
 	const uint8_t vehicle_type = _vehicle_status.vehicle_type;
 
 	// Only update if vehicle type changed or first time
-	static uint8_t last_vehicle_type = UINT8_MAX;
-
-	if (vehicle_type == last_vehicle_type && _vehicle_type_config.config_valid) {
+	if (vehicle_type == _last_vehicle_type_config && _vehicle_type_config.config_valid) {
 		// No change needed, just republish at normal rate
 		_vehicle_type_config.timestamp = hrt_absolute_time();
 		_vehicle_type_config_pub.publish(_vehicle_type_config);
 		return;
 	}
 
-	last_vehicle_type = vehicle_type;
+	_last_vehicle_type_config = vehicle_type;
 	_vehicle_type_config.config_version++;
 
 	// Set vehicle type

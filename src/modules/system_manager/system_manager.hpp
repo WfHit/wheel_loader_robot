@@ -289,6 +289,8 @@ private:
 	bool _have_taken_off_since_arming{false};
 	bool _status_changed{true};
 
+	uint8_t _last_vehicle_type_config{UINT8_MAX};	///< Last vehicle type for config tracking
+
 	vehicle_land_detected_s	_vehicle_land_detected{};
 
 	// system_manager publications

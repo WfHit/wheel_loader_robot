@@ -423,10 +423,11 @@ private:
 	bool isAutomationTaskAvailable(uint8_t task_type);
 
 	/**
-	 * Get the vehicle type configuration
+	 * Update and get the vehicle type configuration
+	 * Note: This method updates the subscription before returning the data
 	 * @return const reference to the current vehicle type configuration
 	 */
-	const vehicle_type_config_s &getVehicleTypeConfig() { _vehicle_type_config_sub.update(); return _vehicle_type_config_sub.get(); }
+	const vehicle_type_config_s &updateAndGetVehicleTypeConfig() { _vehicle_type_config_sub.update(); return _vehicle_type_config_sub.get(); }
 
 	DEFINE_PARAMETERS(
 		(ParamFloat<px4::params::NAV_LOITER_RAD>)   _param_nav_loiter_rad,	/**< loiter radius for fixedwing */
