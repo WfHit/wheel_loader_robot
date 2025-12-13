@@ -35,6 +35,7 @@
 
 #include <lib/mathlib/mathlib.h>
 #include <lib/matrix/matrix/math.hpp>
+#include <lib/vehicle_type/VehicleTypeRegistry.hpp>
 
 using namespace time_literals;
 
@@ -135,19 +136,19 @@ void ModeManager::updateParams()
 
 void ModeManager::selectAndActivateMode()
 {
+	const uint8_t vehicle_type = _vehicle_status_sub.get().vehicle_type;
+	const uint8_t operation_mode = _vehicle_status_sub.get().operation_mode;
+
 	// Do not run any flight task for VTOLs in fixed-wing mode
-	if ((_vehicle_status_sub.get().vehicle_type == vehicle_status_s::VEHICLE_TYPE_FIXED_WING)
-	    || ((_vehicle_status_sub.get().operation_mode >= vehicle_status_s::OPERATION_MODE_EXTERNAL3)
-		&& (_vehicle_status_sub.get().operation_mode <= vehicle_status_s::OPERATION_MODE_EXTERNAL8))) {
+	if ((vehicle_type == vehicle_status_s::VEHICLE_TYPE_FIXED_WING)
+	    || ((operation_mode >= vehicle_status_s::OPERATION_MODE_EXTERNAL3)
+		&& (operation_mode <= vehicle_status_s::OPERATION_MODE_EXTERNAL8))) {
 		switchTask(ModeIndex::None);
 		return;
 	}
 
-	// Handle wheel loader specific mode selection
-	const bool is_wheel_loader = (_vehicle_status_sub.get().vehicle_type == vehicle_status_s::VEHICLE_TYPE_WHEEL_LOADER);
-
-	if (is_wheel_loader) {
-		selectWheelLoaderMode();
+	// Use vehicle type strategy for mode selection if available
+	if (selectModeForVehicleType(vehicle_type)) {
 		return;
 	}
 
@@ -499,10 +500,40 @@ int ModeManager::print_status()
 	return 0;
 }
 
+bool ModeManager::selectModeForVehicleType(uint8_t vehicle_type)
+{
+	// Get the strategy for this vehicle type
+	const vehicle_type::VehicleTypeStrategy *strategy = vehicle_type::VehicleTypeRegistry::getStrategy(vehicle_type);
+
+	if (!strategy) {
+		return false;
+	}
+
+	// Check if this vehicle type has specialized mode selection
+	// Currently only wheel loader has vehicle-specific mode handling
+	if (vehicle_type == vehicle_status_s::VEHICLE_TYPE_WHEEL_LOADER) {
+		selectWheelLoaderMode();
+		return true;
+	}
+
+	// For other vehicle types, check if the current mode is supported
+	// If not supported by the strategy, let the default handling proceed
+	const uint8_t operation_mode = _vehicle_status_sub.get().operation_mode;
+
+	if (!strategy->isModeSupported(operation_mode)) {
+		// Mode not supported by this vehicle type strategy
+		// Fall through to default handling
+		return false;
+	}
+
+	return false;
+}
+
 void ModeManager::selectWheelLoaderMode()
 {
-	// Wheel loader specific mode selection
-	// Priority: VLA Auto -> Manual -> Failsafe
+	// Get the wheel loader strategy for mode selection guidance
+	const vehicle_type::VehicleTypeStrategy *strategy = vehicle_type::VehicleTypeRegistry::getStrategy(
+				vehicle_status_s::VEHICLE_TYPE_WHEEL_LOADER);
 
 	const uint8_t operation_mode = _vehicle_status_sub.get().operation_mode;
 	ModeError error = ModeError::NoError;
@@ -522,13 +553,22 @@ void ModeManager::selectWheelLoaderMode()
 
 	// Manual mode for wheel loader (default mode or fallback from VLA failure)
 	if (!mode_activated) {
-		error = switchTask(ModeIndex::ManualWheelLoader);
+		// Get the fallback mode from strategy
+		uint8_t fallback_mode = vehicle_status_s::OPERATION_MODE_MANUAL;
 
-		if (error == ModeError::NoError) {
-			mode_activated = true;
+		if (strategy) {
+			fallback_mode = strategy->getFallbackMode(operation_mode, true);
+		}
 
-		} else {
-			PX4_WARN("Manual wheel loader mode activation failed");
+		if (fallback_mode == vehicle_status_s::OPERATION_MODE_MANUAL) {
+			error = switchTask(ModeIndex::ManualWheelLoader);
+
+			if (error == ModeError::NoError) {
+				mode_activated = true;
+
+			} else {
+				PX4_WARN("Manual wheel loader mode activation failed");
+			}
 		}
 	}
 

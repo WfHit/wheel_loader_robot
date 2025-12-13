@@ -33,12 +33,20 @@
 
 #include "control_mode.hpp"
 #include <uORB/topics/vehicle_status.h>
+#include <lib/vehicle_type/VehicleTypeRegistry.hpp>
 
 namespace mode_util
 {
 
 static bool stabilization_required(uint8_t vehicle_type)
 {
+	const vehicle_type::VehicleTypeStrategy *strategy = vehicle_type::VehicleTypeRegistry::getStrategy(vehicle_type);
+
+	if (strategy) {
+		return strategy->requiresStabilization();
+	}
+
+	// Default to requiring stabilization for safety
 	return vehicle_type == vehicle_status_s::VEHICLE_TYPE_ROTARY_WING;
 }
 
@@ -46,7 +54,15 @@ void getVehicleControlMode(uint8_t nav_state, uint8_t vehicle_type,
 			   const offboard_control_mode_s &offboard_control_mode,
 			   vehicle_control_mode_s &vehicle_control_mode)
 {
+	// Try to use the vehicle type strategy first
+	const vehicle_type::VehicleTypeStrategy *strategy = vehicle_type::VehicleTypeRegistry::getStrategy(vehicle_type);
 
+	if (strategy && strategy->isModeSupported(nav_state)) {
+		strategy->getControlModeFlags(nav_state, offboard_control_mode, vehicle_control_mode);
+		return;
+	}
+
+	// Fallback to default control mode logic for unsupported vehicle types or modes
 	switch (nav_state) {
 	case vehicle_status_s::OPERATION_MODE_MANUAL:
 		vehicle_control_mode.flag_control_manual_enabled = true;

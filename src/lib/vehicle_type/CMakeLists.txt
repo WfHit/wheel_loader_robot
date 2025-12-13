@@ -1,6 +1,6 @@
 ############################################################################
 #
-#   Copyright (c) 2022 PX4 Development Team. All rights reserved.
+#   Copyright (c) 2024 PX4 Development Team. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -31,9 +31,8 @@
 #
 ############################################################################
 
-add_library(mode_util
-	control_mode.cpp
-	mode_requirements.cpp
+px4_add_library(vehicle_type
+	VehicleTypeRegistry.cpp
 )
-add_dependencies(mode_util uorb_headers prebuild_targets)
-target_link_libraries(mode_util PRIVATE vehicle_type)
+
+target_include_directories(vehicle_type PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

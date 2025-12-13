@@ -4,48 +4,89 @@
 
 This document describes how to extend the PX4-based wheel loader robot system to support additional vehicle types. The architecture has been designed with modularity in mind, allowing different vehicle configurations while sharing common components.
 
+## Architecture Overview
+
+### Vehicle Type Strategy Pattern
+
+The system uses a **Strategy Pattern** to encapsulate vehicle-specific behavior. Each vehicle type implements the `VehicleTypeStrategy` interface, which defines:
+
+1. **Supported Operation Modes** - Which modes are valid for this vehicle type
+2. **Mode Selection Logic** - How to select and fall back between modes
+3. **Control Mode Flags** - What controllers should be active in each mode
+4. **Mode Requirements** - What sensors/systems are required for each mode
+5. **Failsafe Behavior** - How to handle failures
+6. **Automation Task Support** - Which automation tasks are available
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                      VehicleTypeStrategy (Base Interface)                │
+│  - getVehicleType()                                                      │
+│  - isModeSupported(operation_mode)                                       │
+│  - getControlModeFlags(operation_mode, ...)                              │
+│  - setModeRequirements(flags)                                            │
+│  - getFallbackMode(failed_mode, is_armed)                                │
+│  - getAutomationTaskForMode(operation_mode)                              │
+└─────────────────────────────────────────────────────────────────────────┘
+                    ▲                                      ▲
+                    │                                      │
+    ┌───────────────┴───────────────┐    ┌─────────────────┴──────────────┐
+    │     RotaryWingStrategy        │    │      WheelLoaderStrategy       │
+    │  - Manual, Stab, Alt, Pos     │    │  - Manual (direct control)     │
+    │  - Auto: Mission, RTL, Land   │    │  - Auto VLA (trajectory)       │
+    │  - Requires stabilization     │    │  - No stabilization needed     │
+    │  - Failsafe: Descend          │    │  - Failsafe: Manual            │
+    └───────────────────────────────┘    └────────────────────────────────┘
+```
+
+### Vehicle Type Registry
+
+The `VehicleTypeRegistry` provides singleton access to vehicle type strategies:
+
+```cpp
+#include <lib/vehicle_type/VehicleTypeRegistry.hpp>
+
+// Get strategy for current vehicle type
+const auto* strategy = vehicle_type::VehicleTypeRegistry::getStrategy(vehicle_type);
+
+// Check if mode is supported
+if (strategy->isModeSupported(operation_mode)) {
+    // Use strategy for this mode
+}
+```
+
 ## Supported Vehicle Types
 
 The system currently supports the following vehicle types defined in `VehicleStatus.msg`:
 
-| Type | Value | Description |
-|------|-------|-------------|
-| `VEHICLE_TYPE_ROTARY_WING` | 1 | Multirotor/helicopter |
-| `VEHICLE_TYPE_FIXED_WING` | 2 | Fixed-wing aircraft |
-| `VEHICLE_TYPE_ROVER` | 3 | Ground vehicle rover |
-| `VEHICLE_TYPE_WHEEL_LOADER` | 4 | Articulated wheel loader with boom and bucket |
+| Type | Value | Description | Strategy |
+|------|-------|-------------|----------|
+| `VEHICLE_TYPE_ROTARY_WING` | 1 | Multirotor/helicopter | `RotaryWingStrategy` |
+| `VEHICLE_TYPE_FIXED_WING` | 2 | Fixed-wing aircraft | (uses default) |
+| `VEHICLE_TYPE_ROVER` | 3 | Ground vehicle rover | (uses default) |
+| `VEHICLE_TYPE_WHEEL_LOADER` | 4 | Articulated wheel loader | `WheelLoaderStrategy` |
 
-## Architecture Overview
-
-### Mode Manager
+## Mode Manager
 
 The `mode_manager` module is the central controller for vehicle operation modes. It:
 1. Receives the current vehicle type from `vehicle_status`
-2. Selects appropriate modes based on operation mode and vehicle type
+2. Uses the vehicle type strategy to select appropriate modes
 3. Manages mode transitions and failsafes
 
 ### Vehicle-Specific Mode Selection
 
-For wheel loaders, the `selectWheelLoaderMode()` function handles mode selection:
+Mode selection is delegated to the vehicle type strategy:
 
 ```cpp
-void ModeManager::selectWheelLoaderMode()
+void ModeManager::selectAndActivateMode()
 {
-    // Priority: Emergency -> VLA Auto -> Manual
-    // Handles OPERATION_MODE_AUTO_VLA and OPERATION_MODE_MANUAL
+    // Get strategy for current vehicle type
+    if (selectModeForVehicleType(vehicle_type)) {
+        return;  // Strategy handled mode selection
+    }
+    
+    // Fall back to default handling for unsupported types
+    // ...
 }
-```
-
-### Standard Modes Integration
-
-The `standard_modes.hpp` library provides mapping between standard modes and navigation states for each vehicle type:
-
-```cpp
-// Wheel loader specific modes
-case StandardMode::WHEEL_LOADER_MANUAL:
-    return vehicle_status_s::OPERATION_MODE_MANUAL;
-case StandardMode::WHEEL_LOADER_VLA_AUTO:
-    return vehicle_status_s::OPERATION_MODE_AUTO_VLA;
 ```
 
 ## Adding a New Vehicle Type
@@ -58,9 +99,77 @@ Add a new constant in `msg/versioned/VehicleStatus.msg`:
 uint8 VEHICLE_TYPE_YOUR_VEHICLE = 5  # Description of your vehicle
 ```
 
-### Step 2: Create Vehicle-Specific Modes
+### Step 2: Create Vehicle Type Strategy
 
-Create new mode implementations in `src/modules/mode_manager/modes/`:
+Create a new strategy class in `src/lib/vehicle_type/`:
+
+```cpp
+// YourVehicleStrategy.hpp
+#pragma once
+#include "VehicleTypeStrategy.hpp"
+
+namespace vehicle_type {
+
+class YourVehicleStrategy : public VehicleTypeStrategy
+{
+public:
+    uint8_t getVehicleType() const override {
+        return vehicle_status_s::VEHICLE_TYPE_YOUR_VEHICLE;
+    }
+    
+    const char *getVehicleTypeName() const override {
+        return "Your Vehicle";
+    }
+    
+    bool isModeSupported(uint8_t operation_mode) const override {
+        // Define which modes your vehicle supports
+    }
+    
+    void getControlModeFlags(uint8_t operation_mode,
+                             const offboard_control_mode_s &offboard_control_mode,
+                             vehicle_control_mode_s &control_mode) const override {
+        // Set control mode flags for each operation mode
+    }
+    
+    void setModeRequirements(failsafe_flags_s &flags) const override {
+        // Define sensor requirements for each mode
+    }
+    
+    uint8_t getFallbackMode(uint8_t failed_mode, bool is_armed) const override {
+        // Define fallback behavior
+    }
+    
+    // ... implement other virtual methods
+};
+
+} // namespace vehicle_type
+```
+
+### Step 3: Register the Strategy
+
+Add your strategy to `VehicleTypeRegistry.hpp`:
+
+```cpp
+#include "YourVehicleStrategy.hpp"
+
+class VehicleTypeRegistry {
+public:
+    static const VehicleTypeStrategy *getStrategy(uint8_t vehicle_type) {
+        switch (vehicle_type) {
+        case vehicle_status_s::VEHICLE_TYPE_YOUR_VEHICLE:
+            return &_your_vehicle_strategy;
+        // ... other cases
+        }
+    }
+    
+private:
+    static YourVehicleStrategy _your_vehicle_strategy;
+};
+```
+
+### Step 4: Create Vehicle-Specific Modes (if needed)
+
+If your vehicle needs custom mode implementations, create them in `src/modules/mode_manager/modes/`:
 
 1. Create directory: `ModeYourVehicle/`
 2. Implement the mode class inheriting from `Mode`:
@@ -69,50 +178,27 @@ Create new mode implementations in `src/modules/mode_manager/modes/`:
    - `CMakeLists.txt`
    - Parameters file (optional)
 
-### Step 3: Register the Mode
+### Step 5: Add Mode Selection Logic
 
-Add your mode to `src/modules/mode_manager/CMakeLists.txt`:
-
-```cmake
-list(APPEND modes_all
-    ...
-    YourVehicle
-)
-```
-
-### Step 4: Add Mode Selection Logic
-
-Update `ModeManager.cpp` to handle your vehicle type:
+If your vehicle needs specialized mode selection in `ModeManager`, add a handler:
 
 ```cpp
-void ModeManager::selectAndActivateMode()
-{
-    const bool is_your_vehicle = (_vehicle_status_sub.get().vehicle_type == 
-                                   vehicle_status_s::VEHICLE_TYPE_YOUR_VEHICLE);
-    
-    if (is_your_vehicle) {
-        selectYourVehicleMode();
-        return;
-    }
-    // ... existing code
-}
-
 void ModeManager::selectYourVehicleMode()
 {
-    // Your vehicle-specific mode selection logic
+    const vehicle_type::YourVehicleStrategy *strategy = 
+        static_cast<const vehicle_type::YourVehicleStrategy*>(
+            vehicle_type::VehicleTypeRegistry::getStrategy(
+                vehicle_status_s::VEHICLE_TYPE_YOUR_VEHICLE));
+    
+    // Use strategy to guide mode selection
+    uint8_t operation_mode = _vehicle_status_sub.get().operation_mode;
+    
+    if (operation_mode == vehicle_status_s::OPERATION_MODE_YOUR_AUTO_MODE) {
+        switchTask(ModeIndex::YourAutoMode);
+    } else {
+        switchTask(ModeIndex::YourManualMode);
+    }
 }
-```
-
-### Step 5: Update Standard Modes (Optional)
-
-Add your vehicle's standard modes to `src/lib/modes/standard_modes.hpp`:
-
-```cpp
-enum class StandardMode : uint8_t {
-    // ... existing modes
-    YOUR_VEHICLE_MODE1 = 110,
-    YOUR_VEHICLE_MODE2 = 111,
-};
 ```
 
 ## Wheel Loader Implementation Details
@@ -130,6 +216,15 @@ The wheel loader uses two primary modes:
    - Receives VlaSetpointTriplet from automation module
    - Interpolates waypoints to 50Hz control setpoints
    - Publishes chassis, boom, and tilt control commands
+
+### Wheel Loader Strategy
+
+The `WheelLoaderStrategy` defines:
+
+- **Supported modes**: `OPERATION_MODE_MANUAL`, `OPERATION_MODE_AUTO_VLA`, `OPERATION_MODE_TERMINATION`
+- **No stabilization required**: Ground vehicles don't need attitude control
+- **Failsafe to manual**: Unlike aircraft, wheel loaders can safely stop with manual control
+- **VLA trajectory task**: Autonomous operation uses VLA trajectories, not waypoint missions
 
 ### Control Setpoint Messages
 
@@ -156,12 +251,12 @@ The wheel loader uses two primary modes:
 
 ## Best Practices
 
-### 1. Use Existing Base Classes
+### 1. Use the Strategy Pattern
 
-Inherit from the `Mode` base class to get:
-- Time management (`_time_stamp_last`, `_deltatime`)
-- Position/velocity state (`_position`, `_velocity`, `_yaw`)
-- Parameter handling infrastructure
+Always implement `VehicleTypeStrategy` for new vehicle types to ensure:
+- Consistent interface across all vehicle types
+- Easy addition of new vehicle types
+- Clear separation of vehicle-specific logic
 
 ### 2. Follow Message Naming Conventions
 
@@ -186,7 +281,7 @@ Create documentation in `docs/` explaining:
 
 ## Testing
 
-1. **Unit Tests**: Test individual mode classes
+1. **Unit Tests**: Test individual strategy classes
 2. **Integration Tests**: Test mode switching and control flow
 3. **Hardware-in-Loop**: Test with simulated or real hardware
 4. **Safety Tests**: Verify emergency stop and failsafe behavior
@@ -196,8 +291,9 @@ Create documentation in `docs/` explaining:
 ### Mode Not Activating
 
 1. Check `vehicle_status.vehicle_type` is set correctly
-2. Verify mode is registered in CMakeLists.txt
-3. Check mode selection logic in ModeManager
+2. Verify strategy is registered in `VehicleTypeRegistry`
+3. Check `isModeSupported()` returns true for the mode
+4. Review mode selection logic in ModeManager
 
 ### Control Setpoints Not Published
 
@@ -209,16 +305,9 @@ Create documentation in `docs/` explaining:
 
 1. Ensure all headers are included
 2. Verify CMakeLists.txt dependencies
-3. Check parameter registration
-
-## Future Enhancements
-
-- Vehicle capability abstraction layer
-- Dynamic mode registration
-- Plugin-based vehicle support
-- Simulation integration per vehicle type
+3. Check strategy implementation is complete
 
 ---
 
 *Last Updated: 2024*
-*Version: 1.0*
+*Version: 2.0*

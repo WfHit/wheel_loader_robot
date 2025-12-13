@@ -57,6 +57,8 @@
 #include <uORB/topics/vehicle_local_position_setpoint.h>
 #include <uORB/topics/vehicle_status.h>
 
+#include <lib/vehicle_type/VehicleTypeRegistry.hpp>
+
 #include <new>
 
 enum class ModeError : int {
@@ -91,6 +93,13 @@ private:
 	void selectAndActivateMode();
 	void handleCommand();
 	void generateTrajectorySetpoint(const float dt, const vehicle_local_position_s &vehicle_local_position);
+
+	/**
+	 * Vehicle type specific mode selection using strategy pattern
+	 * @param vehicle_type Current vehicle type
+	 * @return true if a mode was selected and activated
+	 */
+	bool selectModeForVehicleType(uint8_t vehicle_type);
 
 	/**
 	 * Wheel loader specific mode selection

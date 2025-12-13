@@ -33,6 +33,7 @@
 
 #include "mode_requirements.hpp"
 #include <uORB/topics/vehicle_status.h>
+#include <lib/vehicle_type/VehicleTypeRegistry.hpp>
 
 namespace mode_util
 {
@@ -59,6 +60,15 @@ void getModeRequirements(uint8_t vehicle_type, failsafe_flags_s &flags)
 	flags.mode_req_manual_control = 0;
 	flags.mode_req_other = 0;
 
+	// Use the vehicle type strategy to set mode requirements
+	const vehicle_type::VehicleTypeStrategy *strategy = vehicle_type::VehicleTypeRegistry::getStrategy(vehicle_type);
+
+	if (strategy) {
+		strategy->setModeRequirements(flags);
+		return;
+	}
+
+	// Fallback to default requirements for unsupported vehicle types
 	// OPERATION_MODE_MANUAL
 	setRequirement(vehicle_status_s::OPERATION_MODE_MANUAL, flags.mode_req_manual_control);
 

@@ -114,6 +114,7 @@ px4_add_module(
 		px4_work_queue
 		WeatherVane
 		flightmodes_generated
+		vehicle_type
 )
 
 # add all flight task dependencies
