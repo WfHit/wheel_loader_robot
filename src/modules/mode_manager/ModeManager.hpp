@@ -93,8 +93,14 @@ private:
 	void generateControlSetpoint(const float dt, const vehicle_local_position_s &vehicle_local_position);
 
 	/**
-	 * Switch to a specific mode (for normal usage)
-	 * @param mode index to switch to
+	 * Wheel loader specific mode selection
+	 * Handles VLA autonomous and manual modes for articulated wheel loaders
+	 */
+	void selectWheelLoaderMode();
+
+	/**
+	 * Switch to a specific task (for normal usage)
+	 * @param task index to switch to
 	 * @return 0 on success, <0 on error
 	 */
 	ModeError switchMode(ModeIndex new_mode_index);

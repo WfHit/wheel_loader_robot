@@ -51,6 +51,9 @@ enum class StandardMode : uint8_t {
 	MISSION = 6,
 	LAND = 7,
 	TAKEOFF = 8,
+	// Wheel loader specific modes
+	WHEEL_LOADER_MANUAL = 100,
+	WHEEL_LOADER_VLA_AUTO = 101,
 };
 
 /**
@@ -58,6 +61,20 @@ enum class StandardMode : uint8_t {
  */
 static inline StandardMode getStandardModeFromNavState(uint8_t nav_state, uint8_t vehicle_type, bool is_vtol)
 {
+	// Handle wheel loader specific modes first
+	if (vehicle_type == vehicle_status_s::VEHICLE_TYPE_WHEEL_LOADER) {
+		switch (nav_state) {
+		case vehicle_status_s::OPERATION_MODE_MANUAL:
+			return StandardMode::WHEEL_LOADER_MANUAL;
+
+		case vehicle_status_s::OPERATION_MODE_AUTO_VLA:
+			return StandardMode::WHEEL_LOADER_VLA_AUTO;
+
+		default:
+			return StandardMode::NON_STANDARD;
+		}
+	}
+
 	switch (nav_state) {
 	case vehicle_status_s::OPERATION_MODE_AUTO_RTL: return StandardMode::SAFE_RECOVERY;
 
@@ -103,6 +120,20 @@ static inline StandardMode getStandardModeFromNavState(uint8_t nav_state, uint8_
  */
 static inline uint8_t getNavStateFromStandardMode(StandardMode mode, uint8_t vehicle_type, bool is_vtol)
 {
+	// Handle wheel loader specific modes
+	if (vehicle_type == vehicle_status_s::VEHICLE_TYPE_WHEEL_LOADER) {
+		switch (mode) {
+		case StandardMode::WHEEL_LOADER_MANUAL:
+			return vehicle_status_s::OPERATION_MODE_MANUAL;
+
+		case StandardMode::WHEEL_LOADER_VLA_AUTO:
+			return vehicle_status_s::OPERATION_MODE_AUTO_VLA;
+
+		default:
+			return vehicle_status_s::OPERATION_MODE_MAX;
+		}
+	}
+
 	switch (mode) {
 	case StandardMode::SAFE_RECOVERY: return vehicle_status_s::OPERATION_MODE_AUTO_RTL;
 
