@@ -211,8 +211,9 @@ public:
 			return true;
 
 		default:
-			// Support most standard MAVLink commands
-			return true;
+			// For rotary wing, delegate unknown commands to default handler
+			// rather than accepting them blindly
+			return false;
 		}
 	}
 

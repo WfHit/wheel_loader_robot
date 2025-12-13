@@ -210,8 +210,9 @@ public:
 			return false;
 
 		default:
-			// Support most standard MAVLink commands
-			return true;
+			// For fixed wing, delegate unknown commands to default handler
+			// rather than rejecting them outright
+			return false;
 		}
 	}
 

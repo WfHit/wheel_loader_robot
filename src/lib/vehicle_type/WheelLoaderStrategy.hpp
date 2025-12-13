@@ -164,8 +164,11 @@ public:
 		case vehicle_command_s::VEHICLE_CMD_DO_SET_MODE:
 			return true;
 
-		// VLA-specific commands would go here
-		// case vehicle_command_s::VEHICLE_CMD_VLA_*:
+		// TODO: Add VLA-specific MAVLink commands when defined
+		// VLA trajectory commands would be added here once the
+		// vehicle_command_s enum includes them, for example:
+		// case vehicle_command_s::VEHICLE_CMD_VLA_START_TRAJECTORY:
+		// case vehicle_command_s::VEHICLE_CMD_VLA_STOP:
 		//     return true;
 
 		// Takeoff/land not supported for ground vehicles
