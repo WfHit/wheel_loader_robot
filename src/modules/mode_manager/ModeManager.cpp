@@ -502,48 +502,42 @@ int ModeManager::print_status()
 void ModeManager::selectWheelLoaderMode()
 {
 	// Wheel loader specific mode selection
-	// Priority: Emergency -> VLA Auto -> Manual
+	// Priority: VLA Auto -> Manual -> Failsafe
 
 	const uint8_t operation_mode = _vehicle_status_sub.get().operation_mode;
 	ModeError error = ModeError::NoError;
+	bool mode_activated = false;
 
 	// VLA 7-DOF Trajectory Following (chassis + boom + tilt) - autonomous mode
 	if (operation_mode == vehicle_status_s::OPERATION_MODE_AUTO_VLA) {
 		error = switchTask(ModeIndex::VLA);
 
-		if (error != ModeError::NoError) {
-			PX4_WARN("VLA mode activation failed, falling back to manual");
-			error = switchTask(ModeIndex::ManualWheelLoader);
-		}
-
 		if (error == ModeError::NoError) {
-			return;
+			mode_activated = true;
+
+		} else {
+			PX4_WARN("VLA mode activation failed, falling back to manual");
 		}
 	}
 
-	// Manual mode for wheel loader (default mode)
-	if (operation_mode == vehicle_status_s::OPERATION_MODE_MANUAL) {
+	// Manual mode for wheel loader (default mode or fallback from VLA)
+	if (!mode_activated &&
+	    (operation_mode == vehicle_status_s::OPERATION_MODE_MANUAL || !mode_activated)) {
 		error = switchTask(ModeIndex::ManualWheelLoader);
 
 		if (error == ModeError::NoError) {
-			return;
+			mode_activated = true;
 		}
 	}
 
-	// Failsafe mode for wheel loader
-	if (error != ModeError::NoError) {
-		// Try failsafe as last resort
+	// Failsafe mode if no other mode was successfully activated
+	if (!mode_activated) {
 		error = switchTask(ModeIndex::Failsafe);
 
 		if (error != ModeError::NoError) {
 			PX4_ERR("No valid mode available for wheel loader");
 			switchTask(ModeIndex::None);
 		}
-	}
-
-	// If no specific mode matched, default to manual for wheel loader
-	if (_current_task.index == ModeIndex::None) {
-		switchTask(ModeIndex::ManualWheelLoader);
 	}
 }
 
