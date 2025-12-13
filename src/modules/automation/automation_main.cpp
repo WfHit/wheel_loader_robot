@@ -765,18 +765,28 @@ void Automation::run()
 		/* Do stuff according to navigation state set by commander */
 		TaskBase *task_new{nullptr};
 
+		// Update vehicle type configuration
+		_vehicle_type_config_sub.update();
+		const vehicle_type_config_s &vtc = _vehicle_type_config_sub.get();
+
 		switch (_vstatus.operation_mode) {
 
 		case vehicle_status_s::OPERATION_MODE_AUTO_MISSION:
 			_pos_sp_triplet_published_invalid_once = false;
 
-			task_new = &_mission_task;
+			if (isAutomationTaskAvailable(vehicle_type_config_s::AUTOMATION_TASK_MISSION)) {
+				task_new = &_mission_task;
+			}
 
 			break;
 
 		case vehicle_status_s::OPERATION_MODE_AUTO_LOITER:
 			_pos_sp_triplet_published_invalid_once = false;
-			task_new = &_loiter;
+
+			if (isAutomationTaskAvailable(vehicle_type_config_s::AUTOMATION_TASK_LOITER)) {
+				task_new = &_loiter;
+			}
+
 			break;
 
 		case vehicle_status_s::OPERATION_MODE_AUTO_RTL:
@@ -790,13 +800,19 @@ void Automation::run()
 				_pos_sp_triplet_published_invalid_once = false;
 			}
 
-			task_new = &_rtl;
+			if (isAutomationTaskAvailable(vehicle_type_config_s::AUTOMATION_TASK_RTL)) {
+				task_new = &_rtl;
+			}
 
 			break;
 
 		case vehicle_status_s::OPERATION_MODE_AUTO_TAKEOFF:
 			_pos_sp_triplet_published_invalid_once = false;
-			task_new = &_takeoff;
+
+			if (isAutomationTaskAvailable(vehicle_type_config_s::AUTOMATION_TASK_TAKEOFF)) {
+				task_new = &_takeoff;
+			}
+
 			break;
 
 #if CONFIG_MODE_NAVIGATOR_VTOL_TAKEOFF
@@ -809,18 +825,30 @@ void Automation::run()
 
 		case vehicle_status_s::OPERATION_MODE_AUTO_LAND:
 			_pos_sp_triplet_published_invalid_once = false;
-			task_new = &_land;
+
+			if (isAutomationTaskAvailable(vehicle_type_config_s::AUTOMATION_TASK_LAND)) {
+				task_new = &_land;
+			}
+
 			break;
 
 		case vehicle_status_s::OPERATION_MODE_AUTO_PRECLAND:
 			_pos_sp_triplet_published_invalid_once = false;
-			task_new = &_precland;
-			_precland.set_mode(PrecLandMode::Required);
+
+			if (isAutomationTaskAvailable(vehicle_type_config_s::AUTOMATION_TASK_PRECLAND)) {
+				task_new = &_precland;
+				_precland.set_mode(PrecLandMode::Required);
+			}
+
 			break;
 
 		case vehicle_status_s::OPERATION_MODE_AUTO_VLA:
 			_pos_sp_triplet_published_invalid_once = false;
-			task_new = &_vla_trajectory_task;
+
+			if (isAutomationTaskAvailable(vehicle_type_config_s::AUTOMATION_TASK_VLA_TRAJECTORY)) {
+				task_new = &_vla_trajectory_task;
+			}
+
 			break;
 
 		case vehicle_status_s::OPERATION_MODE_MANUAL:
@@ -1576,6 +1604,19 @@ bool Automation::geofence_allows_position(const vehicle_global_position_s &pos)
 	}
 
 	return true;
+}
+
+bool Automation::isAutomationTaskAvailable(uint8_t task_type)
+{
+	const vehicle_type_config_s &vtc = _vehicle_type_config_sub.get();
+
+	// If config is not valid, allow all tasks (fallback behavior)
+	if (!vtc.config_valid) {
+		return true;
+	}
+
+	// Check if the task bit is set in the available_automation_tasks_mask
+	return (vtc.available_automation_tasks_mask & (1u << task_type)) != 0;
 }
 
 void Automation::preproject_stop_point(double &lat, double &lon)

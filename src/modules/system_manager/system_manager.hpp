@@ -58,6 +58,10 @@
 #include <uORB/topics/vehicle_command_ack.h>
 #include <uORB/topics/vehicle_control_mode.h>
 #include <uORB/topics/vehicle_status.h>
+#include <uORB/topics/vehicle_type_config.h>
+
+// vehicle type strategy library
+#include <vehicle_type/VehicleTypeRegistry.hpp>
 
 // subscriptions
 #include <uORB/Subscription.hpp>
@@ -201,6 +205,12 @@ private:
 
 	void modeManagementUpdate();
 
+	/**
+	 * Update and publish the vehicle type configuration message.
+	 * This informs mode_manager and automation about vehicle-specific settings.
+	 */
+	void updateVehicleTypeConfig();
+
 	static void onFailsafeNotifyUserTrampoline(void *arg);
 	void onFailsafeNotifyUser();
 
@@ -282,6 +292,8 @@ private:
 	bool _have_taken_off_since_arming{false};
 	bool _status_changed{true};
 
+	uint8_t _last_vehicle_type_config{UINT8_MAX};	///< Last vehicle type for config tracking
+
 	vehicle_land_detected_s	_vehicle_land_detected{};
 
 	// system_manager publications
@@ -319,6 +331,9 @@ private:
 	uORB::Publication<vehicle_command_s>			_vehicle_command_pub{ORB_ID(vehicle_command)};
 	uORB::Publication<vehicle_control_mode_s>		_vehicle_control_mode_pub{ORB_ID(vehicle_control_mode)};
 	uORB::Publication<vehicle_status_s>			_vehicle_status_pub{ORB_ID(vehicle_status)};
+	uORB::Publication<vehicle_type_config_s>		_vehicle_type_config_pub{ORB_ID(vehicle_type_config)};
+
+	vehicle_type_config_s _vehicle_type_config{};	///< Vehicle type configuration
 
 	orb_advert_t _mavlink_log_pub{nullptr};
 

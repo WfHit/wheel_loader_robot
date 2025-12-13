@@ -88,6 +88,7 @@
 #include <uORB/topics/vehicle_local_position.h>
 #include <uORB/topics/vehicle_roi.h>
 #include <uORB/topics/vehicle_status.h>
+#include <uORB/topics/vehicle_type_config.h>
 #include <uORB/topics/mode_completed.h>
 #include <uORB/uORB.h>
 
@@ -312,6 +313,7 @@ private:
 	uORB::Subscription _pos_ctrl_landing_status_sub{ORB_ID(position_controller_landing_status)};	/**< position controller landing status subscription */
 	uORB::Subscription _traffic_sub{ORB_ID(transponder_report)};		/**< traffic subscription */
 	uORB::Subscription _vehicle_command_sub{ORB_ID(vehicle_command)};	/**< vehicle commands (onboard and offboard) */
+	uORB::SubscriptionData<vehicle_type_config_s> _vehicle_type_config_sub{ORB_ID(vehicle_type_config)}; /**< vehicle type configuration */
 
 	uORB::Publication<geofence_result_s>		_geofence_result_pub{ORB_ID(geofence_result)};
 	uORB::Publication<mission_result_s>		_mission_result_pub{ORB_ID(mission_result)};
@@ -412,6 +414,20 @@ private:
 	void publish_distance_sensor_mode_request();
 
 	bool geofence_allows_position(const vehicle_global_position_s &pos);
+
+	/**
+	 * Check if an automation task is available for the current vehicle type
+	 * @param task_type Automation task type from vehicle_type_config_s
+	 * @return true if task is available, false otherwise
+	 */
+	bool isAutomationTaskAvailable(uint8_t task_type);
+
+	/**
+	 * Update and get the vehicle type configuration
+	 * Note: This method updates the subscription before returning the data
+	 * @return const reference to the current vehicle type configuration
+	 */
+	const vehicle_type_config_s &updateAndGetVehicleTypeConfig() { _vehicle_type_config_sub.update(); return _vehicle_type_config_sub.get(); }
 
 	DEFINE_PARAMETERS(
 		(ParamFloat<px4::params::NAV_LOITER_RAD>)   _param_nav_loiter_rad,	/**< loiter radius for fixedwing */

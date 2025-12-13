@@ -1934,6 +1934,9 @@ void SystemManager::run()
 			fd_status.motor_failure_mask = _failure_detector.getMotorFailures();
 			fd_status.timestamp = hrt_absolute_time();
 			_failure_detector_status_pub.publish(fd_status);
+
+			// Update and publish vehicle type configuration
+			updateVehicleTypeConfig();
 		}
 
 		checkWorkerThread();
@@ -2989,6 +2992,29 @@ void SystemManager::onFailsafeNotifyUser()
 	// as the failsafe message might reference that. This is only needed in case the report is currently rate-limited,
 	// i.e. it had a recent previous change already.
 	_health_and_arming_checks.reportIfUnreportedDifferences();
+}
+
+void SystemManager::updateVehicleTypeConfig()
+{
+	const uint8_t vehicle_type = _vehicle_status.vehicle_type;
+
+	// Only update if vehicle type changed or first time
+	if (vehicle_type == _last_vehicle_type_config && _vehicle_type_config.config_valid) {
+		// No change needed, just republish at normal rate
+		_vehicle_type_config.timestamp = hrt_absolute_time();
+		_vehicle_type_config_pub.publish(_vehicle_type_config);
+		return;
+	}
+
+	_last_vehicle_type_config = vehicle_type;
+	_vehicle_type_config.config_version++;
+
+	// Use the vehicle type registry to fill the configuration
+	// This delegates to the appropriate strategy based on vehicle type
+	vehicle_type::VehicleTypeRegistry::fillConfig(_vehicle_type_config, vehicle_type);
+
+	_vehicle_type_config.timestamp = hrt_absolute_time();
+	_vehicle_type_config_pub.publish(_vehicle_type_config);
 }
 
 int SystemManager::print_usage(const char *reason)
