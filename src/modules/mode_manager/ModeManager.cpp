@@ -520,9 +520,8 @@ void ModeManager::selectWheelLoaderMode()
 		}
 	}
 
-	// Manual mode for wheel loader (default mode or fallback from VLA)
-	if (!mode_activated &&
-	    (operation_mode == vehicle_status_s::OPERATION_MODE_MANUAL || !mode_activated)) {
+	// Manual mode for wheel loader (default mode or fallback from VLA failure)
+	if (!mode_activated) {
 		error = switchTask(ModeIndex::ManualWheelLoader);
 
 		if (error == ModeError::NoError) {
