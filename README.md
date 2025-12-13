@@ -101,23 +101,47 @@ make hkust_nxt-dual-wl-front_default
 make hkust_nxt-dual-wl-rear_default
 ```
 
+### Operation Modes
+
+The wheel loader supports two primary operation modes:
+
+1. **Manual Mode** (`OPERATION_MODE_MANUAL`): Direct RC/joystick control
+   - Right stick Y: Forward/backward velocity
+   - Right stick X: Steering angle
+   - Left stick Y: Boom height velocity
+   - Left stick X: Bucket tilt velocity
+
+2. **VLA Auto Mode** (`OPERATION_MODE_AUTO_VLA`): Vision-Language-Action autonomous control
+   - Receives 7-DOF trajectory from VLA model
+   - Chassis position and velocity control
+   - Boom and bucket coordinated control
+   - Smooth trajectory interpolation at 50Hz
+
 ### Key Wheel Loader Modules
 
+- **Mode Manager**: Handles mode selection and switching between manual and VLA auto
+- **ModeVLA**: VLA trajectory interpolation and control setpoint generation
+- **ModeManualWheelLoader**: Manual control with smooth stick input processing
 - **Boom Control Module**: Advanced kinematic control for boom positioning
-- **Bucket Control Module**: Electric actuator control for bucket tilt and curl operations
-- **Load Detection**: Weight and load distribution sensing
-- **Safety Monitor**: Continuous monitoring of electric motor status, temperature, and system health
-- **Autonomous Navigation**: GPS-based waypoint navigation with obstacle avoidance
+- **Tilt Control Module**: Electric actuator control for bucket tilt and curl operations
+- **Safety Manager**: Continuous monitoring of system health and safety status
+- **Articulated Chassis**: Steering and traction control for articulated steering
 
 ### Documentation
 
 Additional wheel loader specific documentation can be found in:
 - [Boom Kinematics Design](docs/BOOM_KINEMATICS_DESIGN.md)
-- [Bucket Control Design](docs/BUCKET_KINEMATICS_DESIGN.md)
+- [Tilt Control Design](docs/TILT_KINEMATICS_DESIGN.md)
 - [VLA Dual Mode Robot](docs/VLA_Dual_Mode_Robot.md)
+- [VLA Mode Manager Design](docs/VLA_MODE_MANAGER_REFACTOR_DESIGN.md)
+- [Vehicle Extensibility Guide](docs/VEHICLE_EXTENSIBILITY_GUIDE.md)
 - [Wheel Loader Robot Design](design/wheel_loader_robot_design.md)
+
+### Vehicle Type Configuration
+
+Set `vehicle_type` to `VEHICLE_TYPE_WHEEL_LOADER` (4) in vehicle configuration to enable wheel loader specific behavior.
 
 ### Version Information
 
-Current wheel loader robot system version: **v0.1.0**
+Current wheel loader robot system version: **v0.2.0**
 Based on PX4 Autopilot framework with specialized wheel loader extensions.

@@ -146,10 +146,10 @@ bool ModeVLA::update()
 		return ret;
 	}
 
-	// Calculate dt
+	// Calculate dt using base class time tracking
 	float dt = 0.02f; // 50Hz default
-	if (_time_stamp_last_loop > 0) {
-		dt = math::constrain((hrt_absolute_time() - _time_stamp_last_loop) * 1e-6f, 0.001f, 0.1f);
+	if (_time_stamp_last > 0) {
+		dt = math::constrain((hrt_absolute_time() - _time_stamp_last) * 1e-6f, 0.001f, 0.1f);
 	}
 
 	// Interpolate setpoints based on time progress

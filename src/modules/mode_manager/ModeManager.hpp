@@ -93,6 +93,12 @@ private:
 	void generateTrajectorySetpoint(const float dt, const vehicle_local_position_s &vehicle_local_position);
 
 	/**
+	 * Wheel loader specific mode selection
+	 * Handles VLA autonomous and manual modes for articulated wheel loaders
+	 */
+	void selectWheelLoaderMode();
+
+	/**
 	 * Switch to a specific task (for normal usage)
 	 * @param task index to switch to
 	 * @return 0 on success, <0 on error

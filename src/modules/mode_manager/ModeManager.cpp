@@ -137,9 +137,17 @@ void ModeManager::selectAndActivateMode()
 {
 	// Do not run any flight task for VTOLs in fixed-wing mode
 	if ((_vehicle_status_sub.get().vehicle_type == vehicle_status_s::VEHICLE_TYPE_FIXED_WING)
-	    || ((_vehicle_status_sub.get().operation_mode >= vehicle_status_s::OPERATION_MODE_EXTERNAL1)
+	    || ((_vehicle_status_sub.get().operation_mode >= vehicle_status_s::OPERATION_MODE_EXTERNAL3)
 		&& (_vehicle_status_sub.get().operation_mode <= vehicle_status_s::OPERATION_MODE_EXTERNAL8))) {
 		switchTask(ModeIndex::None);
+		return;
+	}
+
+	// Handle wheel loader specific mode selection
+	const bool is_wheel_loader = (_vehicle_status_sub.get().vehicle_type == vehicle_status_s::VEHICLE_TYPE_WHEEL_LOADER);
+
+	if (is_wheel_loader) {
+		selectWheelLoaderMode();
 		return;
 	}
 
@@ -489,6 +497,51 @@ int ModeManager::print_status()
 
 	perf_print_counter(_loop_perf);
 	return 0;
+}
+
+void ModeManager::selectWheelLoaderMode()
+{
+	// Wheel loader specific mode selection
+	// Priority: VLA Auto -> Manual -> Failsafe
+
+	const uint8_t operation_mode = _vehicle_status_sub.get().operation_mode;
+	ModeError error = ModeError::NoError;
+	bool mode_activated = false;
+
+	// VLA 7-DOF Trajectory Following (chassis + boom + tilt) - autonomous mode
+	if (operation_mode == vehicle_status_s::OPERATION_MODE_AUTO_VLA) {
+		error = switchTask(ModeIndex::VLA);
+
+		if (error == ModeError::NoError) {
+			mode_activated = true;
+
+		} else {
+			PX4_WARN("VLA mode activation failed, falling back to manual");
+		}
+	}
+
+	// Manual mode for wheel loader (default mode or fallback from VLA failure)
+	if (!mode_activated) {
+		error = switchTask(ModeIndex::ManualWheelLoader);
+
+		if (error == ModeError::NoError) {
+			mode_activated = true;
+
+		} else {
+			PX4_WARN("Manual wheel loader mode activation failed");
+		}
+	}
+
+	// Failsafe mode if no other mode was successfully activated
+	if (!mode_activated) {
+		PX4_WARN("Entering failsafe mode for wheel loader");
+		error = switchTask(ModeIndex::Failsafe);
+
+		if (error != ModeError::NoError) {
+			PX4_ERR("No valid mode available for wheel loader");
+			switchTask(ModeIndex::None);
+		}
+	}
 }
 
 int ModeManager::print_usage(const char *reason)
