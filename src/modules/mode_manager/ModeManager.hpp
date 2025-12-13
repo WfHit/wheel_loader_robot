@@ -61,7 +61,7 @@
 
 enum class ModeError : int {
 	NoError = 0,
-	InvalidTask = -1,
+	InvalidMode = -1,
 	ActivationFailed = -2
 };
 
@@ -90,47 +90,47 @@ private:
 	void updateParams() override;
 	void selectAndActivateMode();
 	void handleCommand();
-	void generateTrajectorySetpoint(const float dt, const vehicle_local_position_s &vehicle_local_position);
+	void generateControlSetpoint(const float dt, const vehicle_local_position_s &vehicle_local_position);
 
 	/**
-	 * Switch to a specific task (for normal usage)
-	 * @param task index to switch to
+	 * Switch to a specific mode (for normal usage)
+	 * @param mode index to switch to
 	 * @return 0 on success, <0 on error
 	 */
-	ModeError switchTask(ModeIndex new_task_index);
-	ModeError switchTask(int new_task_index);
+	ModeError switchMode(ModeIndex new_mode_index);
+	ModeError switchMode(int new_mode_index);
 
 	/**
-	 * Call this method to get the description of a task error.
+	 * Call this method to get the description of a mode error.
 	 */
 	const char *errorToString(const ModeError error);
 
 	/**
-	 * Check if any task is active
-	 * @return true if a task is active, false if not
+	 * Check if any mode is active
+	 * @return true if a mode is active, false if not
 	 */
-	bool isAnyTaskActive() const { return _current_task.task; }
+	bool isAnyModeActive() const { return _current_mode.mode; }
 
 	void tryApplyCommandIfAny();
 
 	// generated
-	int _initTask(ModeIndex task_index);
+	int _initMode(ModeIndex mode_index);
 
 	/**
-	 * Union with all existing tasks: we use it to make sure that only the memory of the largest existing
-	 * task is needed, and to avoid using dynamic memory allocations.
+	 * Union with all existing modes: we use it to make sure that only the memory of the largest existing
+	 * mode is needed, and to avoid using dynamic memory allocations.
 	 */
-	ModeUnion _task_union; /**< storage for the currently active task */
+	ModeUnion _mode_union; /**< storage for the currently active mode */
 
 	struct mode_t {
-		Mode *task{nullptr};
+		Mode *mode{nullptr};
 		ModeIndex index{ModeIndex::None};
-	} _current_task{};
+	} _current_mode{};
 
 	int8_t _old_landing_gear_position{landing_gear_s::GEAR_KEEP};
 	uint8_t _takeoff_state{takeoff_status_s::TAKEOFF_STATE_UNINITIALIZED};
 
-	bool _no_matching_task_error_printed{false};
+	bool _no_matching_mode_error_printed{false};
 
 	perf_counter_t _loop_perf{perf_alloc(PC_ELAPSED, MODULE_NAME": cycle")}; ///< loop duration performance counter
 	hrt_abstime _time_stamp_last_loop{0}; ///< time stamp of last loop iteration
@@ -150,7 +150,7 @@ private:
 	uORB::SubscriptionData<vehicle_status_s> _vehicle_status_sub{ORB_ID(vehicle_status)};
 
 	uORB::Publication<landing_gear_s> _landing_gear_pub{ORB_ID(landing_gear)};
-	uORB::Publication<trajectory_setpoint_s> _trajectory_setpoint_pub{ORB_ID(trajectory_setpoint)};
+	uORB::Publication<trajectory_setpoint_s> _control_setpoint_pub{ORB_ID(trajectory_setpoint)};
 	uORB::Publication<vehicle_constraints_s> _vehicle_constraints_pub{ORB_ID(vehicle_constraints)};
 
 	DEFINE_PARAMETERS(

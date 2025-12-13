@@ -44,20 +44,20 @@ ModeManager::ModeManager() :
 {
 	updateParams();
 
-	// initialize all flight-tasks
+	// initialize all modes
 	// currently this is required to get all parameters read
 	for (int i = 0; i < static_cast<int>(ModeIndex::Count); i++) {
-		_initTask(static_cast<ModeIndex>(i));
+		_initMode(static_cast<ModeIndex>(i));
 	}
 
-	// disable all tasks
-	_initTask(ModeIndex::None);
+	// disable all modes
+	_initMode(ModeIndex::None);
 }
 
 ModeManager::~ModeManager()
 {
-	if (_current_task.task) {
-		_current_task.task->~Mode();
+	if (_current_mode.mode) {
+		_current_mode.mode->~Mode();
 	}
 
 	perf_free(_loop_perf);
@@ -115,8 +115,8 @@ void ModeManager::Run()
 
 		tryApplyCommandIfAny();
 
-		if (isAnyTaskActive()) {
-			generateTrajectorySetpoint(dt, vehicle_local_position);
+		if (isAnyModeActive()) {
+			generateControlSetpoint(dt, vehicle_local_position);
 		}
 
 	}
@@ -128,112 +128,112 @@ void ModeManager::updateParams()
 {
 	ModuleParams::updateParams();
 
-	if (isAnyTaskActive()) {
-		_current_task.task->handleParameterUpdate();
+	if (isAnyModeActive()) {
+		_current_mode.mode->handleParameterUpdate();
 	}
 }
 
 void ModeManager::selectAndActivateMode()
 {
-	// Do not run any flight task for VTOLs in fixed-wing mode
+	// Do not run any mode for VTOLs in fixed-wing mode
 	if ((_vehicle_status_sub.get().vehicle_type == vehicle_status_s::VEHICLE_TYPE_FIXED_WING)
 	    || ((_vehicle_status_sub.get().operation_mode >= vehicle_status_s::OPERATION_MODE_EXTERNAL1)
 		&& (_vehicle_status_sub.get().operation_mode <= vehicle_status_s::OPERATION_MODE_EXTERNAL8))) {
-		switchTask(ModeIndex::None);
+		switchMode(ModeIndex::None);
 		return;
 	}
 
-	// Only run transition flight task if altitude control is enabled (e.g. in Altitdue, Position, Auto flight mode)
+	// Only run transition mode if altitude control is enabled (e.g. in Altitdue, Position, Auto flight mode)
 	if (_vehicle_status_sub.get().in_transition_mode &&
 		_vehicle_control_mode_sub.get().flag_control_altitude_enabled) {
-		switchTask(ModeIndex::Transition);
+		switchMode(ModeIndex::Transition);
 		return;
 	}
 
-	bool found_some_task = false;
-	bool matching_task_running = true;
-	bool task_failure = false;
+	bool found_some_mode = false;
+	bool matching_mode_running = true;
+	bool mode_failure = false;
 	const bool operation_mode_descend = (_vehicle_status_sub.get().operation_mode == vehicle_status_s::OPERATION_MODE_DESCEND);
 
 	// Follow me
 	if (_vehicle_status_sub.get().operation_mode == vehicle_status_s::OPERATION_MODE_AUTO_FOLLOW_TARGET) {
-		found_some_task = true;
-		ModeError error = ModeError::InvalidTask;
+		found_some_mode = true;
+		ModeError error = ModeError::InvalidMode;
 
 #if !defined(CONSTRAINED_FLASH)
-		error = switchTask(ModeIndex::AutoFollowTarget);
+		error = switchMode(ModeIndex::AutoFollowTarget);
 #endif // !CONSTRAINED_FLASH
 
 		if (error != ModeError::NoError) {
-			matching_task_running = false;
-			task_failure = true;
+			matching_mode_running = false;
+			mode_failure = true;
 		}
 	}
 
 	// Manual mode for wheel loader (ground vehicle manual control)
 	if (_vehicle_status_sub.get().operation_mode == vehicle_status_s::OPERATION_MODE_MANUAL) {
-		found_some_task = true;
-		ModeError error = switchTask(ModeIndex::ManualWheelLoader);
+		found_some_mode = true;
+		ModeError error = switchMode(ModeIndex::ManualWheelLoader);
 
 		if (error != ModeError::NoError) {
-			matching_task_running = false;
-			task_failure = true;
+			matching_mode_running = false;
+			mode_failure = true;
 		}
 	}
 
 	// VLA 7-DOF Trajectory Following (chassis + boom + tilt)
 	if (_vehicle_status_sub.get().operation_mode == vehicle_status_s::OPERATION_MODE_AUTO_VLA) {
-		found_some_task = true;
-		ModeError error = switchTask(ModeIndex::VLA);
+		found_some_mode = true;
+		ModeError error = switchMode(ModeIndex::VLA);
 
 		if (error != ModeError::NoError) {
-			matching_task_running = false;
-			task_failure = true;
+			matching_mode_running = false;
+			mode_failure = true;
 		}
 	}
 
 	// Orbit
 	if ((_vehicle_status_sub.get().operation_mode == vehicle_status_s::OPERATION_MODE_ORBIT)
 	    && !_command_failed) {
-		found_some_task = true;
-		ModeError error = ModeError::InvalidTask;
+		found_some_mode = true;
+		ModeError error = ModeError::InvalidMode;
 
 #if !defined(CONSTRAINED_FLASH)
-		error = switchTask(ModeIndex::Orbit);
+		error = switchMode(ModeIndex::Orbit);
 #endif // !CONSTRAINED_FLASH
 
 		if (error != ModeError::NoError) {
-			matching_task_running = false;
-			task_failure = true;
+			matching_mode_running = false;
+			mode_failure = true;
 		}
 	}
 
 	// Navigator interface for autonomous modes
 	if (_vehicle_control_mode_sub.get().flag_control_auto_enabled
 	    && !operation_mode_descend) {
-		found_some_task = true;
+		found_some_mode = true;
 
-		if (switchTask(ModeIndex::Auto) != ModeError::NoError) {
-			matching_task_running = false;
-			task_failure = true;
+		if (switchMode(ModeIndex::Auto) != ModeError::NoError) {
+			matching_mode_running = false;
+			mode_failure = true;
 		}
 	}
 
 	// position slow mode
 	if (_vehicle_status_sub.get().operation_mode == vehicle_status_s::OPERATION_MODE_POSITION_SLOW) {
-		found_some_task = true;
-		ModeError error = switchTask(ModeIndex::ManualAccelerationSlow);
-		task_failure = error != ModeError::NoError;
+		found_some_mode = true;
+		ModeError error = switchMode(ModeIndex::ManualAccelerationSlow);
+		mode_failure = error != ModeError::NoError;
 	}
 
 	// Manual position control
-	if ((_vehicle_status_sub.get().operation_mode == vehicle_status_s::OPERATION_MODE_POSCTL) || task_failure) {
-		found_some_task = true;
+	if ((_vehicle_status_sub.get().operation_mode == vehicle_status_s::OPERATION_MODE_POSCTL) || mode_failure) {
+		found_some_mode = true;
 		ModeError error = ModeError::NoError;
 
 		switch (_param_mpc_pos_mode.get()) {
 		case 0:
-			error = switchTask(ModeIndex::ManualPosition);
+			error = switchMode(ModeIndex::ManualPosition);
 			break;
 
 		case 4:
@@ -244,71 +244,71 @@ void ModeManager::selectAndActivateMode()
 				_param_mpc_pos_mode.commit();
 			}
 
-			error = switchTask(ModeIndex::ManualAcceleration);
+			error = switchMode(ModeIndex::ManualAcceleration);
 			break;
 		}
 
-		task_failure = (error != ModeError::NoError);
-		matching_task_running = matching_task_running && !task_failure;
+		mode_failure = (error != ModeError::NoError);
+		matching_mode_running = matching_mode_running && !mode_failure;
 	}
 
 	// Manual altitude control
-	if ((_vehicle_status_sub.get().operation_mode == vehicle_status_s::OPERATION_MODE_ALTCTL) || task_failure) {
-		found_some_task = true;
+	if ((_vehicle_status_sub.get().operation_mode == vehicle_status_s::OPERATION_MODE_ALTCTL) || mode_failure) {
+		found_some_mode = true;
 		ModeError error = ModeError::NoError;
 
 		switch (_param_mpc_pos_mode.get()) {
 		case 0:
-			error = switchTask(ModeIndex::ManualAltitude);
+			error = switchMode(ModeIndex::ManualAltitude);
 			break;
 
 		case 3:
 		default:
-			error = switchTask(ModeIndex::ManualAltitudeSmoothVel);
+			error = switchMode(ModeIndex::ManualAltitudeSmoothVel);
 			break;
 		}
 
-		task_failure = (error != ModeError::NoError);
-		matching_task_running = matching_task_running && !task_failure;
+		mode_failure = (error != ModeError::NoError);
+		matching_mode_running = matching_mode_running && !mode_failure;
 	}
 
 	// Emergency descend
-	if (operation_mode_descend || task_failure) {
-		found_some_task = true;
+	if (operation_mode_descend || mode_failure) {
+		found_some_mode = true;
 
-		ModeError error = switchTask(ModeIndex::Descend);
+		ModeError error = switchMode(ModeIndex::Descend);
 
-		task_failure = (error != ModeError::NoError);
-		matching_task_running = matching_task_running && !task_failure;
+		mode_failure = (error != ModeError::NoError);
+		matching_mode_running = matching_mode_running && !mode_failure;
 	}
 
-	if (task_failure) {
-		// For some reason no task was able to start, go into failsafe flighttask
-		found_some_task = (switchTask(ModeIndex::Failsafe) == ModeError::NoError);
+	if (mode_failure) {
+		// For some reason no mode was able to start, go into failsafe mode
+		found_some_mode = (switchMode(ModeIndex::Failsafe) == ModeError::NoError);
 	}
 
-	if (!found_some_task) {
-		switchTask(ModeIndex::None);
+	if (!found_some_mode) {
+		switchMode(ModeIndex::None);
 	}
 
-	if (!matching_task_running && _vehicle_control_mode_sub.get().flag_armed && !_no_matching_task_error_printed) {
-		PX4_ERR("Matching flight task was not able to run, Nav state: %" PRIu8 ", Task: %" PRIu32,
-			_vehicle_status_sub.get().operation_mode, static_cast<uint32_t>(_current_task.index));
+	if (!matching_mode_running && _vehicle_control_mode_sub.get().flag_armed && !_no_matching_mode_error_printed) {
+		PX4_ERR("Matching mode was not able to run, Nav state: %" PRIu32,
+			_vehicle_status_sub.get().operation_mode, static_cast<uint32_t>(_current_mode.index));
 	}
 
-	_no_matching_task_error_printed = !matching_task_running;
+	_no_matching_mode_error_printed = !matching_mode_running;
 }
 
 void ModeManager::tryApplyCommandIfAny()
 {
-	if (isAnyTaskActive() && _current_command.command != 0 && hrt_absolute_time() < _current_command.timestamp + 200_ms) {
+	if (isAnyModeActive() && _current_command.command != 0 && hrt_absolute_time() < _current_command.timestamp + 200_ms) {
 		bool success = false;
 
-		if (_current_task.task->applyCommandParameters(_current_command, success)) {
+		if (_current_mode.mode->applyCommandParameters(_current_command, success)) {
 			_current_command.command = 0;
 
 			if (!success) {
-				switchTask(ModeIndex::Failsafe);
+				switchMode(ModeIndex::Failsafe);
 				_command_failed = true;
 			}
 		}
@@ -331,28 +331,28 @@ void ModeManager::handleCommand()
 			break;
 		}
 
-		if (_current_task.task) {
-			// check for other commands not related to task switching
+		if (_current_mode.mode) {
+			// check for other commands not related to mode switching
 			if ((command.command == vehicle_command_s::VEHICLE_CMD_DO_CHANGE_SPEED)
 			    && (static_cast<uint8_t>(command.param1 + .5f) == vehicle_command_s::SPEED_TYPE_GROUNDSPEED)
 			    && (command.param2 > 0.f)) {
-				_current_task.task->overrideCruiseSpeed(command.param2);
+				_current_mode.mode->overrideCruiseSpeed(command.param2);
 			}
 		}
 	}
 }
 
-void ModeManager::generateTrajectorySetpoint(const float dt,
+void ModeManager::generateControlSetpoint(const float dt,
 		const vehicle_local_position_s &vehicle_local_position)
 {
-	// If the task fails sned out empty NAN setpoints and the controller will emergency failsafe
-	trajectory_setpoint_s setpoint = Mode::empty_trajectory_setpoint;
+	// If the mode fails sned out empty NAN setpoints and the controller will emergency failsafe
+	trajectory_setpoint_s setpoint = Mode::empty_control_setpoint;
 	vehicle_constraints_s constraints = Mode::empty_constraints;
 
-	if (_current_task.task->updateInitialize() && _current_task.task->update()) {
-		// setpoints and constraints for the position controller from flighttask
-		setpoint = _current_task.task->getTrajectorySetpoint();
-		constraints = _current_task.task->getConstraints();
+	if (_current_mode.mode->updateInitialize() && _current_mode.mode->update()) {
+		// setpoints and constraints for the position controller from mode
+		setpoint = _current_mode.mode->getControlSetpoint();
+		constraints = _current_mode.mode->getConstraints();
 	}
 
 	if (_takeoff_status_sub.updated()) {
@@ -364,19 +364,19 @@ void ModeManager::generateTrajectorySetpoint(const float dt,
 	}
 
 	if (_takeoff_state < takeoff_status_s::TAKEOFF_STATE_RAMPUP) {
-		// reactivate the task which will reset the setpoint to current state
-		_current_task.task->reActivate();
+		// reactivate the mode which will reset the setpoint to current state
+		_current_mode.mode->reActivate();
 	}
 
 
 	setpoint.timestamp = hrt_absolute_time();
-	_trajectory_setpoint_pub.publish(setpoint);
+	_control_setpoint_pub.publish(setpoint);
 
 	constraints.timestamp = hrt_absolute_time();
 	_vehicle_constraints_pub.publish(constraints);
 
 	// if there's any change in landing gear setpoint publish it
-	landing_gear_s landing_gear = _current_task.task->getGear();
+	landing_gear_s landing_gear = _current_mode.mode->getGear();
 
 	if (landing_gear.landing_gear != _old_landing_gear_position
 	    && landing_gear.landing_gear != landing_gear_s::GEAR_KEEP) {
@@ -388,35 +388,35 @@ void ModeManager::generateTrajectorySetpoint(const float dt,
 	_old_landing_gear_position = landing_gear.landing_gear;
 }
 
-ModeError ModeManager::switchTask(ModeIndex new_task_index)
+ModeError ModeManager::switchMode(ModeIndex new_mode_index)
 {
-	// switch to the running task, nothing to do
-	if (new_task_index == _current_task.index) {
+	// switch to the running mode, nothing to do
+	if (new_mode_index == _current_mode.index) {
 		return ModeError::NoError;
 	}
 
 	// Save current setpoints for the next Mode
-	trajectory_setpoint_s last_setpoint = Mode::empty_trajectory_setpoint;
+	trajectory_setpoint_s last_setpoint = Mode::empty_control_setpoint;
 
-	if (isAnyTaskActive()) {
-		last_setpoint = _current_task.task->getTrajectorySetpoint();
+	if (isAnyModeActive()) {
+		last_setpoint = _current_mode.mode->getControlSetpoint();
 	}
 
-	if (_initTask(new_task_index)) {
-		// invalid task
-		return ModeError::InvalidTask;
+	if (_initMode(new_mode_index)) {
+		// invalid mode
+		return ModeError::InvalidMode;
 	}
 
-	if (!isAnyTaskActive()) {
-		// no task running
+	if (!isAnyModeActive()) {
+		// no mode running
 		return ModeError::NoError;
 	}
 
 	// activation failed
-	if (!_current_task.task->updateInitialize() || !_current_task.task->activate(last_setpoint)) {
-		_current_task.task->~Mode();
-		_current_task.task = nullptr;
-		_current_task.index = ModeIndex::None;
+	if (!_current_mode.mode->updateInitialize() || !_current_mode.mode->activate(last_setpoint)) {
+		_current_mode.mode->~Mode();
+		_current_mode.mode = nullptr;
+		_current_mode.index = ModeIndex::None;
 		return ModeError::ActivationFailed;
 	}
 
@@ -425,16 +425,16 @@ ModeError ModeManager::switchTask(ModeIndex new_task_index)
 	return ModeError::NoError;
 }
 
-ModeError ModeManager::switchTask(int new_task_index)
+ModeError ModeManager::switchMode(int new_mode_index)
 {
 	// make sure we are in range of the enumeration before casting
-	if (static_cast<int>(ModeIndex::None) <= new_task_index &&
-	    static_cast<int>(ModeIndex::Count) > new_task_index) {
-		return switchTask(ModeIndex(new_task_index));
+	if (static_cast<int>(ModeIndex::None) <= new_mode_index &&
+	    static_cast<int>(ModeIndex::Count) > new_mode_index) {
+		return switchMode(ModeIndex(new_mode_index));
 	}
 
-	switchTask(ModeIndex::None);
-	return ModeError::InvalidTask;
+	switchMode(ModeIndex::None);
+	return ModeError::InvalidMode;
 }
 
 const char *ModeManager::errorToString(const ModeError error)
@@ -442,7 +442,7 @@ const char *ModeManager::errorToString(const ModeError error)
 	switch (error) {
 	case ModeError::NoError: return "No Error";
 
-	case ModeError::InvalidTask: return "Invalid Task";
+	case ModeError::InvalidMode: return "Invalid Mode";
 
 	case ModeError::ActivationFailed: return "Activation Failed";
 	}
@@ -480,11 +480,11 @@ int ModeManager::custom_command(int argc, char *argv[])
 
 int ModeManager::print_status()
 {
-	if (isAnyTaskActive()) {
-		PX4_INFO("Running, active flight task: %" PRIu32, static_cast<uint32_t>(_current_task.index));
+	if (isAnyModeActive()) {
+		PX4_INFO("Running, active mode: %" PRIu32, static_cast<uint32_t>(_current_mode.index));
 
 	} else {
-		PX4_INFO("Running, no flight task active");
+		PX4_INFO("Running, no mode active");
 	}
 
 	perf_print_counter(_loop_perf);
