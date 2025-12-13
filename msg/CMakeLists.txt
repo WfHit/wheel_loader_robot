@@ -259,8 +259,8 @@ set(msg_files
 	VehicleRoi.msg
 	VehicleThrustSetpoint.msg
 	VehicleTorqueSetpoint.msg
+	VehicleTypeConfig.msg
 	VelocityLimits.msg
-	TiltControlSetpoint.msg
 	VlaSetpoint.msg
 	VlaSetpointTriplet.msg
 	VlaTrajectory.msg
