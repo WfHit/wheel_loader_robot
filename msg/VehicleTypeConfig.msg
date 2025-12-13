@@ -40,6 +40,8 @@ uint8 mode_change_logic             # Determines how mode changes are processed
 uint8 MODE_CHANGE_LOGIC_STANDARD = 0   # Standard aircraft mode change logic
 uint8 MODE_CHANGE_LOGIC_WHEEL_LOADER = 1  # Wheel loader specific mode change logic
 uint8 MODE_CHANGE_LOGIC_ROVER = 2      # Rover specific mode change logic
+uint8 MODE_CHANGE_LOGIC_ROTARY_WING = 3  # Rotary wing (multicopter) specific mode change logic
+uint8 MODE_CHANGE_LOGIC_FIXED_WING = 4   # Fixed wing specific mode change logic
 
 # Supported commands bitmask - defines which MAVLink commands are supported
 # Each bit corresponds to a command category

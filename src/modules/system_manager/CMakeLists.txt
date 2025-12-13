@@ -39,6 +39,13 @@ add_subdirectory(health_and_arming_checks)
 add_subdirectory(mode_util)
 add_subdirectory(multicopter_throw_launch)
 
+# SystemManager vehicle strategies library
+px4_add_library(system_manager_strategies
+	strategies/SystemManagerStrategyRegistry.cpp
+)
+target_include_directories(system_manager_strategies PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/strategies)
+target_link_libraries(system_manager_strategies PUBLIC vehicle_strategy)
+
 px4_add_module(
 	MODULE modules__system_manager
 	MAIN system_manager
@@ -50,6 +57,7 @@ px4_add_module(
 		calibration/calibration_routines.cpp
 		system_manager.cpp
 		system_manager_helper.cpp
+		SystemManagerBase.cpp
 		calibration/esc_calibration.cpp
 		calibration/factory_calibration_storage.cpp
 		calibration/gyro_calibration.cpp
@@ -78,6 +86,8 @@ px4_add_module(
 		vehicle_type
 		world_magnetic_model
         atmosphere
+		system_manager_strategies
+		vehicle_strategy
 	)
 
 px4_add_unit_gtest(SRC calibration/mag_calibration_test.cpp LINKLIBS modules__system_manager)

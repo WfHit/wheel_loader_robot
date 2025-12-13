@@ -161,6 +161,28 @@ private:
 	 */
 	bool handle_command(const vehicle_command_s &cmd);
 
+	/**
+	 * @brief Check if a command is supported for the current vehicle type
+	 *
+	 * Uses the vehicle_type_config supported_commands_mask to determine
+	 * if the command category is available for this vehicle type.
+	 *
+	 * @param cmd_category The command category to check (from vehicle_type_config_s::CMD_CATEGORY_*)
+	 * @return true if the command category is supported, false otherwise
+	 */
+	bool isCommandSupportedForVehicleType(uint8_t cmd_category) const;
+
+	/**
+	 * @brief Handle vehicle-type-specific command restrictions
+	 *
+	 * Returns UNSUPPORTED for commands that are not applicable to the current vehicle type.
+	 * Uses dispatcher pattern based on vehicle_type.
+	 *
+	 * @param cmd The vehicle command to check
+	 * @return true if the command should be rejected, false if it should be processed
+	 */
+	bool shouldRejectCommandForVehicleType(const vehicle_command_s &cmd) const;
+
 	unsigned handleCommandActuatorTest(const vehicle_command_s &cmd);
 
 	void executeActionRequest(const action_request_s &action_request);

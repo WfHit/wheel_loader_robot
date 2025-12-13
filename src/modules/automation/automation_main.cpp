@@ -45,6 +45,7 @@
  */
 
 #include "automation.h"
+#include "AutomationBase.hpp"
 
 #include <float.h>
 #include <sys/stat.h>
@@ -1121,7 +1122,8 @@ int Automation::task_spawn(int argc, char *argv[])
 
 Automation *Automation::instantiate(int argc, char *argv[])
 {
-	Automation *instance = new Automation();
+	// Use factory to create vehicle-specific instance
+	AutomationBase *instance = AutomationFactory::createFromParam();
 
 	if (instance == nullptr) {
 		PX4_ERR("alloc failed");

@@ -106,6 +106,18 @@ private:
 	void selectRoverMode();
 
 	/**
+	 * Rotary wing (multicopter) specific mode selection
+	 * Handles position control, altitude control, and auto modes for multirotors
+	 */
+	void selectRotaryWingMode();
+
+	/**
+	 * Fixed wing specific mode selection
+	 * Handles altitude control, position control, and auto modes for fixed wing aircraft
+	 */
+	void selectFixedWingMode();
+
+	/**
 	 * Check if the requested mode is available for the current vehicle type
 	 * @param operation_mode Operation mode to check
 	 * @return true if mode is available, false otherwise

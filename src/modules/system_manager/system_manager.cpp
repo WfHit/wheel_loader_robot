@@ -39,6 +39,7 @@
  */
 
 #include "system_manager.hpp"
+#include "SystemManagerBase.hpp"
 
 /* system_manager module headers */
 #include "arming/arm_authorization/arm_authorization.h"
@@ -733,6 +734,13 @@ SystemManager::handle_command(const vehicle_command_s &cmd)
 	if (((cmd.target_system != _vehicle_status.system_id) && (cmd.target_system != 0))
 	    || ((cmd.target_component != _vehicle_status.component_id) && (cmd.target_component != 0))) {
 		return false;
+	}
+
+	/* Check if this command is supported for the current vehicle type */
+	if (shouldRejectCommandForVehicleType(cmd)) {
+		PX4_INFO("Command %d rejected for vehicle type %d", cmd.command, _vehicle_status.vehicle_type);
+		answer_command(cmd, vehicle_command_ack_s::VEHICLE_CMD_RESULT_UNSUPPORTED);
+		return true;
 	}
 
 	/* result of the command */
@@ -1539,6 +1547,111 @@ ModeChangeSource SystemManager::getSourceFromCommand(const vehicle_command_s &cm
 {
 	return cmd.source_component >= vehicle_command_s::COMPONENT_MODE_EXECUTOR_START ? ModeChangeSource::ModeExecutor :
 	       ModeChangeSource::User;
+}
+
+bool SystemManager::isCommandSupportedForVehicleType(uint8_t cmd_category) const
+{
+	if (!_vehicle_type_config.config_valid) {
+		// If config is not valid, allow all commands (fallback behavior)
+		return true;
+	}
+
+	// Check if the command category bit is set in the supported_commands_mask
+	return (_vehicle_type_config.supported_commands_mask & (1u << cmd_category)) != 0;
+}
+
+bool SystemManager::shouldRejectCommandForVehicleType(const vehicle_command_s &cmd) const
+{
+	// Vehicle-type-specific command rejection logic using dispatcher pattern
+	// Returns true if the command should be rejected for the current vehicle type
+
+	switch (_vehicle_status.vehicle_type) {
+	case vehicle_status_s::VEHICLE_TYPE_WHEEL_LOADER:
+		// Wheel loaders don't support aerial commands
+		switch (cmd.command) {
+		case vehicle_command_s::VEHICLE_CMD_NAV_TAKEOFF:
+		case vehicle_command_s::VEHICLE_CMD_NAV_VTOL_TAKEOFF:
+		case vehicle_command_s::VEHICLE_CMD_NAV_LAND:
+		case vehicle_command_s::VEHICLE_CMD_NAV_PRECLAND:
+		case vehicle_command_s::VEHICLE_CMD_DO_ORBIT:
+		case vehicle_command_s::VEHICLE_CMD_DO_FIGUREEIGHT:
+		case vehicle_command_s::VEHICLE_CMD_DO_VTOL_TRANSITION:
+			return true; // Reject aerial commands for wheel loader
+
+		default:
+			break;
+		}
+
+		// Check using supported_commands_mask
+		if (!isCommandSupportedForVehicleType(vehicle_type_config_s::CMD_CATEGORY_TAKEOFF_LAND)) {
+			if (cmd.command == vehicle_command_s::VEHICLE_CMD_NAV_TAKEOFF ||
+			    cmd.command == vehicle_command_s::VEHICLE_CMD_NAV_LAND) {
+				return true;
+			}
+		}
+
+		break;
+
+	case vehicle_status_s::VEHICLE_TYPE_ROVER:
+		// Rovers don't support aerial commands
+		switch (cmd.command) {
+		case vehicle_command_s::VEHICLE_CMD_NAV_TAKEOFF:
+		case vehicle_command_s::VEHICLE_CMD_NAV_VTOL_TAKEOFF:
+		case vehicle_command_s::VEHICLE_CMD_NAV_LAND:
+		case vehicle_command_s::VEHICLE_CMD_NAV_PRECLAND:
+		case vehicle_command_s::VEHICLE_CMD_DO_ORBIT:
+		case vehicle_command_s::VEHICLE_CMD_DO_FIGUREEIGHT:
+		case vehicle_command_s::VEHICLE_CMD_DO_VTOL_TRANSITION:
+			return true; // Reject aerial commands for rover
+
+		default:
+			break;
+		}
+
+		// Rovers don't support boom/bucket commands
+		if (!isCommandSupportedForVehicleType(vehicle_type_config_s::CMD_CATEGORY_BOOM_BUCKET)) {
+			// Add specific boom/bucket command checks here when implemented
+		}
+
+		break;
+
+	case vehicle_status_s::VEHICLE_TYPE_ROTARY_WING:
+		// Rotary wing (multicopter) - reject wheel loader specific commands
+		if (!isCommandSupportedForVehicleType(vehicle_type_config_s::CMD_CATEGORY_BOOM_BUCKET)) {
+			// Reject boom/bucket commands for rotary wing
+			// Add specific command checks when boom/bucket commands are implemented
+		}
+
+		// Fixed wing specific commands should be rejected
+		switch (cmd.command) {
+		case vehicle_command_s::VEHICLE_CMD_DO_FIGUREEIGHT:
+			return true; // Figure 8 is fixed wing only
+
+		default:
+			break;
+		}
+
+		break;
+
+	case vehicle_status_s::VEHICLE_TYPE_FIXED_WING:
+		// Fixed wing - reject multicopter specific commands
+		if (!isCommandSupportedForVehicleType(vehicle_type_config_s::CMD_CATEGORY_BOOM_BUCKET)) {
+			// Reject boom/bucket commands for fixed wing
+		}
+
+		// Precision land is typically not supported for fixed wing
+		if (cmd.command == vehicle_command_s::VEHICLE_CMD_NAV_PRECLAND) {
+			return true;
+		}
+
+		break;
+
+	default:
+		// Unknown vehicle type - allow all commands
+		break;
+	}
+
+	return false; // Don't reject the command
 }
 
 void SystemManager::handleCommandsFromModeExecutors()
@@ -2677,7 +2790,8 @@ int SystemManager::task_spawn(int argc, char *argv[])
 
 SystemManager *SystemManager::instantiate(int argc, char *argv[])
 {
-	SystemManager *instance = new Commander();
+	// Use factory to create vehicle-specific instance
+	SystemManagerBase *instance = SystemManagerFactory::createFromParam();
 
 	if (instance) {
 		if (argc >= 2 && !strcmp(argv[1], "-h")) {
