@@ -60,6 +60,9 @@
 #include <uORB/topics/vehicle_status.h>
 #include <uORB/topics/vehicle_type_config.h>
 
+// vehicle type strategy library
+#include <vehicle_type/VehicleTypeRegistry.hpp>
+
 // subscriptions
 #include <uORB/Subscription.hpp>
 #include <uORB/SubscriptionInterval.hpp>

@@ -2,11 +2,40 @@
 
 ## Overview
 
-This document describes the vehicle type configuration system that enables different vehicle types to have different operation modes, automation tasks, and control logic. The system uses a special message (`VehicleTypeConfig`) published by the `system_manager` module to inform `mode_manager` and `automation` about vehicle-specific settings.
+This document describes the vehicle type configuration system that enables different vehicle types to have different operation modes, automation tasks, and control logic. The system uses a **Strategy Pattern** architecture where each vehicle type has its own strategy class that defines its specific capabilities.
 
 ## Architecture
 
 ```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                          Vehicle Type Library                               │
+│   src/lib/vehicle_type/                                                     │
+│                                                                             │
+│   ┌─────────────────────────┐                                               │
+│   │  VehicleTypeStrategy    │ (Abstract Interface)                         │
+│   │  - getAvailableModes()  │                                               │
+│   │  - getAutomationTasks() │                                               │
+│   │  - getCapabilities()    │                                               │
+│   │  - getSafetyLimits()    │                                               │
+│   └───────────┬─────────────┘                                               │
+│               │                                                             │
+│   ┌───────────┼───────────────────────────────────┐                         │
+│   │           │           │           │           │                         │
+│   ▼           ▼           ▼           ▼           ▼                         │
+│ ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐                 │
+│ │WheelLdr │ │ Rover   │ │RotWing │ │FixedWng │ │ Custom  │                 │
+│ │Strategy │ │Strategy │ │Strategy │ │Strategy │ │Strategy │                 │
+│ └─────────┘ └─────────┘ └─────────┘ └─────────┘ └─────────┘                 │
+│                                                                             │
+│   ┌─────────────────────────┐                                               │
+│   │  VehicleTypeRegistry    │ (Factory/Registry)                           │
+│   │  - getStrategy(type)    │                                               │
+│   │  - fillConfig(config)   │                                               │
+│   └─────────────────────────┘                                               │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    │ fillConfig()
+                                    ▼
 ┌─────────────────┐                 ┌─────────────────────────────────┐
 │  system_manager │────────────────▶│  vehicle_type_config (message)  │
 └─────────────────┘                 └─────────────────────────────────┘
@@ -17,6 +46,58 @@ This document describes the vehicle type configuration system that enables diffe
             ┌─────────────────┐          ┌─────────────────┐          ┌─────────────────┐
             │   mode_manager  │          │   automation    │          │  other modules  │
             └─────────────────┘          └─────────────────┘          └─────────────────┘
+```
+
+## Strategy Pattern Implementation
+
+### VehicleTypeStrategy (Abstract Interface)
+
+Located at `src/lib/vehicle_type/VehicleTypeStrategy.hpp`, this defines the interface that all vehicle type strategies must implement:
+
+```cpp
+class VehicleTypeStrategy {
+public:
+    virtual uint8_t getVehicleType() const = 0;
+    virtual const char* getName() const = 0;
+    virtual uint32_t getAvailableModesMask() const = 0;
+    virtual uint32_t getAvailableAutomationTasksMask() const = 0;
+    virtual uint8_t getDefaultMode() const = 0;
+    virtual uint8_t getFailsafeMode() const = 0;
+    virtual uint8_t getModeChangeLogic() const = 0;
+    virtual ControlCapabilities getControlCapabilities() const = 0;
+    virtual SafetyLimits getSafetyLimits() const = 0;
+    
+    // Helper methods
+    bool isModeAvailable(uint8_t mode) const;
+    bool isAutomationTaskAvailable(uint8_t task) const;
+    void fillConfig(vehicle_type_config_s& config) const;
+};
+```
+
+### Concrete Strategy Classes
+
+Each vehicle type has its own strategy class:
+
+| Class | File | Vehicle Type |
+|-------|------|--------------|
+| `WheelLoaderStrategy` | `WheelLoaderStrategy.hpp` | Articulated wheel loaders with boom/bucket |
+| `RoverStrategy` | `RoverStrategy.hpp` | Ground rovers |
+| `RotaryWingStrategy` | `RotaryWingStrategy.hpp` | Multicopters/helicopters |
+| `FixedWingStrategy` | `FixedWingStrategy.hpp` | Fixed-wing aircraft |
+
+### VehicleTypeRegistry (Factory)
+
+The registry provides a simple factory pattern to get the appropriate strategy:
+
+```cpp
+// Get strategy for a vehicle type
+const VehicleTypeStrategy* strategy = VehicleTypeRegistry::getStrategy(vehicle_type);
+
+// Fill configuration directly
+VehicleTypeRegistry::fillConfig(config, vehicle_type);
+
+// Check availability
+bool available = VehicleTypeRegistry::isModeAvailable(vehicle_type, mode);
 ```
 
 ## VehicleTypeConfig Message
@@ -56,72 +137,111 @@ The `VehicleTypeConfig` message is published by `system_manager` and contains:
 - `max_velocity`: Maximum allowed velocity (m/s)
 - `max_steering_rate`: Maximum steering rate (rad/s)
 
-## Vehicle Type Configurations
+## Adding a New Vehicle Type
 
-### Wheel Loader (`VEHICLE_TYPE_WHEEL_LOADER`)
+### Step 1: Create a New Strategy Class
 
-**Available Modes:**
-- `OPERATION_MODE_MANUAL`
-- `OPERATION_MODE_AUTO_VLA`
+Create `src/lib/vehicle_type/YourVehicleStrategy.hpp`:
 
-**Available Automation Tasks:**
-- `AUTOMATION_TASK_VLA_TRAJECTORY`
+```cpp
+#pragma once
+#include "VehicleTypeStrategy.hpp"
 
-**Mode Change Logic:** `MODE_CHANGE_LOGIC_WHEEL_LOADER`
+namespace vehicle_type {
 
-**Control Capabilities:**
-- Position control: Yes
-- Velocity control: Yes
-- Altitude control: No
-- Boom control: Yes
-- Tilt control: Yes
-- Articulated steering: Yes
+class YourVehicleStrategy : public VehicleTypeStrategy {
+public:
+    uint8_t getVehicleType() const override {
+        return vehicle_status_s::VEHICLE_TYPE_YOUR_VEHICLE;
+    }
 
-### Rover (`VEHICLE_TYPE_ROVER`)
+    const char* getName() const override {
+        return "Your Vehicle";
+    }
 
-**Available Modes:**
-- `OPERATION_MODE_MANUAL`
-- `OPERATION_MODE_POSCTL`
-- `OPERATION_MODE_AUTO_MISSION`
-- `OPERATION_MODE_AUTO_RTL`
-- `OPERATION_MODE_AUTO_LOITER`
+    uint32_t getAvailableModesMask() const override {
+        return (1u << vehicle_status_s::OPERATION_MODE_MANUAL) |
+               (1u << vehicle_status_s::OPERATION_MODE_YOUR_MODE);
+    }
 
-**Available Automation Tasks:**
-- `AUTOMATION_TASK_MISSION`
-- `AUTOMATION_TASK_LOITER`
-- `AUTOMATION_TASK_RTL`
+    uint32_t getAvailableAutomationTasksMask() const override {
+        return (1u << vehicle_type_config_s::AUTOMATION_TASK_MISSION);
+    }
 
-**Mode Change Logic:** `MODE_CHANGE_LOGIC_ROVER`
+    uint8_t getDefaultMode() const override {
+        return vehicle_status_s::OPERATION_MODE_MANUAL;
+    }
 
-### Rotary Wing (`VEHICLE_TYPE_ROTARY_WING`)
+    uint8_t getFailsafeMode() const override {
+        return vehicle_status_s::OPERATION_MODE_MANUAL;
+    }
 
-**Available Modes:**
-- `OPERATION_MODE_MANUAL`
-- `OPERATION_MODE_ALTCTL`
-- `OPERATION_MODE_POSCTL`
-- `OPERATION_MODE_AUTO_MISSION`
-- `OPERATION_MODE_AUTO_RTL`
-- `OPERATION_MODE_AUTO_LOITER`
-- `OPERATION_MODE_AUTO_TAKEOFF`
-- `OPERATION_MODE_AUTO_LAND`
-- `OPERATION_MODE_ORBIT`
-- `OPERATION_MODE_DESCEND`
+    uint8_t getModeChangeLogic() const override {
+        return vehicle_type_config_s::MODE_CHANGE_LOGIC_YOUR_VEHICLE;
+    }
 
-**Available Automation Tasks:**
-- `AUTOMATION_TASK_MISSION`
-- `AUTOMATION_TASK_LOITER`
-- `AUTOMATION_TASK_RTL`
-- `AUTOMATION_TASK_TAKEOFF`
-- `AUTOMATION_TASK_LAND`
-- `AUTOMATION_TASK_PRECLAND`
+    ControlCapabilities getControlCapabilities() const override {
+        ControlCapabilities caps{};
+        // Set your capabilities
+        return caps;
+    }
 
-**Mode Change Logic:** `MODE_CHANGE_LOGIC_STANDARD`
+    SafetyLimits getSafetyLimits() const override {
+        SafetyLimits limits{};
+        // Set your limits
+        return limits;
+    }
+};
 
-### Fixed Wing (`VEHICLE_TYPE_FIXED_WING`)
+} // namespace vehicle_type
+```
 
-Uses standard mode change logic with full aircraft mode support.
+### Step 2: Register in VehicleTypeRegistry
 
-## Usage
+Update `VehicleTypeRegistry.hpp`:
+
+```cpp
+#include "YourVehicleStrategy.hpp"
+
+// Add to getStrategy() switch
+case vehicle_status_s::VEHICLE_TYPE_YOUR_VEHICLE:
+    return &_your_vehicle_strategy;
+
+// Add static member
+static YourVehicleStrategy _your_vehicle_strategy;
+```
+
+### Step 3: Add Mode Change Logic (if needed)
+
+If your vehicle needs custom mode selection, add a new constant to `VehicleTypeConfig.msg` and implement `selectYourVehicleMode()` in `ModeManager`.
+
+## Benefits of Strategy Pattern
+
+1. **Open/Closed Principle**: Add new vehicle types without modifying existing code
+2. **Single Responsibility**: Each strategy class handles one vehicle type
+3. **Testability**: Strategy classes can be unit tested independently
+4. **No Switch Statements**: Configuration retrieval uses polymorphism instead of switch
+5. **Centralized Configuration**: All vehicle configs in one library
+6. **Type Safety**: Compile-time checking of interface implementation
+
+## Usage Examples
+
+### In System Manager
+
+```cpp
+#include <vehicle_type/VehicleTypeRegistry.hpp>
+
+void SystemManager::updateVehicleTypeConfig() {
+    // Use registry to fill config based on vehicle type
+    vehicle_type::VehicleTypeRegistry::fillConfig(
+        _vehicle_type_config, 
+        _vehicle_status.vehicle_type
+    );
+    
+    _vehicle_type_config.timestamp = hrt_absolute_time();
+    _vehicle_type_config_pub.publish(_vehicle_type_config);
+}
+```
 
 ### In Mode Manager
 
@@ -142,24 +262,11 @@ void selectAndActivateMode() {
         }
     }
 }
-
-// Check if mode is available
-bool isModeAvailableForVehicleType(uint8_t operation_mode) const {
-    const vehicle_type_config_s &vtc = _vehicle_type_config_sub.get();
-    if (!vtc.config_valid || operation_mode >= 32) {
-        return true; // Fallback
-    }
-    return (vtc.available_modes_mask & (1u << operation_mode)) != 0;
-}
 ```
 
 ### In Automation Module
 
 ```cpp
-// Subscribe to vehicle type config
-uORB::SubscriptionData<vehicle_type_config_s> _vehicle_type_config_sub{ORB_ID(vehicle_type_config)};
-
-// Check if automation task is available
 bool isAutomationTaskAvailable(uint8_t task_type) {
     const vehicle_type_config_s &vtc = _vehicle_type_config_sub.get();
     if (!vtc.config_valid) {
@@ -169,29 +276,22 @@ bool isAutomationTaskAvailable(uint8_t task_type) {
 }
 ```
 
-## Adding a New Vehicle Type
+## File Structure
 
-1. Add the new vehicle type constant in `VehicleStatus.msg`
-2. Add a new case in `SystemManager::updateVehicleTypeConfig()` with the appropriate configuration
-3. Create vehicle-specific mode selection function in `ModeManager` (e.g., `selectYourVehicleMode()`)
-4. Update mode_change_logic constant in `VehicleTypeConfig.msg` if needed
-
-## Benefits
-
-1. **Centralized Configuration**: All vehicle-specific settings are defined in one place (`system_manager`)
-2. **Runtime Flexibility**: Configuration can be changed at runtime based on vehicle type
-3. **Modularity**: `mode_manager` and `automation` don't need hardcoded vehicle type checks
-4. **Extensibility**: Easy to add new vehicle types without modifying multiple modules
-5. **Safety**: Each vehicle type has appropriate failsafe modes and safety limits
-
-## Message Flow
-
-1. `system_manager` detects vehicle type from MAV_TYPE parameter
-2. `system_manager` publishes `vehicle_type_config` with appropriate settings
-3. `mode_manager` subscribes and uses `mode_change_logic` to select mode selection strategy
-4. `automation` subscribes and checks `available_automation_tasks_mask` before activating tasks
+```
+src/lib/vehicle_type/
+├── CMakeLists.txt
+├── VehicleTypeStrategy.hpp     # Abstract interface
+├── VehicleTypeRegistry.hpp     # Factory/registry
+├── VehicleTypeRegistry.cpp     # Static instance definitions
+├── WheelLoaderStrategy.hpp     # Wheel loader implementation
+├── RoverStrategy.hpp           # Rover implementation
+├── RotaryWingStrategy.hpp      # Multicopter implementation
+└── FixedWingStrategy.hpp       # Fixed wing implementation
+```
 
 ---
 
 *Last Updated: 2024*
-*Version: 1.0*
+*Version: 2.0*
+
