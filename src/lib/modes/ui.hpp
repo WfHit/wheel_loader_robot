@@ -43,30 +43,30 @@ namespace mode_util
 /**
  * @return Bitmask with all valid modes
  */
-static inline uint32_t getValidNavStates()
+static inline uint32_t getValidOperationModes()
 {
-	return (1u << vehicle_status_s::NAVIGATION_STATE_MANUAL) |
-	       (1u << vehicle_status_s::NAVIGATION_STATE_ALTCTL) |
-	       (1u << vehicle_status_s::NAVIGATION_STATE_POSCTL) |
-	       (1u << vehicle_status_s::NAVIGATION_STATE_AUTO_MISSION) |
-	       (1u << vehicle_status_s::NAVIGATION_STATE_AUTO_LOITER) |
-	       (1u << vehicle_status_s::NAVIGATION_STATE_AUTO_RTL) |
-	       (1u << vehicle_status_s::NAVIGATION_STATE_POSITION_SLOW) |
-	       (1u << vehicle_status_s::NAVIGATION_STATE_ACRO) |
-	       (1u << vehicle_status_s::NAVIGATION_STATE_TERMINATION) |
-	       (1u << vehicle_status_s::NAVIGATION_STATE_OFFBOARD) |
-	       (1u << vehicle_status_s::NAVIGATION_STATE_STAB) |
-	       (1u << vehicle_status_s::NAVIGATION_STATE_AUTO_TAKEOFF) |
-	       (1u << vehicle_status_s::NAVIGATION_STATE_AUTO_LAND) |
-	       (1u << vehicle_status_s::NAVIGATION_STATE_AUTO_FOLLOW_TARGET) |
-	       (1u << vehicle_status_s::NAVIGATION_STATE_AUTO_PRECLAND) |
-	       (1u << vehicle_status_s::NAVIGATION_STATE_ORBIT) |
-	       (1u << vehicle_status_s::NAVIGATION_STATE_AUTO_VTOL_TAKEOFF);
+	return (1u << vehicle_status_s::OPERATION_MODE_MANUAL) |
+	       (1u << vehicle_status_s::OPERATION_MODE_ALTCTL) |
+	       (1u << vehicle_status_s::OPERATION_MODE_POSCTL) |
+	       (1u << vehicle_status_s::OPERATION_MODE_AUTO_MISSION) |
+	       (1u << vehicle_status_s::OPERATION_MODE_AUTO_LOITER) |
+	       (1u << vehicle_status_s::OPERATION_MODE_AUTO_RTL) |
+	       (1u << vehicle_status_s::OPERATION_MODE_POSITION_SLOW) |
+	       (1u << vehicle_status_s::OPERATION_MODE_ACRO) |
+	       (1u << vehicle_status_s::OPERATION_MODE_TERMINATION) |
+	       (1u << vehicle_status_s::OPERATION_MODE_OFFBOARD) |
+	       (1u << vehicle_status_s::OPERATION_MODE_STAB) |
+	       (1u << vehicle_status_s::OPERATION_MODE_AUTO_TAKEOFF) |
+	       (1u << vehicle_status_s::OPERATION_MODE_AUTO_LAND) |
+	       (1u << vehicle_status_s::OPERATION_MODE_AUTO_FOLLOW_TARGET) |
+	       (1u << vehicle_status_s::OPERATION_MODE_AUTO_PRECLAND) |
+	       (1u << vehicle_status_s::OPERATION_MODE_ORBIT) |
+	       (1u << vehicle_status_s::OPERATION_MODE_AUTO_VTOL_TAKEOFF);
 
-	static_assert(vehicle_status_s::NAVIGATION_STATE_MAX  == 31, "update valid nav states");
+	static_assert(vehicle_status_s::OPERATION_MODE_MAX  == 31, "update valid nav states");
 }
 
-const char *const nav_state_names[vehicle_status_s::NAVIGATION_STATE_MAX] = {
+const char *const operation_mode_names[vehicle_status_s::OPERATION_MODE_MAX] = {
 	"Manual",
 	"Altitude",
 	"Position",
@@ -106,25 +106,25 @@ const char *const nav_state_names[vehicle_status_s::NAVIGATION_STATE_MAX] = {
 static inline bool isAdvanced(uint8_t nav_state)
 {
 	switch (nav_state) {
-	case vehicle_status_s::NAVIGATION_STATE_ALTCTL: return false;
+	case vehicle_status_s::OPERATION_MODE_ALTCTL: return false;
 
-	case vehicle_status_s::NAVIGATION_STATE_POSCTL: return false;
+	case vehicle_status_s::OPERATION_MODE_POSCTL: return false;
 
-	case vehicle_status_s::NAVIGATION_STATE_EXTERNAL1: return false;
+	case vehicle_status_s::OPERATION_MODE_EXTERNAL1: return false;
 
-	case vehicle_status_s::NAVIGATION_STATE_EXTERNAL2: return false;
+	case vehicle_status_s::OPERATION_MODE_EXTERNAL2: return false;
 
-	case vehicle_status_s::NAVIGATION_STATE_EXTERNAL3: return false;
+	case vehicle_status_s::OPERATION_MODE_EXTERNAL3: return false;
 
-	case vehicle_status_s::NAVIGATION_STATE_EXTERNAL4: return false;
+	case vehicle_status_s::OPERATION_MODE_EXTERNAL4: return false;
 
-	case vehicle_status_s::NAVIGATION_STATE_EXTERNAL5: return false;
+	case vehicle_status_s::OPERATION_MODE_EXTERNAL5: return false;
 
-	case vehicle_status_s::NAVIGATION_STATE_EXTERNAL6: return false;
+	case vehicle_status_s::OPERATION_MODE_EXTERNAL6: return false;
 
-	case vehicle_status_s::NAVIGATION_STATE_EXTERNAL7: return false;
+	case vehicle_status_s::OPERATION_MODE_EXTERNAL7: return false;
 
-	case vehicle_status_s::NAVIGATION_STATE_EXTERNAL8: return false;
+	case vehicle_status_s::OPERATION_MODE_EXTERNAL8: return false;
 
 	}
 

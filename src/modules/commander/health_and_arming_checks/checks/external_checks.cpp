@@ -33,23 +33,23 @@
 
 #include "external_checks.hpp"
 
-static void setOrClearRequirementBits(bool requirement_set, int8_t nav_state, int8_t replaces_nav_state, uint32_t &bits)
+static void setOrClearRequirementBits(bool requirement_set, int8_t nav_state, int8_t replaces_operation_mode, uint32_t &bits)
 {
 	if (requirement_set) {
 		bits |= 1u << nav_state;
 	}
 
-	if (replaces_nav_state != -1) {
+	if (replaces_operation_mode != -1) {
 		if (requirement_set) {
-			bits |= 1u << replaces_nav_state;
+			bits |= 1u << replaces_operation_mode;
 
 		} else {
-			bits &= ~(1u << replaces_nav_state);
+			bits &= ~(1u << replaces_operation_mode);
 		}
 	}
 }
 
-int ExternalChecks::addRegistration(int8_t nav_mode_id, int8_t replaces_nav_state)
+int ExternalChecks::addRegistration(int8_t nav_mode_id, int8_t replaces_operation_mode)
 {
 	int free_registration_index = -1;
 
@@ -63,7 +63,7 @@ int ExternalChecks::addRegistration(int8_t nav_mode_id, int8_t replaces_nav_stat
 	if (free_registration_index != -1) {
 		_active_registrations_mask |= 1 << free_registration_index;
 		_registrations[free_registration_index].nav_mode_id = nav_mode_id;
-		_registrations[free_registration_index].replaces_nav_state = replaces_nav_state;
+		_registrations[free_registration_index].replaces_operation_mode = replaces_operation_mode;
 		_registrations[free_registration_index].waiting_for_first_response = true;
 		_registrations[free_registration_index].num_no_response = 0;
 		_registrations[free_registration_index].unresponsive = false;
@@ -146,40 +146,40 @@ void ExternalChecks::checkAndReport(const Context &context, Report &reporter)
 			} else {
 				modes = reporter.getModeGroup(nav_mode_id);
 
-				int8_t replaces_nav_state = _registrations[reply.registration_id].replaces_nav_state;
+				int8_t replaces_operation_mode = _registrations[reply.registration_id].replaces_operation_mode;
 
-				if (replaces_nav_state != -1) {
-					modes = modes | reporter.getModeGroup(replaces_nav_state);
+				if (replaces_operation_mode != -1) {
+					modes = modes | reporter.getModeGroup(replaces_operation_mode);
 					// Also clear the arming bits for the replaced mode, as the user intention is always set to the
 					// replaced mode.
 					// We only have to clear the bits, as for the internal/replaced mode, the bits are not cleared yet.
 				}
 
 				if (!reply.can_arm_and_run) {
-					setOrClearRequirementBits(true, nav_mode_id, replaces_nav_state, reporter.failsafeFlags().mode_req_other);
+					setOrClearRequirementBits(true, nav_mode_id, replaces_operation_mode, reporter.failsafeFlags().mode_req_other);
 				}
 
 				// Mode requirements
 				// A replacement mode will also replace the mode requirements of the internal/replaced mode
-				setOrClearRequirementBits(reply.mode_req_angular_velocity, nav_mode_id, replaces_nav_state,
+				setOrClearRequirementBits(reply.mode_req_angular_velocity, nav_mode_id, replaces_operation_mode,
 							  reporter.failsafeFlags().mode_req_angular_velocity);
-				setOrClearRequirementBits(reply.mode_req_attitude, nav_mode_id, replaces_nav_state,
+				setOrClearRequirementBits(reply.mode_req_attitude, nav_mode_id, replaces_operation_mode,
 							  reporter.failsafeFlags().mode_req_attitude);
-				setOrClearRequirementBits(reply.mode_req_local_alt, nav_mode_id, replaces_nav_state,
+				setOrClearRequirementBits(reply.mode_req_local_alt, nav_mode_id, replaces_operation_mode,
 							  reporter.failsafeFlags().mode_req_local_alt);
-				setOrClearRequirementBits(reply.mode_req_local_position, nav_mode_id, replaces_nav_state,
+				setOrClearRequirementBits(reply.mode_req_local_position, nav_mode_id, replaces_operation_mode,
 							  reporter.failsafeFlags().mode_req_local_position);
-				setOrClearRequirementBits(reply.mode_req_local_position_relaxed, nav_mode_id, replaces_nav_state,
+				setOrClearRequirementBits(reply.mode_req_local_position_relaxed, nav_mode_id, replaces_operation_mode,
 							  reporter.failsafeFlags().mode_req_local_position_relaxed);
-				setOrClearRequirementBits(reply.mode_req_global_position, nav_mode_id, replaces_nav_state,
+				setOrClearRequirementBits(reply.mode_req_global_position, nav_mode_id, replaces_operation_mode,
 							  reporter.failsafeFlags().mode_req_global_position);
-				setOrClearRequirementBits(reply.mode_req_mission, nav_mode_id, replaces_nav_state,
-							  reporter.failsafeFlags().mode_req_mission);
-				setOrClearRequirementBits(reply.mode_req_home_position, nav_mode_id, replaces_nav_state,
+				setOrClearRequirementBits(reply.mode_req_current_auto_mission, nav_mode_id, replaces_operation_mode,
+							  reporter.failsafeFlags().mode_req_current_auto_mission);
+				setOrClearRequirementBits(reply.mode_req_home_position, nav_mode_id, replaces_operation_mode,
 							  reporter.failsafeFlags().mode_req_home_position);
-				setOrClearRequirementBits(reply.mode_req_prevent_arming, nav_mode_id, replaces_nav_state,
+				setOrClearRequirementBits(reply.mode_req_prevent_arming, nav_mode_id, replaces_operation_mode,
 							  reporter.failsafeFlags().mode_req_prevent_arming);
-				setOrClearRequirementBits(reply.mode_req_manual_control, nav_mode_id, replaces_nav_state,
+				setOrClearRequirementBits(reply.mode_req_manual_control, nav_mode_id, replaces_operation_mode,
 							  reporter.failsafeFlags().mode_req_manual_control);
 			}
 
@@ -293,10 +293,10 @@ void ExternalChecks::update()
 	}
 }
 
-void ExternalChecks::setExternalNavStates(uint8_t first_external_nav_state, uint8_t last_external_nav_state)
+void ExternalChecks::setExternalOperationModes(uint8_t first_external_operation_mode, uint8_t last_external_operation_mode)
 {
-	_first_external_nav_state = first_external_nav_state;
-	_last_external_nav_state = last_external_nav_state;
+	_first_external_operation_mode = first_external_operation_mode;
+	_last_external_operation_mode = last_external_operation_mode;
 }
 
 void ExternalChecks::checkNonRegisteredModes(const Context &context, Report &reporter) const
@@ -305,24 +305,24 @@ void ExternalChecks::checkNonRegisteredModes(const Context &context, Report &rep
 	// But only report if one of them is selected, so we don't need to generate the extra event in most cases.
 	bool report_mode_not_available = false;
 
-	for (uint8_t external_nav_state = _first_external_nav_state; external_nav_state <= _last_external_nav_state;
-	     ++external_nav_state) {
+	for (uint8_t external_operation_mode = _first_external_operation_mode; external_operation_mode <= _last_external_operation_mode;
+	     ++external_operation_mode) {
 		bool found = false;
 
 		for (int reg_idx = 0; reg_idx < MAX_NUM_REGISTRATIONS; ++reg_idx) {
-			if (registrationValid(reg_idx) && _registrations[reg_idx].nav_mode_id == external_nav_state) {
+			if (registrationValid(reg_idx) && _registrations[reg_idx].nav_mode_id == external_operation_mode) {
 				found = true;
 				break;
 			}
 		}
 
 		if (!found) {
-			if (external_nav_state == context.status().nav_state_user_intention) {
+			if (external_operation_mode == context.status().operation_mode_user_intention) {
 				report_mode_not_available = true;
 			}
 
-			reporter.clearArmingBits(reporter.getModeGroup(external_nav_state));
-			setOrClearRequirementBits(true, external_nav_state, -1, reporter.failsafeFlags().mode_req_other);
+			reporter.clearArmingBits(reporter.getModeGroup(external_operation_mode));
+			setOrClearRequirementBits(true, external_operation_mode, -1, reporter.failsafeFlags().mode_req_other);
 		}
 	}
 
@@ -331,7 +331,7 @@ void ExternalChecks::checkNonRegisteredModes(const Context &context, Report &rep
 		 * @description
 		 * The application running the mode is not started.
 		 */
-		reporter.armingCheckFailure(reporter.getModeGroup(context.status().nav_state_user_intention),
+		reporter.armingCheckFailure(reporter.getModeGroup(context.status().operation_mode_user_intention),
 					    health_component_t::system,
 					    events::ID("check_external_modes_unavailable"),
 					    events::Log::Error, "Mode is not registered");

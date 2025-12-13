@@ -1555,7 +1555,7 @@ FixedwingPositionControl::control_auto_takeoff(const hrt_abstime &now, const flo
 		// by default set the takeoff bearing to the takeoff yaw, but override in a mission takeoff with bearing to takeoff WP
 		float takeoff_bearing = _launch_current_yaw;
 
-		if (_vehicle_status.nav_state == vehicle_status_s::NAVIGATION_STATE_AUTO_MISSION) {
+		if (_vehicle_status.operation_mode == vehicle_status_s::OPERATION_MODE_AUTO_MISSION) {
 			// the bearing from runway start to the takeoff waypoint is followed until the clearance altitude is exceeded
 			const Vector2f takeoff_bearing_vector = takeoff_waypoint_local - start_pos_local;
 
@@ -1657,7 +1657,7 @@ FixedwingPositionControl::control_auto_takeoff(const hrt_abstime &now, const flo
 		// by default set the takeoff bearing to the takeoff yaw, but override in a mission takeoff with bearing to takeoff WP
 		float takeoff_bearing = _launch_current_yaw;
 
-		if (_vehicle_status.nav_state == vehicle_status_s::NAVIGATION_STATE_AUTO_MISSION) {
+		if (_vehicle_status.operation_mode == vehicle_status_s::OPERATION_MODE_AUTO_MISSION) {
 			// the bearing from launch to the takeoff waypoint is followed until the clearance altitude is exceeded
 			const Vector2f takeoff_bearing_vector = takeoff_waypoint_local - launch_local_position;
 

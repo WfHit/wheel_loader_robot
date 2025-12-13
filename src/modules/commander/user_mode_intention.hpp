@@ -45,7 +45,7 @@ enum class ModeChangeSource {
 class ModeChangeHandler
 {
 public:
-	virtual void onUserIntendedNavStateChange(ModeChangeSource source, uint8_t user_intended_nav_state) = 0;
+	virtual void onUserIntendedNavStateChange(ModeChangeSource source, uint8_t user_intended_operation_mode) = 0;
 
 	/**
 	 * Get the replaced (internal) mode for a given (external) mode
@@ -65,16 +65,16 @@ public:
 
 	/**
 	 * Change the user intended mode
-	 * @param user_intended_nav_state new mode
+	 * @param user_intended_operation_mode new mode
 	 * @param source calling reason
 	 * @param allow_fallback allow to fallback to a lower mode if current mode cannot run
 	 * @param force always set if true
 	 * @return true if successfully set (also if unchanged)
 	 */
-	bool change(uint8_t user_intended_nav_state, ModeChangeSource source = ModeChangeSource::User,
+	bool change(uint8_t user_intended_operation_mode, ModeChangeSource source = ModeChangeSource::User,
 		    bool allow_fallback = false, bool force = false);
 
-	uint8_t get() const { return _user_intented_nav_state; }
+	uint8_t get() const { return _user_intented_operation_mode; }
 
 	/**
 	 * Change the user intention to the last user intended mode where arming is possible
@@ -95,8 +95,8 @@ private:
 	const HealthAndArmingChecks &_health_and_arming_checks;
 	ModeChangeHandler *const _handler{nullptr};
 
-	uint8_t _user_intented_nav_state{vehicle_status_s::NAVIGATION_STATE_AUTO_LOITER}; ///< Current user intended mode
-	uint8_t _nav_state_after_disarming{vehicle_status_s::NAVIGATION_STATE_AUTO_LOITER}; ///< Mode that is switched into after landing/disarming
+	uint8_t _user_intented_operation_mode{vehicle_status_s::OPERATION_MODE_AUTO_LOITER}; ///< Current user intended mode
+	uint8_t _operation_mode_after_disarming{vehicle_status_s::OPERATION_MODE_AUTO_LOITER}; ///< Mode that is switched into after landing/disarming
 
 	bool _ever_had_mode_change{false}; ///< true if there was ever a mode change call (also if the same mode as already set)
 	bool _had_mode_change{false}; ///< true if there was a mode change call since the last getHadModeChangeAndClear()

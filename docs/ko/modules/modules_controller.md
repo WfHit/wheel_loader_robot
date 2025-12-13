@@ -239,7 +239,7 @@ Source: [modules/navigator](https://github.com/PX4/PX4-Autopilot/tree/main/src/m
 
 ### 구현
 
-The different internal modes are implemented as separate classes that inherit from a common base class `NavigatorMode`.
+The different internal modes are implemented as separate classes that inherit from a common base class `TaskBase`.
 The member `_navigation_mode` contains the current active mode.
 
 Navigator publishes position setpoint triplets (`position_setpoint_triplet_s`), which are then used by the position

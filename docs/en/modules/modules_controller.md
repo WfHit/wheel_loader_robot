@@ -212,7 +212,7 @@ takeoff and RTL.
 It is also responsible for geofence violation checking.
 
 ### Implementation
-The different internal modes are implemented as separate classes that inherit from a common base class `NavigatorMode`.
+The different internal modes are implemented as separate classes that inherit from a common base class `TaskBase`.
 The member `_navigation_mode` contains the current active mode.
 
 Navigator publishes position setpoint triplets (`position_setpoint_triplet_s`), which are then used by the position
@@ -332,7 +332,7 @@ Source: [modules/spacecraft](https://github.com/PX4/PX4-Autopilot/tree/main/src/
 	This implements control allocation for spacecraft vehicles.
 	It takes torque and thrust setpoints as inputs and outputs
 	actuator setpoint messages.
-	
+
 <a id="spacecraft_usage"></a>
 ### Usage
 ```

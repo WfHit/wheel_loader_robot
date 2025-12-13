@@ -542,7 +542,7 @@
 *(.text._ZN31MavlinkStreamAttitudeQuaternion8get_sizeEv)
 *(.text._ZN30MavlinkStreamGlobalPositionInt4sendEv)
 *(.text._ZN6SticksD1Ev)
-*(.text._ZN13NavigatorMode3runEb)
+*(.text._ZN8TaskBase3runEb)
 *(.text._ZL19param_find_internalPKcb)
 *(.text.uart_datasent)
 *(.text._ZN4EKF221PublishOpticalFlowVelERKy)

@@ -139,13 +139,13 @@ private:
 			_vehicle_status_sub.copy(&vehicle_status);
 
 			bool vehicle_in_auto_mode = (vehicle_status.timestamp > 0)
-						    && (vehicle_status.nav_state == vehicle_status_s::NAVIGATION_STATE_AUTO_FOLLOW_TARGET
-							|| vehicle_status.nav_state == vehicle_status_s::NAVIGATION_STATE_AUTO_LAND
-							|| vehicle_status.nav_state == vehicle_status_s::NAVIGATION_STATE_AUTO_PRECLAND
-							|| vehicle_status.nav_state == vehicle_status_s::NAVIGATION_STATE_AUTO_MISSION
-							|| vehicle_status.nav_state == vehicle_status_s::NAVIGATION_STATE_AUTO_LOITER
-							|| vehicle_status.nav_state == vehicle_status_s::NAVIGATION_STATE_AUTO_TAKEOFF
-							|| vehicle_status.nav_state == vehicle_status_s::NAVIGATION_STATE_AUTO_RTL);
+						    && (vehicle_status.operation_mode == vehicle_status_s::OPERATION_MODE_AUTO_FOLLOW_TARGET
+							|| vehicle_status.operation_mode == vehicle_status_s::OPERATION_MODE_AUTO_LAND
+							|| vehicle_status.operation_mode == vehicle_status_s::OPERATION_MODE_AUTO_PRECLAND
+							|| vehicle_status.operation_mode == vehicle_status_s::OPERATION_MODE_AUTO_MISSION
+							|| vehicle_status.operation_mode == vehicle_status_s::OPERATION_MODE_AUTO_LOITER
+							|| vehicle_status.operation_mode == vehicle_status_s::OPERATION_MODE_AUTO_TAKEOFF
+							|| vehicle_status.operation_mode == vehicle_status_s::OPERATION_MODE_AUTO_RTL);
 
 			// Handle next waypoint if it is valid
 			position_setpoint_triplet_s position_setpoint_triplet;

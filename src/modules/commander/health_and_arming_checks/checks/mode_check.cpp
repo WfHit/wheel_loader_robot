@@ -109,7 +109,7 @@ void ModeChecks::checkAndReport(const Context &context, Report &reporter)
 		reporter.clearCanRunBits((NavModes)reporter.failsafeFlags().mode_req_local_alt);
 	}
 
-	NavModes mission_required_modes = (NavModes)reporter.failsafeFlags().mode_req_mission;
+	NavModes mission_required_modes = (NavModes)reporter.failsafeFlags().mode_req_current_auto_mission;
 
 	if (_param_com_arm_mis_req.get()) {
 		mission_required_modes = NavModes::All;
@@ -127,7 +127,7 @@ void ModeChecks::checkAndReport(const Context &context, Report &reporter)
 		reporter.armingCheckFailure(mission_required_modes, health_component_t::system,
 					    events::ID("check_modes_mission"),
 					    events::Log::Info, "No valid mission available");
-		reporter.clearCanRunBits((NavModes)reporter.failsafeFlags().mode_req_mission);
+		reporter.clearCanRunBits((NavModes)reporter.failsafeFlags().mode_req_current_auto_mission);
 	}
 
 	if (reporter.failsafeFlags().offboard_control_signal_lost && reporter.failsafeFlags().mode_req_offboard_signal != 0) {
@@ -184,7 +184,7 @@ void ModeChecks::checkAndReport(const Context &context, Report &reporter)
 
 void ModeChecks::checkArmingRequirement(const Context &context, Report &reporter)
 {
-	if (reporter.failsafeFlags().mode_req_prevent_arming & (1u << context.status().nav_state)) {
+	if (reporter.failsafeFlags().mode_req_prevent_arming & (1u << context.status().operation_mode)) {
 		/* EVENT
 		 * @description
 		 * Switch to another mode first.

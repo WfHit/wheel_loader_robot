@@ -58,8 +58,8 @@ public:
 	}
 
 private:
-	static constexpr int MAX_NUM_EXTERNAL_MODES = vehicle_status_s::NAVIGATION_STATE_EXTERNAL8 -
-			vehicle_status_s::NAVIGATION_STATE_EXTERNAL1 + 1;
+	static constexpr int MAX_NUM_EXTERNAL_MODES = vehicle_status_s::OPERATION_MODE_EXTERNAL8 -
+			vehicle_status_s::OPERATION_MODE_EXTERNAL1 + 1;
 
 	explicit MavlinkStreamAvailableModes(Mavlink *mavlink) : MavlinkStream(mavlink) {}
 
@@ -73,8 +73,8 @@ private:
 
 	bool _had_dynamic_update{false};
 	uint8_t _dynamic_update_seq{0};
-	uint32_t _last_valid_nav_states_mask{0};
-	uint32_t _last_can_set_nav_states_mask{0};
+	uint32_t _last_valid_operation_modes_mask{0};
+	uint32_t _last_can_set_operation_modes_mask{0};
 
 	void send_single_mode(const vehicle_status_s &vehicle_status, int mode_index, int total_num_modes, uint8_t nav_state)
 	{
@@ -83,7 +83,7 @@ private:
 		available_modes.number_modes = total_num_modes;
 		px4_custom_mode custom_mode{get_px4_custom_mode(nav_state)};
 		available_modes.custom_mode = custom_mode.data;
-		const bool cannot_be_selected = (vehicle_status.can_set_nav_states_mask & (1u << nav_state)) == 0;
+		const bool cannot_be_selected = (vehicle_status.can_set_operation_modes_mask & (1u << nav_state)) == 0;
 
 		// Set the mode name if not a standard mode
 		available_modes.standard_mode = (uint8_t)mode_util::getStandardModeFromNavState(nav_state, vehicle_status.vehicle_type,
@@ -97,9 +97,9 @@ private:
 			static_assert(sizeof(available_modes.mode_name) >= sizeof(ExternalModeName::name), "mode name too short");
 
 			// Is it an external mode?
-			unsigned external_mode_index = nav_state - vehicle_status_s::NAVIGATION_STATE_EXTERNAL1;
+			unsigned external_mode_index = nav_state - vehicle_status_s::OPERATION_MODE_EXTERNAL1;
 
-			if (nav_state >= vehicle_status_s::NAVIGATION_STATE_EXTERNAL1 && external_mode_index < MAX_NUM_EXTERNAL_MODES) {
+			if (nav_state >= vehicle_status_s::OPERATION_MODE_EXTERNAL1 && external_mode_index < MAX_NUM_EXTERNAL_MODES) {
 				if (cannot_be_selected) {
 					// If not selectable, it's not registered
 					strcpy(available_modes.mode_name, "(Mode not available)");
@@ -110,8 +110,8 @@ private:
 				}
 
 			} else { // Internal
-				if (nav_state < sizeof(mode_util::nav_state_names) / sizeof(mode_util::nav_state_names[0])) {
-					strncpy(available_modes.mode_name, mode_util::nav_state_names[nav_state], sizeof(available_modes.mode_name));
+				if (nav_state < sizeof(mode_util::operation_mode_names) / sizeof(mode_util::operation_mode_names[0])) {
+					strncpy(available_modes.mode_name, mode_util::operation_mode_names[nav_state], sizeof(available_modes.mode_name));
 					available_modes.mode_name[sizeof(available_modes.mode_name) - 1] = '\0';
 				}
 			}
@@ -137,13 +137,13 @@ private:
 			return false;
 		}
 
-		int total_num_modes = math::countSetBits(vehicle_status.valid_nav_states_mask);
+		int total_num_modes = math::countSetBits(vehicle_status.valid_operation_modes_mask);
 
 		if (mode_index == 0) { // All
 			int cur_mode_index = 1;
 
-			for (uint8_t nav_state = 0; nav_state < vehicle_status_s::NAVIGATION_STATE_MAX; ++nav_state) {
-				if ((1u << nav_state) & vehicle_status.valid_nav_states_mask) {
+			for (uint8_t nav_state = 0; nav_state < vehicle_status_s::OPERATION_MODE_MAX; ++nav_state) {
+				if ((1u << nav_state) & vehicle_status.valid_operation_modes_mask) {
 					send_single_mode(vehicle_status, cur_mode_index, total_num_modes, nav_state);
 					++cur_mode_index;
 				}
@@ -156,15 +156,15 @@ private:
 			int cur_index = 0;
 			uint8_t nav_state = 0;
 
-			for (; nav_state < vehicle_status_s::NAVIGATION_STATE_MAX; ++nav_state) {
-				if ((1u << nav_state) & vehicle_status.valid_nav_states_mask) {
+			for (; nav_state < vehicle_status_s::OPERATION_MODE_MAX; ++nav_state) {
+				if ((1u << nav_state) & vehicle_status.valid_operation_modes_mask) {
 					if (++cur_index == mode_index) {
 						break;
 					}
 				}
 			}
 
-			if (nav_state < vehicle_status_s::NAVIGATION_STATE_MAX) {
+			if (nav_state < vehicle_status_s::OPERATION_MODE_MAX) {
 				send_single_mode(vehicle_status, mode_index, total_num_modes, nav_state);
 			}
 
@@ -186,7 +186,7 @@ private:
 					_external_mode_names = new ExternalModeName[MAX_NUM_EXTERNAL_MODES];
 				}
 
-				unsigned mode_index = reply.mode_id - vehicle_status_s::NAVIGATION_STATE_EXTERNAL1;
+				unsigned mode_index = reply.mode_id - vehicle_status_s::OPERATION_MODE_EXTERNAL1;
 
 				if (_external_mode_names && mode_index < MAX_NUM_EXTERNAL_MODES) {
 					memcpy(_external_mode_names[mode_index].name, reply.name, sizeof(ExternalModeName::name));
@@ -199,22 +199,22 @@ private:
 		vehicle_status_s vehicle_status;
 
 		if (_vehicle_status_sub.copy(&vehicle_status)) {
-			if (_last_valid_nav_states_mask == 0) {
-				_last_valid_nav_states_mask = vehicle_status.valid_nav_states_mask;
+			if (_last_valid_operation_modes_mask == 0) {
+				_last_valid_operation_modes_mask = vehicle_status.valid_operation_modes_mask;
 			}
 
-			if (_last_can_set_nav_states_mask == 0) {
-				_last_can_set_nav_states_mask = vehicle_status.can_set_nav_states_mask;
+			if (_last_can_set_operation_modes_mask == 0) {
+				_last_can_set_operation_modes_mask = vehicle_status.can_set_operation_modes_mask;
 			}
 
-			if (vehicle_status.valid_nav_states_mask != _last_valid_nav_states_mask) {
+			if (vehicle_status.valid_operation_modes_mask != _last_valid_operation_modes_mask) {
 				dynamic_update = true;
-				_last_valid_nav_states_mask = vehicle_status.valid_nav_states_mask;
+				_last_valid_operation_modes_mask = vehicle_status.valid_operation_modes_mask;
 			}
 
-			if (vehicle_status.can_set_nav_states_mask != _last_can_set_nav_states_mask) {
+			if (vehicle_status.can_set_operation_modes_mask != _last_can_set_operation_modes_mask) {
 				dynamic_update = true;
-				_last_can_set_nav_states_mask = vehicle_status.can_set_nav_states_mask;
+				_last_can_set_operation_modes_mask = vehicle_status.can_set_operation_modes_mask;
 			}
 		}
 

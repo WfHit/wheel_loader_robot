@@ -22,6 +22,29 @@ parameters:
           unit: Hz
           decimal: 1
 
+        # IK parameters for bucket height to boom angle conversion
+        BOOM_LEN:
+          description:
+            short: Boom length for IK
+            long: Length of boom from pivot to bucket attachment, used for IK computation
+          type: float
+          default: 2.5
+          min: 0.5
+          max: 10.0
+          unit: m
+          decimal: 2
+
+        BOOM_PIVOT_H:
+          description:
+            short: Pivot height for IK
+            long: Height of boom pivot point above ground level, used for IK computation
+          type: float
+          default: 1.0
+          min: 0.0
+          max: 5.0
+          unit: m
+          decimal: 2
+
         BOOM_PIV_BASE:
           description:
             short: Pivot to actuator base length

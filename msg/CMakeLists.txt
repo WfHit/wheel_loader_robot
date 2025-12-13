@@ -48,18 +48,18 @@ set(msg_files
 	Airspeed.msg
 	AirspeedWind.msg
 	AutotuneAttitudeControlStatus.msg
+	BoomControlSetpoint.msg
 	BoomStatus.msg
-	BoomTrajectorySetpoint.msg
+	TiltControlSetpoint.msg
 	BucketStatus.msg
-	BucketTrajectorySetpoint.msg
 	ButtonEvent.msg
 	CameraCapture.msg
 	CameraStatus.msg
 	CameraTrigger.msg
 	CanInterfaceStatus.msg
 	CellularStatus.msg
+	ChassisControlSetpoint.msg
 	ChassisStatus.msg
-	ChassisTrajectorySetpoint.msg
 	CollisionConstraints.msg
 	ControlAllocatorStatus.msg
 	Cpuload.msg
@@ -260,7 +260,10 @@ set(msg_files
 	VehicleThrustSetpoint.msg
 	VehicleTorqueSetpoint.msg
 	VelocityLimits.msg
-	VlaTrajectorySetpoint.msg
+	TiltControlSetpoint.msg
+	VlaSetpoint.msg
+	VlaSetpointTriplet.msg
+	VlaTrajectory.msg
 	WheelLoaderStatus.msg
 	Wind.msg
 	YawEstimatorStatus.msg

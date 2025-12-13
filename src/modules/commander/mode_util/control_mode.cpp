@@ -48,21 +48,21 @@ void getVehicleControlMode(uint8_t nav_state, uint8_t vehicle_type,
 {
 
 	switch (nav_state) {
-	case vehicle_status_s::NAVIGATION_STATE_MANUAL:
+	case vehicle_status_s::OPERATION_MODE_MANUAL:
 		vehicle_control_mode.flag_control_manual_enabled = true;
 		vehicle_control_mode.flag_control_attitude_enabled = stabilization_required(vehicle_type);
 		vehicle_control_mode.flag_control_rates_enabled = stabilization_required(vehicle_type);
 		vehicle_control_mode.flag_control_allocation_enabled = true;
 		break;
 
-	case vehicle_status_s::NAVIGATION_STATE_STAB:
+	case vehicle_status_s::OPERATION_MODE_STAB:
 		vehicle_control_mode.flag_control_manual_enabled = true;
 		vehicle_control_mode.flag_control_attitude_enabled = true;
 		vehicle_control_mode.flag_control_rates_enabled = true;
 		vehicle_control_mode.flag_control_allocation_enabled = true;
 		break;
 
-	case vehicle_status_s::NAVIGATION_STATE_ALTCTL:
+	case vehicle_status_s::OPERATION_MODE_ALTCTL:
 		vehicle_control_mode.flag_control_manual_enabled = true;
 		vehicle_control_mode.flag_control_altitude_enabled = true;
 		vehicle_control_mode.flag_control_climb_rate_enabled = true;
@@ -71,8 +71,8 @@ void getVehicleControlMode(uint8_t nav_state, uint8_t vehicle_type,
 		vehicle_control_mode.flag_control_allocation_enabled = true;
 		break;
 
-	case vehicle_status_s::NAVIGATION_STATE_POSCTL:
-	case vehicle_status_s::NAVIGATION_STATE_POSITION_SLOW:
+	case vehicle_status_s::OPERATION_MODE_POSCTL:
+	case vehicle_status_s::OPERATION_MODE_POSITION_SLOW:
 		vehicle_control_mode.flag_control_manual_enabled = true;
 		vehicle_control_mode.flag_control_position_enabled = true;
 		vehicle_control_mode.flag_control_velocity_enabled = true;
@@ -83,13 +83,13 @@ void getVehicleControlMode(uint8_t nav_state, uint8_t vehicle_type,
 		vehicle_control_mode.flag_control_allocation_enabled = true;
 		break;
 
-	case vehicle_status_s::NAVIGATION_STATE_AUTO_RTL:
-	case vehicle_status_s::NAVIGATION_STATE_AUTO_LAND:
-	case vehicle_status_s::NAVIGATION_STATE_AUTO_PRECLAND:
-	case vehicle_status_s::NAVIGATION_STATE_AUTO_MISSION:
-	case vehicle_status_s::NAVIGATION_STATE_AUTO_LOITER:
-	case vehicle_status_s::NAVIGATION_STATE_AUTO_TAKEOFF:
-	case vehicle_status_s::NAVIGATION_STATE_AUTO_VTOL_TAKEOFF:
+	case vehicle_status_s::OPERATION_MODE_AUTO_RTL:
+	case vehicle_status_s::OPERATION_MODE_AUTO_LAND:
+	case vehicle_status_s::OPERATION_MODE_AUTO_PRECLAND:
+	case vehicle_status_s::OPERATION_MODE_AUTO_MISSION:
+	case vehicle_status_s::OPERATION_MODE_AUTO_LOITER:
+	case vehicle_status_s::OPERATION_MODE_AUTO_TAKEOFF:
+	case vehicle_status_s::OPERATION_MODE_AUTO_VTOL_TAKEOFF:
 		vehicle_control_mode.flag_control_auto_enabled = true;
 		vehicle_control_mode.flag_control_position_enabled = true;
 		vehicle_control_mode.flag_control_velocity_enabled = true;
@@ -100,13 +100,13 @@ void getVehicleControlMode(uint8_t nav_state, uint8_t vehicle_type,
 		vehicle_control_mode.flag_control_allocation_enabled = true;
 		break;
 
-	case vehicle_status_s::NAVIGATION_STATE_ACRO:
+	case vehicle_status_s::OPERATION_MODE_ACRO:
 		vehicle_control_mode.flag_control_manual_enabled = true;
 		vehicle_control_mode.flag_control_rates_enabled = true;
 		vehicle_control_mode.flag_control_allocation_enabled = true;
 		break;
 
-	case vehicle_status_s::NAVIGATION_STATE_DESCEND:
+	case vehicle_status_s::OPERATION_MODE_DESCEND:
 		vehicle_control_mode.flag_control_auto_enabled = true;
 		vehicle_control_mode.flag_control_climb_rate_enabled = true;
 		vehicle_control_mode.flag_control_attitude_enabled = true;
@@ -114,12 +114,12 @@ void getVehicleControlMode(uint8_t nav_state, uint8_t vehicle_type,
 		vehicle_control_mode.flag_control_allocation_enabled = true;
 		break;
 
-	case vehicle_status_s::NAVIGATION_STATE_TERMINATION:
+	case vehicle_status_s::OPERATION_MODE_TERMINATION:
 		/* disable all controllers on termination */
 		vehicle_control_mode.flag_control_termination_enabled = true;
 		break;
 
-	case vehicle_status_s::NAVIGATION_STATE_OFFBOARD:
+	case vehicle_status_s::OPERATION_MODE_OFFBOARD:
 		vehicle_control_mode.flag_control_offboard_enabled = true;
 
 		if (offboard_control_mode.position) {
@@ -162,11 +162,11 @@ void getVehicleControlMode(uint8_t nav_state, uint8_t vehicle_type,
 
 		break;
 
-	case vehicle_status_s::NAVIGATION_STATE_AUTO_FOLLOW_TARGET:
+	case vehicle_status_s::OPERATION_MODE_AUTO_FOLLOW_TARGET:
 
 	// Follow Target supports RC adjustment, so disable auto control mode to disable
 	// the Flight Task from exiting itself when RC stick movement is detected.
-	case vehicle_status_s::NAVIGATION_STATE_ORBIT:
+	case vehicle_status_s::OPERATION_MODE_ORBIT:
 		vehicle_control_mode.flag_control_manual_enabled = false;
 		vehicle_control_mode.flag_control_auto_enabled = false;
 		vehicle_control_mode.flag_control_position_enabled = true;
@@ -178,7 +178,7 @@ void getVehicleControlMode(uint8_t nav_state, uint8_t vehicle_type,
 		vehicle_control_mode.flag_control_allocation_enabled = true;
 		break;
 
-	// vehicle_status_s::NAVIGATION_STATE_EXTERNALx: handled in ModeManagement
+	// vehicle_status_s::OPERATION_MODE_EXTERNALx: handled in ModeManagement
 	default:
 		break;
 	}

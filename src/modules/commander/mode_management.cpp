@@ -74,7 +74,7 @@ void ModeExecutors::printStatus(int executor_in_charge) const
 	for (int i = 0; i < MAX_NUM; ++i) {
 		if (_mode_executors[i].valid) {
 			int executor_id = i + FIRST_EXECUTOR_ID;
-			PX4_INFO("Mode Executor %i: owned nav_state: %i, in charge: %s", executor_id, _mode_executors[i].owned_nav_state,
+			PX4_INFO("Mode Executor %i: owned nav_state: %i, in charge: %s", executor_id, _mode_executors[i].owned_operation_mode,
 				 executor_id == executor_in_charge ? "yes" : "no");
 
 		}
@@ -175,7 +175,7 @@ uint8_t Modes::addExternalMode(const Modes::Mode &mode)
 
 		_modes[new_mode_idx] = mode;
 		_modes[new_mode_idx].valid = true;
-		return new_mode_idx + FIRST_EXTERNAL_NAV_STATE;
+		return new_mode_idx + FIRST_EXTERNAL_OPERATION_MODE;
 	}
 
 	PX4_ERR("logic error");
@@ -184,8 +184,8 @@ uint8_t Modes::addExternalMode(const Modes::Mode &mode)
 
 bool Modes::removeExternalMode(uint8_t nav_state, const char *name)
 {
-	if (valid(nav_state) && strncmp(name, _modes[nav_state - FIRST_EXTERNAL_NAV_STATE].name, sizeof(Mode::name)) == 0) {
-		_modes[nav_state - FIRST_EXTERNAL_NAV_STATE].valid = false;
+	if (valid(nav_state) && strncmp(name, _modes[nav_state - FIRST_EXTERNAL_OPERATION_MODE].name, sizeof(Mode::name)) == 0) {
+		_modes[nav_state - FIRST_EXTERNAL_OPERATION_MODE].valid = false;
 		return true;
 	}
 
@@ -195,15 +195,15 @@ bool Modes::removeExternalMode(uint8_t nav_state, const char *name)
 
 void Modes::printStatus() const
 {
-	for (int i = Modes::FIRST_EXTERNAL_NAV_STATE; i <= Modes::LAST_EXTERNAL_NAV_STATE; ++i) {
+	for (int i = Modes::FIRST_EXTERNAL_OPERATION_MODE; i <= Modes::LAST_EXTERNAL_OPERATION_MODE; ++i) {
 		if (valid(i)) {
 			const Modes::Mode &cur_mode = mode(i);
-			PX4_INFO("External Mode %i: nav_state: %i, name: %s", i - vehicle_status_s::NAVIGATION_STATE_EXTERNAL1 + 1, i,
+			PX4_INFO("External Mode %i: nav_state: %i, name: %s", i - vehicle_status_s::OPERATION_MODE_EXTERNAL1 + 1, i,
 				 cur_mode.name);
 
-			if (cur_mode.replaces_nav_state != Mode::REPLACES_NAV_STATE_NONE
-			    && cur_mode.replaces_nav_state < vehicle_status_s::NAVIGATION_STATE_MAX) {
-				PX4_INFO("  Replaces mode: %s", mode_util::nav_state_names[cur_mode.replaces_nav_state]);
+			if (cur_mode.replaces_operation_mode != Mode::REPLACES_NAV_STATE_NONE
+			    && cur_mode.replaces_operation_mode < vehicle_status_s::OPERATION_MODE_MAX) {
+				PX4_INFO("  Replaces mode: %s", mode_util::operation_mode_names[cur_mode.replaces_operation_mode]);
 			}
 		}
 	}
@@ -212,7 +212,7 @@ void Modes::printStatus() const
 ModeManagement::ModeManagement(ExternalChecks &external_checks)
 	: _external_checks(external_checks)
 {
-	_external_checks.setExternalNavStates(Modes::FIRST_EXTERNAL_NAV_STATE, Modes::LAST_EXTERNAL_NAV_STATE);
+	_external_checks.setExternalOperationModes(Modes::FIRST_EXTERNAL_OPERATION_MODE, Modes::LAST_EXTERNAL_OPERATION_MODE);
 }
 
 void ModeManagement::checkNewRegistrations(UpdateRequest &update_request)
@@ -220,7 +220,7 @@ void ModeManagement::checkNewRegistrations(UpdateRequest &update_request)
 	register_ext_component_request_s request;
 	int max_updates = 5;
 
-	while (!update_request.change_user_intended_nav_state && _register_ext_component_request_sub.update(&request)
+	while (!update_request.change_user_intended_operation_mode && _register_ext_component_request_sub.update(&request)
 	       && --max_updates >= 0) {
 		request.name[sizeof(request.name) - 1] = '\0';
 		PX4_DEBUG("got registration request: %s %llu, arming: %i mode: %i executor: %i", request.name, request.request_id,
@@ -263,11 +263,11 @@ void ModeManagement::checkNewRegistrations(UpdateRequest &update_request)
 
 				} else if (request.enable_replace_internal_mode) {
 					// Check if another one already replaces the same mode
-					for (int i = Modes::FIRST_EXTERNAL_NAV_STATE; i <= Modes::LAST_EXTERNAL_NAV_STATE; ++i) {
+					for (int i = Modes::FIRST_EXTERNAL_OPERATION_MODE; i <= Modes::LAST_EXTERNAL_OPERATION_MODE; ++i) {
 						if (_modes.valid(i)) {
 							const Modes::Mode &cur_mode = _modes.mode(i);
 
-							if (cur_mode.replaces_nav_state == request.replace_internal_mode) {
+							if (cur_mode.replaces_operation_mode == request.replace_internal_mode) {
 								// TODO: we could add priorities and allow the highest priority to do the replacement
 								PX4_ERR("Trying to replace an already replaced mode (%i)", request.replace_internal_mode);
 								reply.success = false;
@@ -291,7 +291,7 @@ void ModeManagement::checkNewRegistrations(UpdateRequest &update_request)
 					strncpy(mode.name, request.name, sizeof(mode.name));
 
 					if (request.enable_replace_internal_mode) {
-						mode.replaces_nav_state = request.replace_internal_mode;
+						mode.replaces_operation_mode = request.replace_internal_mode;
 					}
 
 					nav_mode_id = _modes.addExternalMode(mode);
@@ -300,7 +300,7 @@ void ModeManagement::checkNewRegistrations(UpdateRequest &update_request)
 
 				if (request.register_mode_executor) {
 					ModeExecutors::ModeExecutor executor{};
-					executor.owned_nav_state = nav_mode_id;
+					executor.owned_operation_mode = nav_mode_id;
 					int registration_id = _mode_executors.addExecutor(executor);
 
 					if (nav_mode_id != -1) {
@@ -311,8 +311,8 @@ void ModeManagement::checkNewRegistrations(UpdateRequest &update_request)
 				}
 
 				if (request.register_arming_check) {
-					int8_t replace_nav_state = request.enable_replace_internal_mode ? request.replace_internal_mode : -1;
-					int registration_id = _external_checks.addRegistration(nav_mode_id, replace_nav_state);
+					int8_t replace_operation_mode = request.enable_replace_internal_mode ? request.replace_internal_mode : -1;
+					int registration_id = _external_checks.addRegistration(nav_mode_id, replace_operation_mode);
 
 					if (nav_mode_id != -1) {
 						_modes.mode(nav_mode_id).arming_check_registration_id = registration_id;
@@ -323,8 +323,8 @@ void ModeManagement::checkNewRegistrations(UpdateRequest &update_request)
 
 				// Activate the mode?
 				if (request.register_mode_executor && request.activate_mode_immediately && nav_mode_id != -1) {
-					update_request.change_user_intended_nav_state = true;
-					update_request.user_intended_nav_state = nav_mode_id;
+					update_request.change_user_intended_operation_mode = true;
+					update_request.user_intended_operation_mode = nav_mode_id;
 				}
 			}
 		}
@@ -334,12 +334,12 @@ void ModeManagement::checkNewRegistrations(UpdateRequest &update_request)
 	}
 }
 
-void ModeManagement::checkUnregistrations(uint8_t user_intended_nav_state, UpdateRequest &update_request)
+void ModeManagement::checkUnregistrations(uint8_t user_intended_operation_mode, UpdateRequest &update_request)
 {
 	unregister_ext_component_s request;
 	int max_updates = 5;
 
-	while (!update_request.change_user_intended_nav_state && _unregister_ext_component_sub.update(&request)
+	while (!update_request.change_user_intended_operation_mode && _unregister_ext_component_sub.update(&request)
 	       && --max_updates >= 0) {
 		request.name[sizeof(request.name) - 1] = '\0';
 		PX4_DEBUG("got unregistration request: %s arming: %i mode: %i executor: %i", request.name,
@@ -356,15 +356,15 @@ void ModeManagement::checkUnregistrations(uint8_t user_intended_nav_state, Updat
 			}
 
 			// If the removed mode is currently active, switch to Hold
-			if (user_intended_nav_state == request.mode_id) {
-				update_request.change_user_intended_nav_state = true;
-				update_request.user_intended_nav_state = vehicle_status_s::NAVIGATION_STATE_AUTO_LOITER;
+			if (user_intended_operation_mode == request.mode_id) {
+				update_request.change_user_intended_operation_mode = true;
+				update_request.user_intended_operation_mode = vehicle_status_s::OPERATION_MODE_AUTO_LOITER;
 			}
 		}
 	}
 }
 
-void ModeManagement::update(bool armed, uint8_t user_intended_nav_state, bool failsafe_action_active,
+void ModeManagement::update(bool armed, uint8_t user_intended_operation_mode, bool failsafe_action_active,
 			    UpdateRequest &update_request)
 {
 	_failsafe_action_active = failsafe_action_active;
@@ -390,12 +390,12 @@ void ModeManagement::update(bool armed, uint8_t user_intended_nav_state, bool fa
 
 	} else {
 		// Check for unresponsive modes
-		for (int i = Modes::FIRST_EXTERNAL_NAV_STATE; i <= Modes::LAST_EXTERNAL_NAV_STATE; ++i) {
+		for (int i = Modes::FIRST_EXTERNAL_OPERATION_MODE; i <= Modes::LAST_EXTERNAL_OPERATION_MODE; ++i) {
 			if (_modes.valid(i)) {
 				const Modes::Mode &mode = _modes.mode(i);
 
 				// Remove only if not currently selected
-				if (user_intended_nav_state != i && _external_checks.isUnresponsive(mode.arming_check_registration_id)) {
+				if (user_intended_operation_mode != i && _external_checks.isUnresponsive(mode.arming_check_registration_id)) {
 					PX4_DEBUG("Removing unresponsive mode %i", i);
 					_external_checks.removeRegistration(mode.arming_check_registration_id, i);
 					removeModeExecutor(mode.mode_executor_registration_id);
@@ -407,23 +407,23 @@ void ModeManagement::update(bool armed, uint8_t user_intended_nav_state, bool fa
 		// As we're disarmed we can use the user intended mode, as no failsafe will be active.
 		// Note that this might not be true if COM_MODE_ARM_CHK is set
 		checkNewRegistrations(update_request);
-		checkUnregistrations(user_intended_nav_state, update_request);
+		checkUnregistrations(user_intended_operation_mode, update_request);
 	}
 
 	update_request.control_setpoint_update = checkConfigControlSetpointUpdates();
 	checkConfigOverrides();
 }
 
-void ModeManagement::onUserIntendedNavStateChange(ModeChangeSource source, uint8_t user_intended_nav_state)
+void ModeManagement::onUserIntendedNavStateChange(ModeChangeSource source, uint8_t user_intended_operation_mode)
 {
 	// Update mode executor in charge
-	int mode_executor_for_intended_nav_state = -1;
+	int mode_executor_for_intended_operation_mode = -1;
 
-	if (_modes.valid(user_intended_nav_state)) {
-		mode_executor_for_intended_nav_state = _modes.mode(user_intended_nav_state).mode_executor_registration_id;
+	if (_modes.valid(user_intended_operation_mode)) {
+		mode_executor_for_intended_operation_mode = _modes.mode(user_intended_operation_mode).mode_executor_registration_id;
 	}
 
-	if (mode_executor_for_intended_nav_state == -1) {
+	if (mode_executor_for_intended_operation_mode == -1) {
 		// Not an owned mode: check source
 		if (source == ModeChangeSource::User) {
 			// Give control to the pilot
@@ -432,17 +432,17 @@ void ModeManagement::onUserIntendedNavStateChange(ModeChangeSource source, uint8
 
 	} else {
 		// Switched into an owned mode: put executor in charge
-		_mode_executor_in_charge = mode_executor_for_intended_nav_state;
+		_mode_executor_in_charge = mode_executor_for_intended_operation_mode;
 	}
 }
 
 uint8_t ModeManagement::getNavStateReplacementIfValid(uint8_t nav_state, bool report_error)
 {
-	for (int i = Modes::FIRST_EXTERNAL_NAV_STATE; i <= Modes::LAST_EXTERNAL_NAV_STATE; ++i) {
+	for (int i = Modes::FIRST_EXTERNAL_OPERATION_MODE; i <= Modes::LAST_EXTERNAL_OPERATION_MODE; ++i) {
 		if (_modes.valid(i)) {
 			Modes::Mode &mode = _modes.mode(i);
 
-			if (mode.replaces_nav_state == nav_state) {
+			if (mode.replaces_operation_mode == nav_state) {
 				if (_external_checks.isUnresponsive(mode.arming_check_registration_id)) {
 					if (!mode.unresponsive_reported && report_error) {
 						mode.unresponsive_reported = true;
@@ -467,8 +467,8 @@ uint8_t ModeManagement::getReplacedModeIfAny(uint8_t nav_state)
 	if (_modes.valid(nav_state)) {
 		const Modes::Mode &mode = _modes.mode(nav_state);
 
-		if (mode.replaces_nav_state != Modes::Mode::REPLACES_NAV_STATE_NONE) {
-			return mode.replaces_nav_state;
+		if (mode.replaces_operation_mode != Modes::Mode::REPLACES_NAV_STATE_NONE) {
+			return mode.replaces_operation_mode;
 		}
 	}
 
@@ -501,7 +501,7 @@ bool ModeManagement::updateControlMode(uint8_t nav_state, vehicle_control_mode_s
 {
 	bool ret = false;
 
-	if (nav_state >= Modes::FIRST_EXTERNAL_NAV_STATE && nav_state <= Modes::LAST_EXTERNAL_NAV_STATE) {
+	if (nav_state >= Modes::FIRST_EXTERNAL_OPERATION_MODE && nav_state <= Modes::LAST_EXTERNAL_OPERATION_MODE) {
 		if (_modes.valid(nav_state)) {
 			control_mode = _modes.mode(nav_state).config_control_setpoint;
 			ret = true;
@@ -607,28 +607,28 @@ void ModeManagement::checkConfigOverrides()
 	}
 }
 
-void ModeManagement::getModeStatus(uint32_t &valid_nav_state_mask, uint32_t &can_set_nav_state_mask) const
+void ModeManagement::getModeStatus(uint32_t &valid_operation_mode_mask, uint32_t &can_set_operation_mode_mask) const
 {
-	valid_nav_state_mask = mode_util::getValidNavStates();
-	can_set_nav_state_mask = valid_nav_state_mask & ~(1u << vehicle_status_s::NAVIGATION_STATE_TERMINATION);
+	valid_operation_mode_mask = mode_util::getValidOperationModes();
+	can_set_operation_mode_mask = valid_operation_mode_mask & ~(1u << vehicle_status_s::OPERATION_MODE_TERMINATION);
 
 	// Add external modes
-	for (int i = Modes::FIRST_EXTERNAL_NAV_STATE; i <= Modes::LAST_EXTERNAL_NAV_STATE; ++i) {
+	for (int i = Modes::FIRST_EXTERNAL_OPERATION_MODE; i <= Modes::LAST_EXTERNAL_OPERATION_MODE; ++i) {
 		if (_modes.valid(i)) {
-			valid_nav_state_mask |= 1u << i;
-			can_set_nav_state_mask |= 1u << i;
+			valid_operation_mode_mask |= 1u << i;
+			can_set_operation_mode_mask |= 1u << i;
 			const Modes::Mode &cur_mode = _modes.mode(i);
 
-			if (cur_mode.replaces_nav_state != Modes::Mode::REPLACES_NAV_STATE_NONE) {
+			if (cur_mode.replaces_operation_mode != Modes::Mode::REPLACES_NAV_STATE_NONE) {
 				// Hide the internal mode if it's replaced
-				can_set_nav_state_mask &= ~(1u << cur_mode.replaces_nav_state);
+				can_set_operation_mode_mask &= ~(1u << cur_mode.replaces_operation_mode);
 			}
 
 		} else {
 			// Still set the mode as valid but not as selectable. This is because an external mode could still
 			// be selected via RC when not yet running, so we make sure to display some mode label indicating it's not
 			// available.
-			valid_nav_state_mask |= 1u << i;
+			valid_operation_mode_mask |= 1u << i;
 		}
 	}
 }

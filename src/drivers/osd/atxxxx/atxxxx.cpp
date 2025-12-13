@@ -367,7 +367,7 @@ OSDatxxxx::update_topics()
 		}
 
 		_arming_state = vehicle_status.arming_state;
-		_nav_state = vehicle_status.nav_state;
+		_operation_mode = vehicle_status.operation_mode;
 	}
 
 	return PX4_OK;
@@ -379,48 +379,48 @@ OSDatxxxx::get_flight_mode(uint8_t nav_state)
 	const char *flight_mode = "UNKNOWN";
 
 	switch (nav_state) {
-	case vehicle_status_s::NAVIGATION_STATE_MANUAL:
+	case vehicle_status_s::OPERATION_MODE_MANUAL:
 		flight_mode = "MANUAL";
 		break;
 
-	case vehicle_status_s::NAVIGATION_STATE_ALTCTL:
+	case vehicle_status_s::OPERATION_MODE_ALTCTL:
 		flight_mode = "ALTITUDE";
 		break;
 
-	case vehicle_status_s::NAVIGATION_STATE_POSCTL:
+	case vehicle_status_s::OPERATION_MODE_POSCTL:
 		flight_mode = "POSITION";
 		break;
 
-	case vehicle_status_s::NAVIGATION_STATE_AUTO_RTL:
+	case vehicle_status_s::OPERATION_MODE_AUTO_RTL:
 		flight_mode = "RETURN";
 		break;
 
-	case vehicle_status_s::NAVIGATION_STATE_AUTO_MISSION:
+	case vehicle_status_s::OPERATION_MODE_AUTO_MISSION:
 		flight_mode = "MISSION";
 		break;
 
-	case vehicle_status_s::NAVIGATION_STATE_AUTO_LOITER:
-	case vehicle_status_s::NAVIGATION_STATE_DESCEND:
-	case vehicle_status_s::NAVIGATION_STATE_AUTO_TAKEOFF:
-	case vehicle_status_s::NAVIGATION_STATE_AUTO_LAND:
-	case vehicle_status_s::NAVIGATION_STATE_AUTO_FOLLOW_TARGET:
-	case vehicle_status_s::NAVIGATION_STATE_AUTO_PRECLAND:
+	case vehicle_status_s::OPERATION_MODE_AUTO_LOITER:
+	case vehicle_status_s::OPERATION_MODE_DESCEND:
+	case vehicle_status_s::OPERATION_MODE_AUTO_TAKEOFF:
+	case vehicle_status_s::OPERATION_MODE_AUTO_LAND:
+	case vehicle_status_s::OPERATION_MODE_AUTO_FOLLOW_TARGET:
+	case vehicle_status_s::OPERATION_MODE_AUTO_PRECLAND:
 		flight_mode = "AUTO";
 		break;
 
-	case vehicle_status_s::NAVIGATION_STATE_ACRO:
+	case vehicle_status_s::OPERATION_MODE_ACRO:
 		flight_mode = "ACRO";
 		break;
 
-	case vehicle_status_s::NAVIGATION_STATE_TERMINATION:
+	case vehicle_status_s::OPERATION_MODE_TERMINATION:
 		flight_mode = "TERMINATE";
 		break;
 
-	case vehicle_status_s::NAVIGATION_STATE_OFFBOARD:
+	case vehicle_status_s::OPERATION_MODE_OFFBOARD:
 		flight_mode = "OFFBOARD";
 		break;
 
-	case vehicle_status_s::NAVIGATION_STATE_STAB:
+	case vehicle_status_s::OPERATION_MODE_STAB:
 		flight_mode = "STABILIZED";
 		break;
 	}
@@ -455,7 +455,7 @@ OSDatxxxx::update_screen()
 		ret |= add_flighttime(flight_time_sec, 1, 14);
 
 	} else {
-		flight_mode = get_flight_mode(_nav_state);
+		flight_mode = get_flight_mode(_operation_mode);
 	}
 
 	add_string_to_screen_centered(flight_mode, 12, 10);

@@ -112,7 +112,7 @@ void FwAutotuneAttitudeControl::Run()
 
 		if (_vehicle_status_sub.copy(&vehicle_status)) {
 			_armed = (vehicle_status.arming_state == vehicle_status_s::ARMING_STATE_ARMED);
-			_nav_state = vehicle_status.nav_state;
+			_operation_mode = vehicle_status.operation_mode;
 		}
 	}
 
@@ -301,7 +301,7 @@ void FwAutotuneAttitudeControl::updateStateMachine(hrt_abstime now)
 			mavlink_log_info(&_mavlink_log_pub, "Autotune started");
 			_state = state::init;
 			_state_start_time = now;
-			_start_flight_mode = _nav_state;
+			_start_flight_mode = _operation_mode;
 		}
 
 		break;
@@ -486,7 +486,7 @@ void FwAutotuneAttitudeControl::updateStateMachine(hrt_abstime now)
 	if (_state != state::wait_for_disarm && _state != state::idle && _state != state::fail && _state != state::complete) {
 		if (now - _state_start_time > 20_s
 		    || (_param_fw_at_man_aux.get() && !_aux_switch_en)
-		    || _start_flight_mode != _nav_state) {
+		    || _start_flight_mode != _operation_mode) {
 			orb_advert_t mavlink_log_pub = nullptr;
 			mavlink_log_critical(&mavlink_log_pub, "Autotune aborted before finishing");
 			_state = state::fail;

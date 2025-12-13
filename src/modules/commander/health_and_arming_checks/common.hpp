@@ -71,7 +71,7 @@ enum class NavModes : uint32_t {
 	All = 0xffffffff
 };
 static_assert(sizeof(navigation_mode_group_t) == sizeof(NavModes), "type mismatch");
-static_assert(vehicle_status_s::NAVIGATION_STATE_MAX <= CHAR_BIT *sizeof(navigation_mode_group_t),
+static_assert(vehicle_status_s::OPERATION_MODE_MAX <= CHAR_BIT *sizeof(navigation_mode_group_t),
 	      "type too small, use next larger type");
 
 // Type to pass two mode groups in one struct to have the same number of function arguments to facilitate events parsing

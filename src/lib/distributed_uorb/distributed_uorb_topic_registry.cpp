@@ -45,9 +45,9 @@
 #include <uORB/topics/actuator_outputs.h>
 #include <uORB/topics/vehicle_status.h>
 #include <uORB/topics/sensor_limit_switch.h>
-#include <uORB/topics/boom_trajectory_setpoint.h>
+#include <uORB/topics/boom_control_setpoint.h>
 #include <uORB/topics/boom_status.h>
-#include <uORB/topics/bucket_trajectory_setpoint.h>
+#include <uORB/topics/tilt_control_setpoint.h>
 #include <uORB/topics/bucket_status.h>
 #include <uORB/topics/steering_setpoint.h>
 #include <uORB/topics/steering_status.h>
@@ -77,8 +77,8 @@ void TopicRegistry::register_default_topics()
 	// Control topics (X7+ → NXT)
 	register_topic("actuator_outputs", ORB_ID(actuator_outputs), true, 50, 2, false);
 	register_topic("vehicle_status", ORB_ID(vehicle_status), true, 10, 1, false);
-	register_topic("boom_trajectory_setpoint", ORB_ID(boom_trajectory_setpoint), true, 50, 2, false);
-	register_topic("bucket_trajectory_setpoint", ORB_ID(bucket_trajectory_setpoint), true, 50, 2, false);
+	register_topic("boom_control_setpoint", ORB_ID(boom_control_setpoint), true, 50, 2, false);
+	register_topic("tilt_control_setpoint", ORB_ID(tilt_control_setpoint), true, 50, 2, false);
 	register_topic("steering_setpoint", ORB_ID(steering_setpoint), true, 50, 2, false);
 	register_topic("load_lamp_command", ORB_ID(load_lamp_command), true, 5, 1, false);
 
@@ -231,8 +231,8 @@ uint16_t TopicRegistry::generate_topic_id(const char *name) const
 	} predefined_topics[] = {
 		{"actuator_outputs", TopicIdRange::ACTUATOR_OUTPUTS},
 		{"vehicle_status", TopicIdRange::VEHICLE_STATUS},
-		{"boom_trajectory_setpoint", TopicIdRange::BOOM_TRAJECTORY_SETPOINT},
-		{"bucket_trajectory_setpoint", TopicIdRange::BUCKET_TRAJECTORY_SETPOINT},
+		{"boom_control_setpoint", TopicIdRange::BOOM_CONTROL_SETPOINT},
+		{"tilt_control_setpoint", TopicIdRange::TILT_CONTROL_SETPOINT},
 		{"steering_setpoint", TopicIdRange::STEERING_SETPOINT},
 		{"load_lamp_command", TopicIdRange::LOAD_LAMP_COMMAND},
 		{"sensor_limit_switch", TopicIdRange::SENSOR_LIMIT_SWITCH},

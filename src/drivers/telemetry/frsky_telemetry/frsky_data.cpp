@@ -177,7 +177,7 @@ void frsky_send_frame1(int uart)
 	frsky_send_data(uart, FRSKY_ID_VFAS, roundf(bat.voltage_v * 10.0f));
 	frsky_send_data(uart, FRSKY_ID_CURRENT, (bat.current_a < 0) ? 0 : roundf(bat.current_a * 10.0f));
 
-	int16_t telem_flight_mode = get_telemetry_flight_mode(subscription_data->vehicle_status_sub.get().nav_state);
+	int16_t telem_flight_mode = get_telemetry_flight_mode(subscription_data->vehicle_status_sub.get().operation_mode);
 	frsky_send_data(uart, FRSKY_ID_TEMP1, telem_flight_mode); // send flight mode as TEMP1. This matches with OpenTX & APM
 
 	const sensor_gps_s &gps = subscription_data->vehicle_gps_position_sub.get();

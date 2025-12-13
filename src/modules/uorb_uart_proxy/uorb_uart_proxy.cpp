@@ -322,8 +322,8 @@ bool UorbUartProxy::setup_topic_handlers()
 		g_topic_registry.register_topic("hbridge_status", ORB_ID(hbridge_status));
 
 		// Incoming command topics
-		g_topic_registry.register_topic("boom_trajectory_setpoint", ORB_ID(boom_trajectory_setpoint));
-		g_topic_registry.register_topic("bucket_trajectory_setpoint", ORB_ID(bucket_trajectory_setpoint));
+		g_topic_registry.register_topic("boom_control_setpoint", ORB_ID(boom_control_setpoint));
+		g_topic_registry.register_topic("tilt_control_setpoint", ORB_ID(tilt_control_setpoint));
 	}
 
 	PX4_INFO("Registered %zu topics in distributed registry", g_topic_registry.get_topic_count());
@@ -424,8 +424,8 @@ bool UorbUartProxy::is_topic_relevant_for_node(uint16_t topic_id, NodeId node_id
 	}
 
 	// Topics that X7+ sends to NXT nodes (incoming from NXT perspective)
-	if (strcmp(topic_name, "boom_trajectory_setpoint") == 0 ||
-		strcmp(topic_name, "bucket_trajectory_setpoint") == 0) {
+	if (strcmp(topic_name, "boom_control_setpoint") == 0 ||
+		strcmp(topic_name, "tilt_control_setpoint") == 0) {
 		return true;
 	}
 

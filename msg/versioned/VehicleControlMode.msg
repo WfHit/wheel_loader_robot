@@ -19,6 +19,6 @@ bool flag_control_allocation_enabled		# true if control allocation is enabled
 bool flag_control_termination_enabled		# true if flighttermination is enabled
 
 # TODO: use dedicated topic for external requests
-uint8 source_id                  # Mode ID (nav_state)
+uint8 source_id                  # Mode ID (operation_mode)
 
 # TOPICS vehicle_control_mode config_control_setpoints

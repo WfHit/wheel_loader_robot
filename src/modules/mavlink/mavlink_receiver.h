@@ -45,7 +45,7 @@
 
 #include "mavlink_ftp.h"
 #include "mavlink_log_handler.h"
-#include "mavlink_mission.h"
+#include "mavlink_current_auto_mission.h"
 #include "mavlink_parameters.h"
 #include "MavlinkStatustextHandler.hpp"
 #include "mavlink_timesync.h"

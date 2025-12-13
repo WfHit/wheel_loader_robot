@@ -28,48 +28,48 @@ uint8 ARM_DISARM_REASON_FAILURE_DETECTOR = 11
 uint8 ARM_DISARM_REASON_SHUTDOWN = 12
 uint8 ARM_DISARM_REASON_UNIT_TEST = 13
 
-uint64 nav_state_timestamp # time when current nav_state activated
+uint64 operation_mode_timestamp # time when current operation_mode activated
 
-uint8 nav_state_user_intention                  # Mode that the user selected (might be different from nav_state in a failsafe situation)
+uint8 operation_mode_user_intention                  # Mode that the user selected (might be different from operation_mode in a failsafe situation)
 
-uint8 nav_state                                 # Currently active mode
-uint8 NAVIGATION_STATE_MANUAL = 0               # Manual mode
-uint8 NAVIGATION_STATE_ALTCTL = 1               # Altitude control mode
-uint8 NAVIGATION_STATE_POSCTL = 2               # Position control mode
-uint8 NAVIGATION_STATE_AUTO_MISSION = 3         # Auto mission mode
-uint8 NAVIGATION_STATE_AUTO_LOITER = 4          # Auto loiter mode
-uint8 NAVIGATION_STATE_AUTO_RTL = 5             # Auto return to launch mode
-uint8 NAVIGATION_STATE_POSITION_SLOW = 6
-uint8 NAVIGATION_STATE_FREE5 = 7
-uint8 NAVIGATION_STATE_FREE4 = 8
-uint8 NAVIGATION_STATE_FREE3 = 9
-uint8 NAVIGATION_STATE_ACRO = 10                # Acro mode
-uint8 NAVIGATION_STATE_FREE2 = 11
-uint8 NAVIGATION_STATE_DESCEND = 12             # Descend mode (no position control)
-uint8 NAVIGATION_STATE_TERMINATION = 13         # Termination mode
-uint8 NAVIGATION_STATE_OFFBOARD = 14
-uint8 NAVIGATION_STATE_STAB = 15                # Stabilized mode
-uint8 NAVIGATION_STATE_FREE1 = 16
-uint8 NAVIGATION_STATE_AUTO_TAKEOFF = 17        # Takeoff
-uint8 NAVIGATION_STATE_AUTO_LAND = 18           # Land
-uint8 NAVIGATION_STATE_AUTO_FOLLOW_TARGET = 19  # Auto Follow
-uint8 NAVIGATION_STATE_AUTO_PRECLAND = 20       # Precision land with landing target
-uint8 NAVIGATION_STATE_ORBIT = 21               # Orbit in a circle
-uint8 NAVIGATION_STATE_AUTO_VTOL_TAKEOFF = 22   # Takeoff, transition, establish loiter
-uint8 NAVIGATION_STATE_EXTERNAL1 = 23
-uint8 NAVIGATION_STATE_EXTERNAL2 = 24
-uint8 NAVIGATION_STATE_EXTERNAL3 = 25
-uint8 NAVIGATION_STATE_EXTERNAL4 = 26
-uint8 NAVIGATION_STATE_EXTERNAL5 = 27
-uint8 NAVIGATION_STATE_EXTERNAL6 = 28
-uint8 NAVIGATION_STATE_EXTERNAL7 = 29
-uint8 NAVIGATION_STATE_EXTERNAL8 = 30
-uint8 NAVIGATION_STATE_MAX = 31
+uint8 operation_mode                                 # Currently active mode
+uint8 OPERATION_MODE_MANUAL = 0               # Manual mode
+uint8 OPERATION_MODE_ALTCTL = 1               # Altitude control mode
+uint8 OPERATION_MODE_POSCTL = 2               # Position control mode
+uint8 OPERATION_MODE_AUTO_MISSION = 3         # Auto mission mode
+uint8 OPERATION_MODE_AUTO_LOITER = 4          # Auto loiter mode
+uint8 OPERATION_MODE_AUTO_RTL = 5             # Auto return to launch mode
+uint8 OPERATION_MODE_POSITION_SLOW = 6
+uint8 OPERATION_MODE_FREE5 = 7
+uint8 OPERATION_MODE_FREE4 = 8
+uint8 OPERATION_MODE_FREE3 = 9
+uint8 OPERATION_MODE_ACRO = 10                # Acro mode
+uint8 OPERATION_MODE_FREE2 = 11
+uint8 OPERATION_MODE_DESCEND = 12             # Descend mode (no position control)
+uint8 OPERATION_MODE_TERMINATION = 13         # Termination mode
+uint8 OPERATION_MODE_OFFBOARD = 14
+uint8 OPERATION_MODE_STAB = 15                # Stabilized mode
+uint8 OPERATION_MODE_FREE1 = 16
+uint8 OPERATION_MODE_AUTO_TAKEOFF = 17        # Takeoff
+uint8 OPERATION_MODE_AUTO_LAND = 18           # Land
+uint8 OPERATION_MODE_AUTO_FOLLOW_TARGET = 19  # Auto Follow
+uint8 OPERATION_MODE_AUTO_PRECLAND = 20       # Precision land with landing target
+uint8 OPERATION_MODE_ORBIT = 21               # Orbit in a circle
+uint8 OPERATION_MODE_AUTO_VTOL_TAKEOFF = 22   # Takeoff, transition, establish loiter
+uint8 OPERATION_MODE_EXTERNAL1 = 23
+uint8 OPERATION_MODE_EXTERNAL2 = 24
+uint8 OPERATION_MODE_EXTERNAL3 = 25
+uint8 OPERATION_MODE_EXTERNAL4 = 26
+uint8 OPERATION_MODE_EXTERNAL5 = 27
+uint8 OPERATION_MODE_EXTERNAL6 = 28
+uint8 OPERATION_MODE_EXTERNAL7 = 29
+uint8 OPERATION_MODE_EXTERNAL8 = 30
+uint8 OPERATION_MODE_MAX = 31
 
 uint8 executor_in_charge                        # Current mode executor in charge (0=Autopilot)
 
-uint32 valid_nav_states_mask                    # Bitmask for all valid nav_state values
-uint32 can_set_nav_states_mask                  # Bitmask for all modes that a user can select
+uint32 valid_operation_modes_mask                    # Bitmask for all valid operation_mode values
+uint32 can_set_operation_modes_mask                  # Bitmask for all modes that a user can select
 
 # Bitmask of detected failures
 uint16 failure_detector_status

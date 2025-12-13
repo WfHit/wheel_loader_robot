@@ -505,7 +505,7 @@ bool Logger::initialize_topics()
 	logged_topics.set_rate_factor(_rate_factor);
 
 	// initialize mission topics
-	logged_topics.initialize_mission_topics((MissionLogType)_param_sdlog_mission.get());
+	logged_topics.initialize_mission_topics((MissionLogType)_param_sdlog_current_auto_mission.get());
 	_num_mission_subs = logged_topics.numMissionSubscriptions();
 
 	if (_num_mission_subs > 0) {
@@ -1015,7 +1015,7 @@ bool Logger::handle_event_updates(uint32_t &total_bytes)
 			if (events::internalLogLevel(orb_event->log_levels) <= events::LogLevelInternal::Warning) {
 				if (_writer.is_started(LogType::Mission)) {
 					memcpy(&updated_sequence, &orb_event->event_sequence, sizeof(updated_sequence));
-					updated_sequence -= _event_sequence_offset_mission;
+					updated_sequence -= _event_sequence_offset_current_auto_mission;
 					memcpy(&orb_event->event_sequence, &updated_sequence, sizeof(updated_sequence));
 
 					if (write_message(LogType::Mission, _msg_buffer, msg_size)) {
@@ -1024,7 +1024,7 @@ bool Logger::handle_event_updates(uint32_t &total_bytes)
 				}
 
 			} else {
-				++_event_sequence_offset_mission; // skip this event
+				++_event_sequence_offset_current_auto_mission; // skip this event
 			}
 		}
 	}
@@ -1148,7 +1148,7 @@ bool Logger::start_stop_logging()
 
 			start_log_file(LogType::Full);
 
-			if ((MissionLogType)_param_sdlog_mission.get() != MissionLogType::Disabled) {
+			if ((MissionLogType)_param_sdlog_current_auto_mission.get() != MissionLogType::Disabled) {
 				start_log_file(LogType::Mission);
 			}
 
@@ -1159,7 +1159,7 @@ bool Logger::start_stop_logging()
 			initialize_load_output(PrintLoadReason::Postflight);
 			_should_stop_file_log = true;
 
-			if ((MissionLogType)_param_sdlog_mission.get() != MissionLogType::Disabled) {
+			if ((MissionLogType)_param_sdlog_current_auto_mission.get() != MissionLogType::Disabled) {
 				stop_log_file(LogType::Mission);
 			}
 		}

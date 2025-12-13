@@ -40,7 +40,7 @@ void Report::getHealthReport(health_report_s &report) const
 	report.can_arm_mode_flags = 0;
 	report.can_run_mode_flags = 0;
 
-	for (int i = 0; i < vehicle_status_s::NAVIGATION_STATE_MAX; ++i) {
+	for (int i = 0; i < vehicle_status_s::OPERATION_MODE_MAX; ++i) {
 		NavModes group = getModeGroup(i);
 
 		if ((uint32_t)(current_results.arming_checks.can_arm & group)) {

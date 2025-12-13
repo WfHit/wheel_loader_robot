@@ -41,14 +41,14 @@ UserModeIntention::UserModeIntention(ModuleParams *parent, const vehicle_status_
 {
 }
 
-bool UserModeIntention::change(uint8_t user_intended_nav_state, ModeChangeSource source, bool allow_fallback,
+bool UserModeIntention::change(uint8_t user_intended_operation_mode, ModeChangeSource source, bool allow_fallback,
 			       bool force)
 {
 	_ever_had_mode_change = true;
 
 	if (_handler) {
 		// If a replacement mode is selected, select the internal one instead. The replacement will be selected after.
-		user_intended_nav_state = _handler->getReplacedModeIfAny(user_intended_nav_state);
+		user_intended_operation_mode = _handler->getReplacedModeIfAny(user_intended_operation_mode);
 	}
 
 	// Always allow mode change while disarmed
@@ -56,12 +56,12 @@ bool UserModeIntention::change(uint8_t user_intended_nav_state, ModeChangeSource
 	bool allow_change = true;
 
 	if (!always_allow) {
-		allow_change = _health_and_arming_checks.canRun(user_intended_nav_state);
+		allow_change = _health_and_arming_checks.canRun(user_intended_operation_mode);
 
 		// Check fallback
 		if (!allow_change && allow_fallback && _param_com_posctl_navl.get() == 0) {
-			if (user_intended_nav_state == vehicle_status_s::NAVIGATION_STATE_POSCTL) {
-				allow_change = _health_and_arming_checks.canRun(vehicle_status_s::NAVIGATION_STATE_ALTCTL);
+			if (user_intended_operation_mode == vehicle_status_s::OPERATION_MODE_POSCTL) {
+				allow_change = _health_and_arming_checks.canRun(vehicle_status_s::OPERATION_MODE_ALTCTL);
 				// We still use the original user intended mode. The failsafe state machine will then set the
 				// fallback and once can_run becomes true, the actual user intended mode will be selected.
 			}
@@ -69,21 +69,21 @@ bool UserModeIntention::change(uint8_t user_intended_nav_state, ModeChangeSource
 	}
 
 	// never allow to change out of termination state
-	allow_change &= _vehicle_status.nav_state != vehicle_status_s::NAVIGATION_STATE_TERMINATION;
+	allow_change &= _vehicle_status.operation_mode != vehicle_status_s::OPERATION_MODE_TERMINATION;
 
 	if (allow_change) {
 		_had_mode_change = true;
-		_user_intented_nav_state = user_intended_nav_state;
+		_user_intented_operation_mode = user_intended_operation_mode;
 
 		// Special case termination state: even though this mode prevents arming,
-		// still don't switch out of it after disarm and thus store it in _nav_state_after_disarming.
-		if (!_health_and_arming_checks.modePreventsArming(user_intended_nav_state)
-		    || user_intended_nav_state == vehicle_status_s::NAVIGATION_STATE_TERMINATION) {
-			_nav_state_after_disarming = user_intended_nav_state;
+		// still don't switch out of it after disarm and thus store it in _operation_mode_after_disarming.
+		if (!_health_and_arming_checks.modePreventsArming(user_intended_operation_mode)
+		    || user_intended_operation_mode == vehicle_status_s::OPERATION_MODE_TERMINATION) {
+			_operation_mode_after_disarming = user_intended_operation_mode;
 		}
 
 		if (_handler) {
-			_handler->onUserIntendedNavStateChange(source, user_intended_nav_state);
+			_handler->onUserIntendedNavStateChange(source, user_intended_operation_mode);
 		}
 	}
 
@@ -92,5 +92,5 @@ bool UserModeIntention::change(uint8_t user_intended_nav_state, ModeChangeSource
 
 void UserModeIntention::onDisarm()
 {
-	_user_intented_nav_state = _nav_state_after_disarming;
+	_user_intented_operation_mode = _operation_mode_after_disarming;
 }

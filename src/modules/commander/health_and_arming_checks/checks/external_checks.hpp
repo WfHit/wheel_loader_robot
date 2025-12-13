@@ -48,7 +48,7 @@ public:
 	ExternalChecks() = default;
 	~ExternalChecks() = default;
 
-	void setExternalNavStates(uint8_t first_external_nav_state, uint8_t last_external_nav_state);
+	void setExternalOperationModes(uint8_t first_external_operation_mode, uint8_t last_external_operation_mode);
 
 	void checkAndReport(const Context &context, Report &reporter) override;
 
@@ -56,10 +56,10 @@ public:
 	/**
 	 * Add registration
 	 * @param nav_mode_id associated mode, -1 if none
-	 * @param replaces_nav_state replaced mode, -1 if none
+	 * @param replaces_operation_mode replaced mode, -1 if none
 	 * @return registration id, or -1
 	 */
-	int addRegistration(int8_t nav_mode_id, int8_t replaces_nav_state);
+	int addRegistration(int8_t nav_mode_id, int8_t replaces_operation_mode);
 	bool removeRegistration(int registration_id, int8_t nav_mode_id);
 	void update();
 
@@ -82,7 +82,7 @@ private:
 		~Registration() { delete reply; }
 
 		int8_t nav_mode_id{-1}; ///< associated mode, -1 if none
-		int8_t replaces_nav_state{-1};
+		int8_t replaces_operation_mode{-1};
 
 		bool waiting_for_first_response{true};
 		uint8_t num_no_response{0};
@@ -94,8 +94,8 @@ private:
 	unsigned _active_registrations_mask{0};
 	Registration _registrations[MAX_NUM_REGISTRATIONS] {};
 
-	uint8_t _first_external_nav_state = vehicle_status_s::NAVIGATION_STATE_MAX;
-	uint8_t _last_external_nav_state = vehicle_status_s::NAVIGATION_STATE_MAX;
+	uint8_t _first_external_operation_mode = vehicle_status_s::OPERATION_MODE_MAX;
+	uint8_t _last_external_operation_mode = vehicle_status_s::OPERATION_MODE_MAX;
 
 	// Current requests (async updates)
 	hrt_abstime _last_update{0};

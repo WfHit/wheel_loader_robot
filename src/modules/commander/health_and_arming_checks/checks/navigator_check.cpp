@@ -41,7 +41,7 @@ void NavigatorChecks::checkAndReport(const Context &context, Report &reporter)
 		status = {};
 	}
 
-	if (context.status().nav_state == status.nav_state) {
+	if (context.status().operation_mode == status.operation_mode) {
 
 		reporter.failsafeFlags().navigator_failure = (status.failure != navigator_status_s::FAILURE_NONE);
 

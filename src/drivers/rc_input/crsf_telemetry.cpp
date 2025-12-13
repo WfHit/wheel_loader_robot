@@ -132,49 +132,49 @@ bool CRSFTelemetry::send_flight_mode()
 
 	const char *flight_mode = "(unknown)";
 
-	switch (vehicle_status.nav_state) {
-	case vehicle_status_s::NAVIGATION_STATE_MANUAL:
+	switch (vehicle_status.operation_mode) {
+	case vehicle_status_s::OPERATION_MODE_MANUAL:
 		flight_mode = "Manual";
 		break;
 
-	case vehicle_status_s::NAVIGATION_STATE_ALTCTL:
+	case vehicle_status_s::OPERATION_MODE_ALTCTL:
 		flight_mode = "Altitude";
 		break;
 
-	case vehicle_status_s::NAVIGATION_STATE_POSCTL:
+	case vehicle_status_s::OPERATION_MODE_POSCTL:
 		flight_mode = "Position";
 		break;
 
-	case vehicle_status_s::NAVIGATION_STATE_AUTO_RTL:
+	case vehicle_status_s::OPERATION_MODE_AUTO_RTL:
 		flight_mode = "Return";
 		break;
 
-	case vehicle_status_s::NAVIGATION_STATE_AUTO_MISSION:
+	case vehicle_status_s::OPERATION_MODE_AUTO_MISSION:
 		flight_mode = "Mission";
 		break;
 
-	case vehicle_status_s::NAVIGATION_STATE_AUTO_LOITER:
-	case vehicle_status_s::NAVIGATION_STATE_DESCEND:
-	case vehicle_status_s::NAVIGATION_STATE_AUTO_TAKEOFF:
-	case vehicle_status_s::NAVIGATION_STATE_AUTO_LAND:
-	case vehicle_status_s::NAVIGATION_STATE_AUTO_FOLLOW_TARGET:
-	case vehicle_status_s::NAVIGATION_STATE_AUTO_PRECLAND:
+	case vehicle_status_s::OPERATION_MODE_AUTO_LOITER:
+	case vehicle_status_s::OPERATION_MODE_DESCEND:
+	case vehicle_status_s::OPERATION_MODE_AUTO_TAKEOFF:
+	case vehicle_status_s::OPERATION_MODE_AUTO_LAND:
+	case vehicle_status_s::OPERATION_MODE_AUTO_FOLLOW_TARGET:
+	case vehicle_status_s::OPERATION_MODE_AUTO_PRECLAND:
 		flight_mode = "Auto";
 		break;
 
-	case vehicle_status_s::NAVIGATION_STATE_ACRO:
+	case vehicle_status_s::OPERATION_MODE_ACRO:
 		flight_mode = "Acro";
 		break;
 
-	case vehicle_status_s::NAVIGATION_STATE_TERMINATION:
+	case vehicle_status_s::OPERATION_MODE_TERMINATION:
 		flight_mode = "Terminate";
 		break;
 
-	case vehicle_status_s::NAVIGATION_STATE_OFFBOARD:
+	case vehicle_status_s::OPERATION_MODE_OFFBOARD:
 		flight_mode = "Offboard";
 		break;
 
-	case vehicle_status_s::NAVIGATION_STATE_STAB:
+	case vehicle_status_s::OPERATION_MODE_STAB:
 		flight_mode = "Stabilized";
 		break;
 	}

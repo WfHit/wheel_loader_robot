@@ -124,7 +124,7 @@ private:
 	uint64_t _arming_timestamp{0};
 
 	// flight mode
-	uint8_t _nav_state{0};
+	uint8_t _operation_mode{0};
 
 	DEFINE_PARAMETERS(
 		(ParamInt<px4::params::OSD_ATXXXX_CFG>) _param_osd_atxxxx_cfg

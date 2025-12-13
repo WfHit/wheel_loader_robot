@@ -125,7 +125,10 @@ public:
 		Count
 	};
 
-	GPS(const char *path, gps_driver_mode_t mode, GPSHelper::Interface interface, Instance instance,
+	GPS(const char *path,
+		gps_driver_mode_t mode,
+		GPSHelper::Interface interface,
+		Instance instance,
 	    unsigned configured_baudrate);
 	~GPS() override;
 
@@ -173,18 +176,18 @@ private:
 #ifdef __PX4_LINUX
 	int				_spi_fd {-1};					///< SPI interface to GPS
 #endif
-	Serial 			_uart {};				///< UART interface to GPS
+	Serial 				_uart {};				///< UART interface to GPS
 	unsigned			_baudrate{0};					///< current baudrate
-	const unsigned			_configured_baudrate{0};			///< configured baudrate (0=auto-detect)
+	const unsigned		_configured_baudrate{0};			///< configured baudrate (0=auto-detect)
 	char				_port[20] {};					///< device / serial port path
 
 	bool				_healthy{false};				///< flag to signal if the GPS is ok
 	bool				_mode_auto;					///< if true, auto-detect which GPS is attached
 
-	gps_driver_mode_t		_mode;						///< current mode
+	gps_driver_mode_t	_mode;						///< current mode
 
-	GPSHelper::Interface		_interface;   					///< interface
-	GPSHelper			*_helper{nullptr};				///< instance of GPS parser
+	GPSHelper::Interface	_interface;   					///< interface
+	GPSHelper				*_helper{nullptr};				///< instance of GPS parser
 
 	GPS_Sat_Info			*_sat_info{nullptr};				///< instance of GPS sat info data object
 
@@ -193,10 +196,10 @@ private:
 	uint8_t                         _spoofing_state{0};                             ///< spoofing state
 	uint8_t                         _jamming_state{0};                              ///< jamming state
 
-	uORB::PublicationMulti<sensor_gps_s>	_report_gps_pos_pub{ORB_ID(sensor_gps)};	///< uORB pub for gps position
-	uORB::PublicationMulti<sensor_gnss_relative_s> _sensor_gnss_relative_pub{ORB_ID(sensor_gnss_relative)};
+	uORB::PublicationMulti<sensor_gps_s>			_report_gps_pos_pub{ORB_ID(sensor_gps)};	///< uORB pub for gps position
+	uORB::PublicationMulti<sensor_gnss_relative_s> 	_sensor_gnss_relative_pub{ORB_ID(sensor_gnss_relative)};
 
-	uORB::PublicationMulti<satellite_info_s>	_report_sat_info_pub{ORB_ID(satellite_info)};		///< uORB pub for satellite info
+	uORB::PublicationMulti<satellite_info_s>		_report_sat_info_pub{ORB_ID(satellite_info)};		///< uORB pub for satellite info
 
 	float				_rate{0.0f};					///< position update rate
 	float				_rate_rtcm_injection{0.0f};			///< RTCM message injection rate

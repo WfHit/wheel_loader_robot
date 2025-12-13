@@ -89,7 +89,7 @@ msp_name_t construct_display_message(const vehicle_status_s &vehicle_status,
 		}
 
 		// display flight mode
-		display.set(MessageDisplayType::FLIGHT_MODE, mode_util::nav_state_names[vehicle_status.nav_state]);
+		display.set(MessageDisplayType::FLIGHT_MODE, mode_util::operation_mode_names[vehicle_status.operation_mode]);
 	}
 
 	// display, if updated
@@ -164,24 +164,24 @@ msp_status_BF_t construct_STATUS(const vehicle_status_s &vehicle_status)
 	if (vehicle_status.arming_state == vehicle_status_s::ARMING_STATE_ARMED) {
 		status_BF.flight_mode_flags |= ARM_ACRO_BF;
 
-		switch (vehicle_status.nav_state) {
-		case vehicle_status_s::NAVIGATION_STATE_MANUAL:
+		switch (vehicle_status.operation_mode) {
+		case vehicle_status_s::OPERATION_MODE_MANUAL:
 			status_BF.flight_mode_flags |= 0;
 			break;
 
-		case vehicle_status_s::NAVIGATION_STATE_ACRO:
+		case vehicle_status_s::OPERATION_MODE_ACRO:
 			status_BF.flight_mode_flags |= 0;
 			break;
 
-		case vehicle_status_s::NAVIGATION_STATE_STAB:
+		case vehicle_status_s::OPERATION_MODE_STAB:
 			status_BF.flight_mode_flags |= STAB_BF;
 			break;
 
-		case vehicle_status_s::NAVIGATION_STATE_AUTO_RTL:
+		case vehicle_status_s::OPERATION_MODE_AUTO_RTL:
 			status_BF.flight_mode_flags |= RESC_BF;
 			break;
 
-		case vehicle_status_s::NAVIGATION_STATE_TERMINATION:
+		case vehicle_status_s::OPERATION_MODE_TERMINATION:
 			status_BF.flight_mode_flags |= FS_BF;
 			break;
 

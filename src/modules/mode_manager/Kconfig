@@ -1,0 +1,12 @@
+menuconfig MODULES_MODE_MANAGER
+	bool "mode_manager"
+	default n
+	---help---
+		Enable support for mode_manager
+
+menuconfig USER_MODE_MANAGER
+	bool "mode_manager running as userspace module"
+	default y
+	depends on BOARD_PROTECTED && MODULES_MODE_MANAGER
+	---help---
+		Put mode_manager in userspace memory

@@ -45,7 +45,7 @@
 // uORB includes (use lowercase topic names)
 #include <uORB/Publication.hpp>
 #include <uORB/Subscription.hpp>
-#include <uORB/topics/boom_trajectory_setpoint.h>
+#include <uORB/topics/boom_control_setpoint.h>
 #include <uORB/topics/boom_status.h>
 #include <uORB/topics/parameter_update.h>
 
@@ -137,7 +137,7 @@ private:
 
 	// uORB interface (using modern uORB::Publication/Subscription classes)
 		// Subscriptions
-	uORB::Subscription _boom_trajectory_setpoint_sub{ORB_ID(boom_trajectory_setpoint)}; // Trajectory input
+	uORB::Subscription _boom_control_setpoint_sub{ORB_ID(boom_control_setpoint)}; // Control setpoint input
 	uORB::Subscription _parameter_update_sub{ORB_ID(parameter_update)};   // Parameter updates
 	uORB::Publication<boom_status_s> _boom_status_pub{ORB_ID(boom_status)}; // Outgoing status telemetry
 
@@ -148,6 +148,18 @@ private:
 	// Module parameters
 	DEFINE_PARAMETERS(
 		(ParamInt<px4::params::BOOM_EN>) _param_enabled,
-		(ParamFloat<px4::params::BOOM_RATE>) _param_update_rate
+		(ParamFloat<px4::params::BOOM_RATE>) _param_update_rate,
+		// IK parameters
+		(ParamFloat<px4::params::BOOM_LEN>) _param_boom_length,
+		(ParamFloat<px4::params::BOOM_PIVOT_H>) _param_boom_pivot_height,
+		(ParamFloat<px4::params::BOOM_ANG_MIN>) _param_boom_angle_min,
+		(ParamFloat<px4::params::BOOM_ANG_MAX>) _param_boom_angle_max
 	)
+
+	/**
+	 * @brief Compute boom angle from bucket height using inverse kinematics
+	 * @param bucket_height Target bucket height from ground [m]
+	 * @return Boom angle [rad], clamped to joint limits
+	 */
+	float computeBoomAngleFromHeight(float bucket_height);
 };

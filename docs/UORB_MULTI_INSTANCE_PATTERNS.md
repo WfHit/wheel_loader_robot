@@ -135,7 +135,7 @@ void process_all_hbridge_status()
 ## Modules Analyzed and Updated ✓
 
 ### Motor Control Modules
-1. **bucket_control.cpp** ✓ - Updated to use EKF2 Instance Discovery Pattern for both HBridge and encoder
+1. **tilt_control.cpp** ✓ - Updated to use EKF2 Instance Discovery Pattern for both HBridge and encoder
 2. **wheel_controller.cpp** ✓ - Updated to use EKF2 Instance Discovery Pattern (was parameter-based)
 3. **hbridge driver** ✓ - Implements `get_msg_instance()` for parameter-based routing
 4. **boom_control.cpp** ✓ - Updated to use EKF2 Instance Discovery Pattern for HBridge
@@ -156,7 +156,7 @@ void process_all_hbridge_status()
 ## Implementation Summary
 
 **Three EKF2-Style Patterns Implemented:**
-- **Pattern A**: Instance Discovery (auto-discovery based on criteria) - used by EKF2, bucket_control, boom_control, wheel_controller
+- **Pattern A**: Instance Discovery (auto-discovery based on criteria) - used by EKF2, tilt_control, boom_control, wheel_controller
 - **Pattern B**: Parameter-Based Selection (direct targeting) - used by slip_estimator, steering_controller, wheel_loader_robot
 - **Pattern C**: Multi-Instance Monitoring (all instances) - used by load_analysis for system-wide monitoring
 
@@ -215,7 +215,7 @@ _pub.publish(msg);
 **Result**: All modules in the wheel loader project correctly implement uORB multi-instance patterns. No changes are required.
 
 ### Changes Made During Analysis
-- **bucket_control.cpp**: Updated to follow EKF2 pattern (instance in message data)
+- **tilt_control.cpp**: Updated to follow EKF2 pattern (instance in message data)
 - **All other modules**: Already correctly implemented
 
 ### Verification

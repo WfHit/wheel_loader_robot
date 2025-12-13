@@ -104,7 +104,7 @@ private:
 		float quaternion[4];      // w, x, y, z
 		float angular_velocity[3]; // roll_rate, pitch_rate, yaw_rate in rad/s
 		uint8_t armed;           // 0=disarmed, 1=armed
-		uint8_t nav_state;       // Navigation state
+		uint8_t operation_mode;  // Operation mode
 		float battery_voltage;    // Battery voltage in volts
 
 		// Joint states - Boom

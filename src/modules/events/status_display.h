@@ -93,7 +93,7 @@ private:
 	bool _old_home_position_valid{false};
 	bool _low_battery{false};
 	bool _critical_battery{false};
-	int _old_nav_state{-1};
+	int _old_operation_mode{-1};
 	int _old_battery_status_warning{-1};
 };
 

@@ -459,7 +459,7 @@ private:
 			}
 
 			// flight mode
-			union px4_custom_mode custom_mode {get_px4_custom_mode(status.nav_state)};
+			union px4_custom_mode custom_mode {get_px4_custom_mode(status.operation_mode)};
 			msg->custom_mode = custom_mode.custom_mode_hl;
 
 			return true;

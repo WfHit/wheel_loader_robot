@@ -357,8 +357,8 @@ bool UorbUartBridge::setup_topic_handlers()
 
 	// Register common topics used in wheel loader communication
 	g_topic_registry.register_topic("vehicle_status", ORB_ID(vehicle_status));
-	g_topic_registry.register_topic("boom_trajectory_setpoint", ORB_ID(boom_trajectory_setpoint));
-	g_topic_registry.register_topic("bucket_trajectory_setpoint", ORB_ID(bucket_trajectory_setpoint));
+	g_topic_registry.register_topic("boom_control_setpoint", ORB_ID(boom_control_setpoint));
+	g_topic_registry.register_topic("tilt_control_setpoint", ORB_ID(tilt_control_setpoint));
 	g_topic_registry.register_topic("boom_status", ORB_ID(boom_status));
 	g_topic_registry.register_topic("bucket_status", ORB_ID(bucket_status));
 	g_topic_registry.register_topic("steering_status", ORB_ID(steering_status));

@@ -310,7 +310,7 @@ void sPort_send_GPS_SPD(int uart)
  */
 void sPort_send_NAV_STATE(int uart)
 {
-	uint32_t navstate = (int)(128 + s_port_subscription_data->vehicle_status_sub.get().nav_state);
+	uint32_t navstate = (int)(128 + s_port_subscription_data->vehicle_status_sub.get().operation_mode);
 
 	/* send data */
 	sPort_send_data(uart, SMARTPORT_ID_DIY_NAVSTATE, navstate);
@@ -329,7 +329,7 @@ void sPort_send_GPS_FIX(int uart)
 
 void sPort_send_flight_mode(int uart)
 {
-	int16_t telem_flight_mode = get_telemetry_flight_mode(s_port_subscription_data->vehicle_status_sub.get().nav_state);
+	int16_t telem_flight_mode = get_telemetry_flight_mode(s_port_subscription_data->vehicle_status_sub.get().operation_mode);
 
 	sPort_send_data(uart, FRSKY_ID_TEMP1, telem_flight_mode); // send flight mode as TEMP1. This matches with OpenTX & APM
 }

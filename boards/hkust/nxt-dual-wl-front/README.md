@@ -4,15 +4,15 @@
 
 The NXT-Dual-WL-Front is a specialized controller board for wheel loader applications, designed to control:
 - **Front wheel** - Steering and propulsion control for the front axle
-- **Bucket** - Hydraulic bucket control for digging and loading operations
+- **Tilt** - Hydraulic tilt control for digging and loading operations
 
 This board is based on the nxt-dual-wl platform and includes specialized modules and configurations for front-end wheel loader operations.
 
 ## Key Features
 
 - Dual wheel quadrature encoder support for precise front wheel control
-- AS5600 magnetic encoder for bucket position feedback
-- H-bridge motor drivers (DRV8701) for bucket hydraulic control
+- AS5600 magnetic encoder for tilt position feedback
+- H-bridge motor drivers (DRV8701) for tilt hydraulic control
 - BMI088 IMU for attitude and motion sensing
 - SPL06 barometric pressure sensor
 - CAN bus communication for coordination with rear controller
@@ -20,7 +20,7 @@ This board is based on the nxt-dual-wl platform and includes specialized modules
 
 ## Modules Enabled
 
-- **bucket_control** - Dedicated bucket position and hydraulic control
+- **tilt_control** - Dedicated tilt position and hydraulic control
 - **front_wheel_control** - Front axle steering and drive control
 - Standard PX4 navigation and control modules
 
@@ -42,7 +42,7 @@ This board is based on the nxt-dual-wl platform and includes specialized modules
 ## Parameters
 
 Key parameters for front wheel loader control:
-- `BUCKET_CTRL_EN`: Enable bucket control module
+- `TILT_CTRL_EN`: Enable tilt control module
 - `WL_FRONT_WHEEL_EN`: Enable front wheel control
 - `WL_FRONT_WHEEL_KP/KI/KD`: Front wheel PID parameters
 

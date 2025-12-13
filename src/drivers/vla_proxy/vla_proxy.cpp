@@ -413,7 +413,7 @@ void VLAProxy::collect_robot_status(WheelloaderStatus &status)
 	vehicle_status_s vehicle_status;
 	if (_vehicle_status_sub.copy(&vehicle_status)) {
 		status.armed = (vehicle_status.arming_state == vehicle_status_s::ARMING_STATE_ARMED) ? 1 : 0;
-		status.nav_state = vehicle_status.nav_state;
+		status.operation_mode = vehicle_status.operation_mode;
 	}
 
 	// Get position and velocity

@@ -156,7 +156,7 @@ setpoints (`vehicle_attitude_setpoint`) as inputs and outputs a rate setpoint.
 
 The controller has a P loop for angular error
 
-The different internal modes are implemented as separate classes that inherit from a common base class <code>NavigatorMode</code>. The member <code>_navigation_mode</code> contains the current active mode.
+The different internal modes are implemented as separate classes that inherit from a common base class <code>TaskBase</code>. The member <code>_navigation_mode</code> contains the current active mode.
 
 https://www.research-collection.ethz.ch/bitstream/handle/20.500.11850/154099/eth-7387-01.pdf
 
@@ -241,7 +241,7 @@ It is also responsible for geofence violation checking.
 
 ### 实现
 
-The different internal modes are implemented as separate classes that inherit from a common base class `NavigatorMode`.
+The different internal modes are implemented as separate classes that inherit from a common base class `TaskBase`.
 The member `_navigation_mode` contains the current active mode.
 
 Navigator publishes position setpoint triplets (`position_setpoint_triplet_s`), which are then used by the position

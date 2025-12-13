@@ -32,7 +32,7 @@
  ****************************************************************************/
 
 /**
- * @file mavlink_mission.cpp
+ * @file mavlink_current_auto_mission.cpp
  * MAVLink mission manager implementation.
  *
  * @author Lorenz Meier <lorenz@px4.io>
@@ -40,7 +40,7 @@
  * @author Anton Babushkin <anton@px4.io>
  */
 
-#include "mavlink_mission.h"
+#include "mavlink_current_auto_mission.h"
 #include "mavlink_main.h"
 
 #include <lib/geo/geo.h>

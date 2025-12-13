@@ -54,7 +54,7 @@ protected:
 			       ActionOptions(Action::RTL).clearOn(ClearCondition::OnModeChangeOrDisarm));
 		CHECK_FAILSAFE(status_flags, gcs_connection_lost, Action::Descend);
 
-		if (state.user_intended_mode == vehicle_status_s::NAVIGATION_STATE_AUTO_MISSION) {
+		if (state.user_intended_mode == vehicle_status_s::OPERATION_MODE_AUTO_MISSION) {
 			CHECK_FAILSAFE(status_flags, mission_failure, Action::Descend);
 		}
 
@@ -99,7 +99,7 @@ TEST_F(FailsafeTest, general)
 	failsafe_flags_s failsafe_flags{};
 	FailsafeBase::State state{};
 	state.armed = true;
-	state.user_intended_mode = vehicle_status_s::NAVIGATION_STATE_POSCTL;
+	state.user_intended_mode = vehicle_status_s::OPERATION_MODE_POSCTL;
 	state.vehicle_type = vehicle_status_s::VEHICLE_TYPE_ROTARY_WING;
 	hrt_abstime time = 5_s;
 	bool stick_override_request = false;
@@ -143,7 +143,7 @@ TEST_F(FailsafeTest, general)
 
 	// Mode change -> clear failsafe
 	time += 10_ms;
-	state.user_intended_mode = vehicle_status_s::NAVIGATION_STATE_ALTCTL;
+	state.user_intended_mode = vehicle_status_s::OPERATION_MODE_ALTCTL;
 	updated_user_intented_mode = failsafe.update(time, state, false, stick_override_request, failsafe_flags);
 	ASSERT_EQ(updated_user_intented_mode, state.user_intended_mode);
 	ASSERT_EQ(failsafe.selectedAction(), FailsafeBase::Action::None);
@@ -156,7 +156,7 @@ TEST_F(FailsafeTest, takeover)
 	failsafe_flags_s failsafe_flags{};
 	FailsafeBase::State state{};
 	state.armed = true;
-	state.user_intended_mode = vehicle_status_s::NAVIGATION_STATE_POSCTL;
+	state.user_intended_mode = vehicle_status_s::OPERATION_MODE_POSCTL;
 	state.vehicle_type = vehicle_status_s::VEHICLE_TYPE_ROTARY_WING;
 	hrt_abstime time = 3847124342;
 	bool stick_override_request = false;
@@ -172,7 +172,7 @@ TEST_F(FailsafeTest, takeover)
 
 	// Change to mission -> Hold, then Descend
 	time += 10_ms;
-	state.user_intended_mode = vehicle_status_s::NAVIGATION_STATE_AUTO_MISSION;
+	state.user_intended_mode = vehicle_status_s::OPERATION_MODE_AUTO_MISSION;
 	updated_user_intented_mode = failsafe.update(time, state, false, stick_override_request, failsafe_flags);
 	ASSERT_EQ(updated_user_intented_mode, state.user_intended_mode);
 	ASSERT_EQ(failsafe.selectedAction(), FailsafeBase::Action::Hold);
@@ -192,7 +192,7 @@ TEST_F(FailsafeTest, takeover)
 	time += 10_ms;
 	stick_override_request = true;
 	updated_user_intented_mode = failsafe.update(time, state, false, stick_override_request, failsafe_flags);
-	state.user_intended_mode = vehicle_status_s::NAVIGATION_STATE_POSCTL;
+	state.user_intended_mode = vehicle_status_s::OPERATION_MODE_POSCTL;
 	ASSERT_EQ(updated_user_intented_mode, state.user_intended_mode);
 	ASSERT_EQ(failsafe.selectedAction(), FailsafeBase::Action::Warn);
 	ASSERT_TRUE(failsafe.userTakeoverActive());
@@ -213,7 +213,7 @@ TEST_F(FailsafeTest, takeover_denied)
 	failsafe_flags_s failsafe_flags{};
 	FailsafeBase::State state{};
 	state.armed = true;
-	state.user_intended_mode = vehicle_status_s::NAVIGATION_STATE_POSCTL;
+	state.user_intended_mode = vehicle_status_s::OPERATION_MODE_POSCTL;
 	state.vehicle_type = vehicle_status_s::VEHICLE_TYPE_ROTARY_WING;
 	hrt_abstime time = 3847124342;
 	bool stick_override_request = false;
@@ -229,7 +229,7 @@ TEST_F(FailsafeTest, takeover_denied)
 	// Try takeover (mode switch + stick movements)
 	time += 10_ms;
 	stick_override_request = true;
-	state.user_intended_mode = vehicle_status_s::NAVIGATION_STATE_STAB;
+	state.user_intended_mode = vehicle_status_s::OPERATION_MODE_STAB;
 	updated_user_intented_mode = failsafe.update(time, state, false, stick_override_request, failsafe_flags);
 	stick_override_request = false;
 	ASSERT_EQ(updated_user_intented_mode, state.user_intended_mode);
@@ -265,7 +265,7 @@ TEST_F(FailsafeTest, defer)
 	failsafe_flags_s failsafe_flags{};
 	FailsafeBase::State state{};
 	state.armed = true;
-	state.user_intended_mode = vehicle_status_s::NAVIGATION_STATE_POSCTL;
+	state.user_intended_mode = vehicle_status_s::OPERATION_MODE_POSCTL;
 	state.vehicle_type = vehicle_status_s::VEHICLE_TYPE_ROTARY_WING;
 	hrt_abstime time = 3847124342;
 
@@ -285,7 +285,7 @@ TEST_F(FailsafeTest, defer)
 
 	// Wait a bit, still deferred
 	time += 5_s;
-	state.user_intended_mode = vehicle_status_s::NAVIGATION_STATE_STAB;
+	state.user_intended_mode = vehicle_status_s::OPERATION_MODE_STAB;
 	updated_user_intented_mode = failsafe.update(time, state, false, false, failsafe_flags);
 	ASSERT_EQ(updated_user_intented_mode, state.user_intended_mode);
 	ASSERT_EQ(failsafe.selectedAction(), FailsafeBase::Action::None);
@@ -377,7 +377,7 @@ TEST_F(FailsafeTest, skip_failsafe)
 	failsafe_flags_s failsafe_flags{};
 	FailsafeBase::State state{};
 	state.armed = true;
-	state.user_intended_mode = vehicle_status_s::NAVIGATION_STATE_AUTO_RTL;
+	state.user_intended_mode = vehicle_status_s::OPERATION_MODE_AUTO_RTL;
 	state.vehicle_type = vehicle_status_s::VEHICLE_TYPE_ROTARY_WING;
 	hrt_abstime time = 5_s;
 
@@ -400,7 +400,7 @@ TEST_F(FailsafeTest, user_termination)
 	failsafe_flags_s failsafe_flags{};
 	FailsafeBase::State state{};
 	state.armed = true;
-	state.user_intended_mode = vehicle_status_s::NAVIGATION_STATE_TERMINATION;
+	state.user_intended_mode = vehicle_status_s::OPERATION_MODE_TERMINATION;
 	state.vehicle_type = vehicle_status_s::VEHICLE_TYPE_ROTARY_WING;
 	hrt_abstime time = 5_s;
 

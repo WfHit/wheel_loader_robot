@@ -55,7 +55,7 @@ public:
 
 	struct ModeExecutor {
 		config_overrides_s overrides{};
-		uint8_t owned_nav_state{};
+		uint8_t owned_operation_mode{};
 		bool valid{false};
 	};
 
@@ -75,9 +75,9 @@ private:
 class Modes
 {
 public:
-	static constexpr uint8_t FIRST_EXTERNAL_NAV_STATE = vehicle_status_s::NAVIGATION_STATE_EXTERNAL1;
-	static constexpr uint8_t LAST_EXTERNAL_NAV_STATE = vehicle_status_s::NAVIGATION_STATE_EXTERNAL8;
-	static constexpr int MAX_NUM = LAST_EXTERNAL_NAV_STATE - FIRST_EXTERNAL_NAV_STATE + 1;
+	static constexpr uint8_t FIRST_EXTERNAL_OPERATION_MODE = vehicle_status_s::OPERATION_MODE_EXTERNAL1;
+	static constexpr uint8_t LAST_EXTERNAL_OPERATION_MODE = vehicle_status_s::OPERATION_MODE_EXTERNAL8;
+	static constexpr int MAX_NUM = LAST_EXTERNAL_OPERATION_MODE - FIRST_EXTERNAL_OPERATION_MODE + 1;
 
 	struct Mode {
 		Mode()
@@ -101,7 +101,7 @@ public:
 
 		char name[sizeof(register_ext_component_request_s::name)] {};
 		bool valid{false};
-		uint8_t replaces_nav_state{REPLACES_NAV_STATE_NONE};
+		uint8_t replaces_operation_mode{REPLACES_NAV_STATE_NONE};
 		bool unresponsive_reported{false};
 		int arming_check_registration_id{-1};
 		int mode_executor_registration_id{-1};
@@ -111,9 +111,9 @@ public:
 
 	void printStatus() const;
 
-	bool valid(uint8_t nav_state) const { return nav_state >= FIRST_EXTERNAL_NAV_STATE && nav_state <= LAST_EXTERNAL_NAV_STATE && _modes[nav_state - FIRST_EXTERNAL_NAV_STATE].valid; }
-	Mode &mode(uint8_t nav_state) { return _modes[nav_state - FIRST_EXTERNAL_NAV_STATE]; }
-	const Mode &mode(uint8_t nav_state) const { return _modes[nav_state - FIRST_EXTERNAL_NAV_STATE]; }
+	bool valid(uint8_t nav_state) const { return nav_state >= FIRST_EXTERNAL_OPERATION_MODE && nav_state <= LAST_EXTERNAL_OPERATION_MODE && _modes[nav_state - FIRST_EXTERNAL_OPERATION_MODE].valid; }
+	Mode &mode(uint8_t nav_state) { return _modes[nav_state - FIRST_EXTERNAL_OPERATION_MODE]; }
+	const Mode &mode(uint8_t nav_state) const { return _modes[nav_state - FIRST_EXTERNAL_OPERATION_MODE]; }
 
 	bool hasFreeExternalModes() const;
 	uint8_t addExternalMode(const Mode &mode);
@@ -133,12 +133,12 @@ public:
 	~ModeManagement() = default;
 
 	struct UpdateRequest {
-		bool change_user_intended_nav_state{false};
-		uint8_t user_intended_nav_state{};
+		bool change_user_intended_operation_mode{false};
+		uint8_t user_intended_operation_mode{};
 		bool control_setpoint_update{false};
 	};
 
-	void update(bool armed, uint8_t user_intended_nav_state, bool failsafe_action_active, UpdateRequest &update_request);
+	void update(bool armed, uint8_t user_intended_operation_mode, bool failsafe_action_active, UpdateRequest &update_request);
 
 	/**
 	 * Mode executor ID for who is currently in charge (and can send commands etc).
@@ -146,7 +146,7 @@ public:
 	 */
 	int modeExecutorInCharge() const;
 
-	void onUserIntendedNavStateChange(ModeChangeSource source, uint8_t user_intended_nav_state) override;
+	void onUserIntendedNavStateChange(ModeChangeSource source, uint8_t user_intended_operation_mode) override;
 	uint8_t getReplacedModeIfAny(uint8_t nav_state) override;
 
 	uint8_t getNavStateReplacementIfValid(uint8_t nav_state, bool report_error = true);
@@ -155,14 +155,14 @@ public:
 
 	void printStatus() const;
 
-	void getModeStatus(uint32_t &valid_nav_state_mask, uint32_t &can_set_nav_state_mask) const;
+	void getModeStatus(uint32_t &valid_operation_mode_mask, uint32_t &can_set_operation_mode_mask) const;
 
 	void updateActiveConfigOverrides(uint8_t nav_state, config_overrides_s &overrides_in_out);
 
 private:
 	bool checkConfigControlSetpointUpdates();
 	void checkNewRegistrations(UpdateRequest &update_request);
-	void checkUnregistrations(uint8_t user_intended_nav_state, UpdateRequest &update_request);
+	void checkUnregistrations(uint8_t user_intended_operation_mode, UpdateRequest &update_request);
 	void checkConfigOverrides();
 
 	void removeModeExecutor(int mode_executor_id);
@@ -193,16 +193,16 @@ public:
 	~ModeManagement() = default;
 
 	struct UpdateRequest {
-		bool change_user_intended_nav_state{false};
-		uint8_t user_intended_nav_state{};
+		bool change_user_intended_operation_mode{false};
+		uint8_t user_intended_operation_mode{};
 		bool control_setpoint_update{false};
 	};
 
-	void update(bool armed, uint8_t user_intended_nav_state, bool failsafe_action_active, UpdateRequest &update_request) {}
+	void update(bool armed, uint8_t user_intended_operation_mode, bool failsafe_action_active, UpdateRequest &update_request) {}
 
 	int modeExecutorInCharge() const { return ModeExecutors::AUTOPILOT_EXECUTOR_ID; }
 
-	void onUserIntendedNavStateChange(ModeChangeSource source, uint8_t user_intended_nav_state) override {}
+	void onUserIntendedNavStateChange(ModeChangeSource source, uint8_t user_intended_operation_mode) override {}
 	uint8_t getReplacedModeIfAny(uint8_t nav_state) override { return nav_state; }
 
 	uint8_t getNavStateReplacementIfValid(uint8_t nav_state, bool report_error = true) { return nav_state; }
@@ -211,10 +211,10 @@ public:
 
 	void printStatus() const {}
 
-	void getModeStatus(uint32_t &valid_nav_state_mask, uint32_t &can_set_nav_state_mask) const
+	void getModeStatus(uint32_t &valid_operation_mode_mask, uint32_t &can_set_operation_mode_mask) const
 	{
-		valid_nav_state_mask = mode_util::getValidNavStates();
-		can_set_nav_state_mask = valid_nav_state_mask & ~(1u << vehicle_status_s::NAVIGATION_STATE_TERMINATION);
+		valid_operation_mode_mask = mode_util::getValidOperationModes();
+		can_set_operation_mode_mask = valid_operation_mode_mask & ~(1u << vehicle_status_s::OPERATION_MODE_TERMINATION);
 	}
 
 	void updateActiveConfigOverrides(uint8_t nav_state, config_overrides_s &overrides_in_out) { }

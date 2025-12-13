@@ -12,7 +12,7 @@ bool emergency_stop                # Emergency stop active
 bool system_armed                  # System is armed and ready
 bool position_valid                # Position estimation is valid
 bool manual_control_valid          # Manual control input is valid
-bool vla_trajectory_setpoint_valid # VLA trajectory setpoint is valid
+bool vla_setpoint_triplet_valid    # VLA setpoint triplet is valid
 
 # Operation mode constants
 uint8 MODE_MANUAL = 0

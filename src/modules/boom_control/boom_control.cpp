@@ -157,20 +157,14 @@ void BoomControl::update_sensors()
 
 void BoomControl::process_commands()
 {
-	boom_trajectory_setpoint_s trajectory_setpoint;
+	boom_control_setpoint_s control_setpoint;
 
-	if (_boom_trajectory_setpoint_sub.update(&trajectory_setpoint)) {
+	if (_boom_control_setpoint_sub.update(&control_setpoint)) {
 		_last_command_time = hrt_absolute_time();
 
-		// Handle emergency stop
-		if (trajectory_setpoint.control_mode == boom_trajectory_setpoint_s::MODE_EMERGENCY_STOP) {
-			handle_emergency_stop();
-			return;
-		}
-
-		// Check if trajectory is valid and in trajectory mode
-		if (!trajectory_setpoint.valid || trajectory_setpoint.control_mode == boom_trajectory_setpoint_s::MODE_STOP) {
-			// If trajectory is not valid or in stop mode, hold current position
+		// Check if setpoint is valid
+		if (!control_setpoint.valid) {
+			// If setpoint is not valid, hold current position
 			_motion_controller.set_mode(BoomMotionController::ControlMode::POSITION);
 			_motion_controller.set_target_position(_current_boom_angle, 0.5f); // Conservative velocity
 			return;
@@ -178,34 +172,41 @@ void BoomControl::process_commands()
 
 		// Check if system is operational
 		if (!_state_manager.is_operational()) {
-			PX4_WARN("System not operational, ignoring trajectory setpoint");
+			PX4_WARN("System not operational, ignoring control setpoint");
 			return;
 		}
 
-		// Validate angle command bounds
-		if (!std::isfinite(trajectory_setpoint.angle) ||
-		    fabsf(trajectory_setpoint.angle) > M_PI_F) {
-			PX4_WARN("Invalid angle setpoint: %.2f rad", (double)trajectory_setpoint.angle);
+		// Validate bucket height bounds
+		if (!std::isfinite(control_setpoint.bucket_height) ||
+		    control_setpoint.bucket_height < 0.0f ||
+		    control_setpoint.bucket_height > 10.0f) {
+			PX4_WARN("Invalid bucket height: %.2f m", (double)control_setpoint.bucket_height);
 			return;
 		}
 
-		// Validate velocity bounds
-		float max_velocity = trajectory_setpoint.max_velocity;
-		if (!std::isfinite(max_velocity) || max_velocity <= 0.0f || max_velocity > 5.0f) {
-			max_velocity = 1.0f; // Default safe velocity
+		// Compute boom angle from bucket height using IK
+		_target_boom_angle = computeBoomAngleFromHeight(control_setpoint.bucket_height);
+
+		// Compute velocity limit from bucket height velocity (optional)
+		float max_velocity = 1.0f; // Default safe velocity
+		if (std::isfinite(control_setpoint.bucket_height_velocity) &&
+		    control_setpoint.bucket_height_velocity > 0.0f) {
+			// Convert height velocity to angular velocity estimate
+			// angular_velocity ≈ height_velocity / (boom_length * cos(boom_angle))
+			float boom_length = _param_boom_length.get();
+			if (boom_length > 0.1f) {
+				float cos_angle = cosf(_target_boom_angle);
+				if (fabsf(cos_angle) > 0.1f) {
+					max_velocity = fabsf(control_setpoint.bucket_height_velocity / (boom_length * cos_angle));
+					max_velocity = math::constrain(max_velocity, 0.1f, 2.0f);
+				}
+			}
 		}
 
-		// Set target position with trajectory constraints
-		_target_boom_angle = trajectory_setpoint.angle;
+		// Set target position with computed angle
 		_motion_controller.set_mode(BoomMotionController::ControlMode::POSITION);
 		_motion_controller.set_target_position(_target_boom_angle, max_velocity);
 		_state_manager.request_transition(BoomStateManager::OperationalState::MOVING);
-
-		// Optionally use angular velocity and acceleration if the motion controller supports it
-		if (std::isfinite(trajectory_setpoint.angular_velocity)) {
-			// Advanced controllers could use this for feedforward control
-			// _motion_controller.set_feedforward_velocity(trajectory_setpoint.angular_velocity);
-		}
 	}
 
 	// Check for command timeout
@@ -216,6 +217,34 @@ void BoomControl::process_commands()
 			_state_manager.request_transition(BoomStateManager::OperationalState::HOLDING);
 		}
 	}
+}
+
+float BoomControl::computeBoomAngleFromHeight(float bucket_height)
+{
+	// Inverse kinematics: bucket_height = pivot_height + boom_length * sin(boom_angle)
+	// boom_angle = asin((bucket_height - pivot_height) / boom_length)
+
+	const float pivot_height = _param_boom_pivot_height.get();
+	const float boom_length = _param_boom_length.get();
+
+	if (boom_length < 0.1f) {
+		return 0.0f;  // Invalid configuration
+	}
+
+	float height_delta = bucket_height - pivot_height;
+	float sin_angle = height_delta / boom_length;
+
+	// Clamp to valid sine range
+	sin_angle = math::constrain(sin_angle, -1.0f, 1.0f);
+
+	float boom_angle = asinf(sin_angle);
+
+	// Convert angle limits from degrees to radians
+	float angle_min_rad = math::radians(_param_boom_angle_min.get());
+	float angle_max_rad = math::radians(_param_boom_angle_max.get());
+
+	// Apply joint limits
+	return math::constrain(boom_angle, angle_min_rad, angle_max_rad);
 }
 
 void BoomControl::update_motion_planning()

@@ -221,7 +221,7 @@ private:
 	int		_transition_command{vtol_vehicle_status_s::VEHICLE_VTOL_STATE_MC};
 	bool		_immediate_transition{false};
 
-	uint8_t _nav_state_prev;
+	uint8_t _operation_mode_prev;
 
 	VtolType	*_vtol_type{nullptr};	// base class for different vtol types
 	mode		_previous_vtol_mode;

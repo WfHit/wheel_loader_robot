@@ -85,15 +85,15 @@ TEST(ModeManagementTest, Hashes)
 	EXPECT_EQ(modes.addExternalMode(mode), Modes::FIRST_EXTERNAL_NAV_STATE + mode_to_add_idx);
 
 	// Try to add another one with the same name: should succeed, with the hash of the added index reset
-	uint8_t added_mode_nav_state = modes.addExternalMode(mode);
-	EXPECT_EQ(readHash(added_mode_nav_state - Modes::FIRST_EXTERNAL_NAV_STATE), 0);
+	uint8_t added_mode_operation_mode = modes.addExternalMode(mode);
+	EXPECT_EQ(readHash(added_mode_operation_mode - Modes::FIRST_EXTERNAL_NAV_STATE), 0);
 
 	// 3 Modes are used now. Add N-3 new ones which must overwrite previous hashes
 	for (int i = 0; i < Modes::MAX_NUM - 3; ++i) {
 		snprintf(mode.name, sizeof(mode.name), "new mode %i", i);
-		added_mode_nav_state = modes.addExternalMode(mode);
-		EXPECT_TRUE(modeValid(added_mode_nav_state));
-		EXPECT_EQ(readHash(added_mode_nav_state - Modes::FIRST_EXTERNAL_NAV_STATE),
+		added_mode_operation_mode = modes.addExternalMode(mode);
+		EXPECT_TRUE(modeValid(added_mode_operation_mode));
+		EXPECT_EQ(readHash(added_mode_operation_mode - Modes::FIRST_EXTERNAL_NAV_STATE),
 			  events::util::hash_32_fnv1a_const(mode.name));
 	}
 

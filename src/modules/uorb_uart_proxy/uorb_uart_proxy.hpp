@@ -57,8 +57,8 @@
 // uORB topic includes
 #include <uORB/topics/boom_status.h>
 #include <uORB/topics/bucket_status.h>
-#include <uORB/topics/boom_trajectory_setpoint.h>
-#include <uORB/topics/bucket_trajectory_setpoint.h>
+#include <uORB/topics/boom_control_setpoint.h>
+#include <uORB/topics/tilt_control_setpoint.h>
 #include <uORB/topics/steering_status.h>
 #include <uORB/topics/sensor_limit_switch.h>
 #include <uORB/topics/sensor_quad_encoder.h>

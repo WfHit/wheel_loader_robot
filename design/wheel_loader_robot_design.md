@@ -19,7 +19,7 @@
 
 The PX4-based Wheel Loader Robot represents a paradigm shift in autonomous heavy equipment design, combining traditional construction equipment capabilities with modern autonomous systems technology. This document outlines a comprehensive design that enables seamless dual-mode operation between human-controlled and fully autonomous states while maintaining the highest safety standards required for industrial construction environments.
 
-The system's core innovation lies in its **Operation Mode Manager** - a sophisticated arbitration layer that manages the complex interactions between manual operators, autonomous algorithms, and safety systems. Unlike traditional automation retrofits, this design treats autonomy as a first-class operational mode, enabling smooth transitions and robust fail-safes.
+The system's core innovation lies in its **Operation Mode Manager** - a sophisticated arbitration layer that manages the complex interactions between manual operators, autonomous algorithms, and safety systems. Unlike traditional automation retrofits, this design treats automation as a first-class operational mode, enabling smooth transitions and robust fail-safes.
 
 ### Key Design Achievements
 - **Seamless Dual-Mode Operation**: Instantaneous switching between manual and autonomous control
@@ -49,8 +49,8 @@ The design encompasses all aspects of autonomous wheel loader operation from hig
 
 ## Design Philosophy
 
-### Human-Centric Autonomy
-The system is designed with the principle that autonomy should enhance rather than replace human capabilities. Manual override is always available, and the autonomous systems are designed to be predictable and transparent to human operators.
+### Human-Centric Automation
+The system is designed with the principle that automation should enhance rather than replace human capabilities. Manual override is always available, and the autonomous systems are designed to be predictable and transparent to human operators.
 
 ### Safety-First Architecture
 Every design decision is evaluated through a safety lens. The architecture implements multiple independent safety layers, ensuring that system failures result in safe states rather than hazardous conditions.
@@ -342,7 +342,7 @@ The system design accommodates diverse market requirements:
 
 The Wheel Loader Robot design represents a comprehensive approach to autonomous construction equipment that prioritizes safety, reliability, and operational effectiveness. By combining proven PX4 autopilot technology with innovative electric actuator systems and sophisticated AI integration, the system delivers autonomous capabilities while maintaining the robust performance required for industrial applications.
 
-The modular architecture ensures long-term viability and enables continuous improvement through technology evolution. The dual-mode operational paradigm provides immediate value through enhanced manual operation while building toward full autonomy as AI capabilities mature.
+The modular architecture ensures long-term viability and enables continuous improvement through technology evolution. The dual-mode operational paradigm provides immediate value through enhanced manual operation while building toward full automation as AI capabilities mature.
 
 This design establishes a foundation for the future of autonomous construction equipment, demonstrating that sophisticated automation can enhance rather than replace human expertise while delivering improved safety, efficiency, and environmental performance.
 

@@ -56,7 +56,7 @@ void StatusDisplay::set_leds()
 {
 	bool gps_lock_valid = !_failsafe_flags_sub.get().global_position_invalid;
 	bool home_position_valid = !_failsafe_flags_sub.get().home_position_invalid;
-	int nav_state = _vehicle_status_sub.get().nav_state;
+	int nav_state = _vehicle_status_sub.get().operation_mode;
 
 #if defined(BOARD_FRONT_LED_MASK)
 
@@ -78,14 +78,14 @@ void StatusDisplay::set_leds()
 	// set the led mask for the status led which are the back LED
 	_led_control.led_mask = BOARD_REAR_LED_MASK;
 
-	if (nav_state == vehicle_status_s::NAVIGATION_STATE_AUTO_RTL
-	    || nav_state == vehicle_status_s::NAVIGATION_STATE_AUTO_LAND) {
+	if (nav_state == vehicle_status_s::OPERATION_MODE_AUTO_RTL
+	    || nav_state == vehicle_status_s::OPERATION_MODE_AUTO_LAND) {
 		_led_control.color = led_control_s::COLOR_PURPLE;
 
-	} else if (nav_state == vehicle_status_s::NAVIGATION_STATE_ALTCTL) {
+	} else if (nav_state == vehicle_status_s::OPERATION_MODE_ALTCTL) {
 		_led_control.color = led_control_s::COLOR_BLUE;
 
-	} else if (nav_state == vehicle_status_s::NAVIGATION_STATE_AUTO_MISSION) {
+	} else if (nav_state == vehicle_status_s::OPERATION_MODE_AUTO_MISSION) {
 		_led_control.color = led_control_s::COLOR_GREEN;
 
 	} else {
@@ -112,7 +112,7 @@ void StatusDisplay::set_leds()
 		_low_battery = true;
 	}
 
-	if (nav_state != _old_nav_state
+	if (nav_state != _old_operation_mode
 	    || gps_lock_valid != _old_gps_lock_valid
 	    || home_position_valid != _old_home_position_valid
 	    || _battery_status_sub.get().warning != _old_battery_status_warning) {
@@ -123,7 +123,7 @@ void StatusDisplay::set_leds()
 #endif // BOARD_REAR_LED_MASK
 
 	// copy actual state
-	_old_nav_state = nav_state;
+	_old_operation_mode = nav_state;
 	_old_gps_lock_valid = gps_lock_valid;
 	_old_home_position_valid = home_position_valid;
 	_old_battery_status_warning = _battery_status_sub.get().warning;

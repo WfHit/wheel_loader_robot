@@ -32,7 +32,7 @@
  ****************************************************************************/
 
 /**
- * @file mavlink_mission.h
+ * @file mavlink_current_auto_mission.h
  * Implementation of the MAVLink mission protocol.
  * Documentation:
  * - http://qgroundcontrol.org/mavlink/mission_interface

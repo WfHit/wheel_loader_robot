@@ -4,16 +4,16 @@
 # Front wheel and bucket control board
 #------------------------------------------------------------------------------
 
-# Start bucket control module
-if param compare BUCKET_CTRL_EN 1
+# Start tilt control module
+if param compare TILT_CTRL_EN 1
 then
-	echo "Starting bucket control module"
-	bucket_control start
+	echo "Starting tilt control module"
+	tilt_control start
 
 	# Wait for module to initialize
 	sleep 1
 
-	echo "Bucket control module started successfully"
+	echo "Tilt control module started successfully"
 fi
 
 # Start H-bridge driver for bucket actuator

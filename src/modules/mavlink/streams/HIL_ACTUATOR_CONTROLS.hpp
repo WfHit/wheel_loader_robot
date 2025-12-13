@@ -106,7 +106,7 @@ private:
 					msg.mode |= MAV_MODE_FLAG_HIL_ENABLED;
 				}
 
-				if (status.nav_state == vehicle_status_s::NAVIGATION_STATE_AUTO_MISSION) {
+				if (status.operation_mode == vehicle_status_s::OPERATION_MODE_AUTO_MISSION) {
 					msg.mode |= MAV_MODE_FLAG_GUIDED_ENABLED;
 				}
 			}
