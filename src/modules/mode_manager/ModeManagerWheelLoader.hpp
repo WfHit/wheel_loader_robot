@@ -103,7 +103,8 @@ public:
 
 		// Manual mode for wheel loader
 		if (!mode_activated &&
-		    (operation_mode == vehicle_status_s::OPERATION_MODE_MANUAL)) {
+		    (operation_mode == vehicle_status_s::OPERATION_MODE_MANUAL ||
+		     !mode_activated)) {  // Fallback to manual
 			error = switchMode(ModeIndex::ManualWheelLoader);
 
 			if (error == ModeError::NoError) {
@@ -112,19 +113,6 @@ public:
 
 			} else {
 				logModeSelection("ManualWheelLoader", false);
-			}
-		}
-
-		// Fallback to manual mode if no mode was activated
-		if (!mode_activated) {
-			error = switchMode(ModeIndex::ManualWheelLoader);
-
-			if (error == ModeError::NoError) {
-				mode_activated = true;
-				logModeSelection("ManualWheelLoader (fallback)", true);
-
-			} else {
-				logModeSelection("ManualWheelLoader (fallback)", false);
 			}
 		}
 

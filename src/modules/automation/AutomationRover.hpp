@@ -158,9 +158,9 @@ public:
 		return _param_nav_acc_rad.get();
 	}
 
-	float getCruisingSpeed() const override
+	float getCruiseSpeed() const override
 	{
-		// Rover cruising speed
-		return get_cruising_speed();
+		// Rover cruise speed
+		return _param_mpc_xy_cruise.get();
 	}
 };
