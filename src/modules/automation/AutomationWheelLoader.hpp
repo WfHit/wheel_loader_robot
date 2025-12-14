@@ -33,9 +33,23 @@
 
 /**
  * @file AutomationWheelLoader.hpp
+ * @brief Automation subclass for wheel loader vehicles
  *
- * Automation subclass for wheel loader vehicles.
- * Handles VLA trajectory following and wheel loader specific tasks.
+ * This class implements the vehicle-specific automation behavior for articulated
+ * wheel loaders. It supports VLA (Vision-Language-Action) trajectory following
+ * for autonomous construction operations.
+ *
+ * Supported operations:
+ * - VLA Trajectory Following: AI-guided 7-DOF control (chassis + boom + bucket)
+ * - Mission: Ground waypoint following
+ *
+ * Unsupported operations:
+ * - All aerial operations (takeoff, land, RTL, loiter, precision landing)
+ *
+ * The wheel loader uses a unique control paradigm with coordinated control of:
+ * - Chassis: steering and propulsion
+ * - Boom: lift arm position
+ * - Bucket: tilt angle
  */
 
 #pragma once
@@ -44,13 +58,13 @@
 
 /**
  * @class AutomationWheelLoader
+ * @brief Wheel loader specific Automation implementation
  *
- * Wheel loader specific Automation implementation.
- *
- * Key behaviors:
- * - Supports VLA trajectory following for autonomous operation
- * - No aerial flight tasks (takeoff, land, RTL)
- * - Ground-based navigation only
+ * Key characteristics:
+ * - Ground-only operations
+ * - 7-DOF trajectory following (VLA mode)
+ * - No automation in failsafe (stop and wait)
+ * - Larger acceptance radius for ground navigation
  */
 class AutomationWheelLoader : public AutomationBase
 {
@@ -78,29 +92,20 @@ public:
 
 	TaskBase* selectVehicleSpecificTask(uint8_t operation_mode) override
 	{
-		TaskBase* selected_task = nullptr;
-
 		switch (operation_mode) {
 		case vehicle_status_s::OPERATION_MODE_AUTO_VLA:
-			// VLA 7-DOF Trajectory Following (chassis + boom + tilt)
-			selected_task = &_vla_trajectory_task;
 			logTaskSelection("VLA Trajectory", true);
-			break;
+			return &_vla_trajectory_task;
 
 		case vehicle_status_s::OPERATION_MODE_AUTO_MISSION:
-			// Mission execution for wheel loader
-			selected_task = &_mission_task;
 			logTaskSelection("Mission", true);
-			break;
+			return &_mission_task;
 
 		case vehicle_status_s::OPERATION_MODE_MANUAL:
 		default:
 			// No automation task for manual mode
-			selected_task = nullptr;
-			break;
+			return nullptr;
 		}
-
-		return selected_task;
 	}
 
 	//========================================================================
@@ -109,21 +114,19 @@ public:
 
 	uint64_t getAvailableTasksMask() const override
 	{
-		// Wheel loaders support limited task set
-		// Note: These would be task type enum values
-		return (1ULL << 0) |  // None/Idle
-		       (1ULL << 1) |  // VLA trajectory
-		       (1ULL << 2);   // Mission (ground waypoints only)
+		// Bit 0: None/Idle, Bit 1: VLA trajectory, Bit 2: Mission
+		return (1ULL << 0) | (1ULL << 1) | (1ULL << 2);
 	}
 
 	bool isTaskAvailable(uint8_t task_type) const override
 	{
-		// Wheel loaders don't support aerial tasks
 		switch (task_type) {
+		// Wheel loader specific tasks
 		case vehicle_type_config_s::AUTOMATION_TASK_VLA:
 		case vehicle_type_config_s::AUTOMATION_TASK_MISSION:
 			return true;
 
+		// All aerial tasks - not supported
 		case vehicle_type_config_s::AUTOMATION_TASK_TAKEOFF:
 		case vehicle_type_config_s::AUTOMATION_TASK_LAND:
 		case vehicle_type_config_s::AUTOMATION_TASK_RTL:
@@ -136,14 +139,12 @@ public:
 
 	TaskBase* getDefaultTask() override
 	{
-		// Wheel loader default is no automation (manual control)
-		return nullptr;
+		return nullptr;  // Manual control, no automation task
 	}
 
 	TaskBase* getFailsafeTask() override
 	{
-		// Wheel loader failsafe is to stop (no automation task)
-		return nullptr;
+		return nullptr;  // Stop and wait for operator
 	}
 
 	//========================================================================
@@ -152,23 +153,21 @@ public:
 
 	uint8_t getGeofenceAction() const override
 	{
-		// Wheel loaders should stop on geofence breach
-		return 0;  // Geofence action: None (handled by SystemManager failsafe)
+		// Geofence breach handled by SystemManager failsafe (emergency stop)
+		return 0;
 	}
 
 	//========================================================================
-	// Vehicle-specific parameters
+	// Vehicle-specific Parameters
 	//========================================================================
 
 	float getAcceptanceRadius() const override
 	{
-		// Wheel loaders need larger acceptance radius for ground navigation
-		return 2.0f;  // 2 meters
+		return 2.0f;  // 2 meters for ground navigation
 	}
 
 	float getCruisingSpeed() const override
 	{
-		// Wheel loader cruising speed (m/s)
 		return 2.0f;  // 2 m/s typical for wheel loader
 	}
 };

@@ -33,10 +33,24 @@
 
 /**
  * @file SystemManagerWheelLoader.hpp
+ * @brief SystemManager subclass for wheel loader vehicles
  *
- * SystemManager subclass for wheel loader vehicles.
- * Handles articulated wheel loader specific command filtering,
- * failsafe behavior, and mode management.
+ * This class manages system-level operations for articulated wheel loaders,
+ * including command filtering, failsafe behavior, arming logic, and mode
+ * management.
+ *
+ * Command handling:
+ * - Rejects all aerial commands (takeoff, land, orbit, etc.)
+ * - Accepts ground navigation and wheel loader specific commands
+ *
+ * Failsafe behavior:
+ * - Emergency stop (apply brakes, stop all motion)
+ * - No RTL/Land options (ground vehicle)
+ * - Manual takeover for operator intervention
+ *
+ * Arming:
+ * - Simplified checks (no altitude/GPS requirements for basic operation)
+ * - Future: bucket/boom position checks, hydraulic pressure verification
  */
 
 #pragma once
@@ -45,14 +59,13 @@
 
 /**
  * @class SystemManagerWheelLoader
+ * @brief Wheel loader specific SystemManager implementation
  *
- * Wheel loader specific SystemManager implementation.
- *
- * Key behaviors:
- * - Rejects aerial commands (takeoff, land, orbit, etc.)
- * - Uses emergency stop for failsafe instead of RTL
- * - Supports only ground-based operation modes (Manual, VLA)
- * - No altitude-based arming checks
+ * Key characteristics:
+ * - Ground-only operation modes
+ * - Emergency stop as primary failsafe
+ * - Aerial command rejection
+ * - Simplified arming requirements
  */
 class SystemManagerWheelLoader : public SystemManagerBase
 {
@@ -80,19 +93,23 @@ public:
 
 	bool shouldRejectCommand(const vehicle_command_s &cmd) const override
 	{
-		// Reject all aerial commands
 		switch (cmd.command) {
+		// Aerial navigation commands - reject
 		case vehicle_command_s::VEHICLE_CMD_NAV_TAKEOFF:
 		case vehicle_command_s::VEHICLE_CMD_NAV_VTOL_TAKEOFF:
 		case vehicle_command_s::VEHICLE_CMD_NAV_LAND:
 		case vehicle_command_s::VEHICLE_CMD_NAV_PRECLAND:
+		case vehicle_command_s::VEHICLE_CMD_NAV_LOITER_UNLIM:
+		case vehicle_command_s::VEHICLE_CMD_NAV_LOITER_TIME:
+			logCommandRejection(cmd, "aerial navigation not supported");
+			return true;
+
+		// Aerial maneuver commands - reject
 		case vehicle_command_s::VEHICLE_CMD_DO_ORBIT:
 		case vehicle_command_s::VEHICLE_CMD_DO_FIGUREEIGHT:
 		case vehicle_command_s::VEHICLE_CMD_DO_VTOL_TRANSITION:
 		case vehicle_command_s::VEHICLE_CMD_DO_CHANGE_ALTITUDE:
-		case vehicle_command_s::VEHICLE_CMD_NAV_LOITER_UNLIM:
-		case vehicle_command_s::VEHICLE_CMD_NAV_LOITER_TIME:
-			logCommandRejection(cmd, "aerial command not supported");
+			logCommandRejection(cmd, "aerial maneuver not supported");
 			return true;
 
 		default:
@@ -102,27 +119,27 @@ public:
 
 	int getUnsupportedCommands(uint16_t* commands, int max_commands) const override
 	{
-		static const uint16_t unsupported[] = {
+		static constexpr uint16_t kUnsupportedCommands[] = {
 			vehicle_command_s::VEHICLE_CMD_NAV_TAKEOFF,
 			vehicle_command_s::VEHICLE_CMD_NAV_VTOL_TAKEOFF,
 			vehicle_command_s::VEHICLE_CMD_NAV_LAND,
 			vehicle_command_s::VEHICLE_CMD_NAV_PRECLAND,
+			vehicle_command_s::VEHICLE_CMD_NAV_LOITER_UNLIM,
+			vehicle_command_s::VEHICLE_CMD_NAV_LOITER_TIME,
 			vehicle_command_s::VEHICLE_CMD_DO_ORBIT,
 			vehicle_command_s::VEHICLE_CMD_DO_FIGUREEIGHT,
 			vehicle_command_s::VEHICLE_CMD_DO_VTOL_TRANSITION,
 			vehicle_command_s::VEHICLE_CMD_DO_CHANGE_ALTITUDE,
-			vehicle_command_s::VEHICLE_CMD_NAV_LOITER_UNLIM,
-			vehicle_command_s::VEHICLE_CMD_NAV_LOITER_TIME,
 		};
 
-		int count = sizeof(unsupported) / sizeof(unsupported[0]);
-		count = (count > max_commands) ? max_commands : count;
+		constexpr int kCount = sizeof(kUnsupportedCommands) / sizeof(kUnsupportedCommands[0]);
+		const int copy_count = (kCount > max_commands) ? max_commands : kCount;
 
-		for (int i = 0; i < count; i++) {
-			commands[i] = unsupported[i];
+		for (int i = 0; i < copy_count; i++) {
+			commands[i] = kUnsupportedCommands[i];
 		}
 
-		return count;
+		return copy_count;
 	}
 
 	//========================================================================
@@ -134,14 +151,14 @@ public:
 		(void)event;
 		(void)current_state;
 
-		// Wheel loaders use emergency stop (brake) for failsafe
-		// No RTL or land options for ground vehicles
+		// Ground vehicle failsafe: apply brakes and stop
 		return FailsafeAction::EmergencyStop;
 	}
 
 	bool supportsFailsafeAction(FailsafeAction action) const override
 	{
 		switch (action) {
+		// Supported ground vehicle actions
 		case FailsafeAction::None:
 		case FailsafeAction::Warn:
 		case FailsafeAction::Hold:
@@ -149,7 +166,7 @@ public:
 		case FailsafeAction::ManualTakeover:
 			return true;
 
-		// Aerial failsafe actions not supported
+		// Aerial failsafe actions - not supported
 		case FailsafeAction::RTL:
 		case FailsafeAction::Land:
 		case FailsafeAction::Descend:
@@ -165,27 +182,22 @@ public:
 
 	bool vehicleSpecificPrearmCheck(const char** reason) const override
 	{
-		// TODO: Add wheel loader specific checks
-		// - Bucket position safe
-		// - Boom position safe
-		// - Articulation angle neutral
+		// TODO: Implement wheel loader specific pre-arm checks
+		// - Bucket in safe position
+		// - Boom in safe position
+		// - Articulation angle within limits
+		// - Hydraulic pressure OK
 		// - Parking brake engaged (for some modes)
-
 		(void)reason;
 		return true;
 	}
 
 	uint32_t getRequiredArmingChecksMask() const override
 	{
-		// Wheel loaders don't need altitude/GPS checks for basic operation
-		// Remove airborne-related checks
-		uint32_t mask = 0xFFFFFFFF;
-
-		// Disable checks that don't apply to ground vehicles
-		// These would be specific bit flags from health_and_arming_checks
-		// For now, return all checks enabled
-
-		return mask;
+		// Ground vehicle: disable airborne-related checks
+		// Return all checks enabled for now; specific bits can be
+		// disabled when health_and_arming_checks bit flags are defined
+		return 0xFFFFFFFF;
 	}
 
 	//========================================================================
@@ -194,7 +206,6 @@ public:
 
 	uint64_t getAvailableModesMask() const override
 	{
-		// Wheel loaders only support manual and VLA autonomous modes
 		return (1ULL << vehicle_status_s::OPERATION_MODE_MANUAL) |
 		       (1ULL << vehicle_status_s::OPERATION_MODE_AUTO_VLA) |
 		       (1ULL << vehicle_status_s::OPERATION_MODE_OFFBOARD);
@@ -207,7 +218,6 @@ public:
 
 	uint8_t getFailsafeMode() const override
 	{
-		// Wheel loaders go to manual on failsafe (emergency stop handled separately)
 		return vehicle_status_s::OPERATION_MODE_MANUAL;
 	}
 
@@ -222,9 +232,10 @@ public:
 
 	void updateVehicleSpecificState() override
 	{
-		// TODO: Update wheel loader specific state
-		// - Monitor boom/bucket positions
-		// - Check articulation limits
-		// - Monitor hydraulic pressure
+		// TODO: Implement wheel loader state monitoring
+		// - Boom/bucket position monitoring
+		// - Articulation angle monitoring
+		// - Hydraulic system status
+		// - Load cell readings (if equipped)
 	}
 };

@@ -33,8 +33,20 @@
 
 /**
  * @file AutomationRover.hpp
+ * @brief Automation subclass for rover/ground vehicles
  *
- * Automation subclass for rover/ground vehicles.
+ * This class implements the vehicle-specific automation behavior for ground-based
+ * rovers. It supports ground navigation tasks while rejecting aerial operations.
+ *
+ * Supported operations:
+ * - RTL (Return to Launch) - drives back to launch position
+ * - Mission - follows ground waypoints
+ * - Loiter/Hold - stops and holds current position
+ *
+ * Unsupported operations:
+ * - Takeoff/Land - not applicable for ground vehicles
+ * - Precision Landing - aerial only
+ * - VLA - wheel loader specific
  */
 
 #pragma once
@@ -43,8 +55,12 @@
 
 /**
  * @class AutomationRover
+ * @brief Rover/ground vehicle specific Automation implementation
  *
- * Rover/ground vehicle specific Automation implementation.
+ * Key characteristics:
+ * - Ground-only navigation
+ * - Hold position as default/failsafe behavior
+ * - No altitude-based operations
  */
 class AutomationRover : public AutomationBase
 {
@@ -72,42 +88,27 @@ public:
 
 	TaskBase* selectVehicleSpecificTask(uint8_t operation_mode) override
 	{
-		TaskBase* selected_task = nullptr;
-
 		switch (operation_mode) {
 		case vehicle_status_s::OPERATION_MODE_AUTO_RTL:
-			selected_task = &_rtl;
 			logTaskSelection("RTL", true);
-			break;
+			return &_rtl;
 
 		case vehicle_status_s::OPERATION_MODE_AUTO_MISSION:
-			selected_task = &_mission_task;
 			logTaskSelection("Mission", true);
-			break;
+			return &_mission_task;
 
 		case vehicle_status_s::OPERATION_MODE_AUTO_LOITER:
-			// Rover loiter = hold position
-			selected_task = &_loiter;
 			logTaskSelection("Hold", true);
-			break;
+			return &_loiter;
 
-		// Aerial operations not available for rovers
 		case vehicle_status_s::OPERATION_MODE_AUTO_TAKEOFF:
-			logTaskSelection("Takeoff (ground vehicle)", false);
-			selected_task = nullptr;
-			break;
-
 		case vehicle_status_s::OPERATION_MODE_AUTO_LAND:
-			logTaskSelection("Land (ground vehicle)", false);
-			selected_task = nullptr;
-			break;
+			logTaskSelection("Aerial task (not supported)", false);
+			return nullptr;
 
 		default:
-			selected_task = nullptr;
-			break;
+			return nullptr;
 		}
-
-		return selected_task;
 	}
 
 	//========================================================================
@@ -117,19 +118,16 @@ public:
 	bool isTaskAvailable(uint8_t task_type) const override
 	{
 		switch (task_type) {
-		// Ground-based tasks
+		// Ground-based tasks - supported
 		case vehicle_type_config_s::AUTOMATION_TASK_RTL:
 		case vehicle_type_config_s::AUTOMATION_TASK_LOITER:
 		case vehicle_type_config_s::AUTOMATION_TASK_MISSION:
 			return true;
 
-		// Aerial tasks not supported
+		// Aerial and vehicle-specific tasks - not supported
 		case vehicle_type_config_s::AUTOMATION_TASK_TAKEOFF:
 		case vehicle_type_config_s::AUTOMATION_TASK_LAND:
 		case vehicle_type_config_s::AUTOMATION_TASK_PRECLAND:
-			return false;
-
-		// VLA is wheel loader specific
 		case vehicle_type_config_s::AUTOMATION_TASK_VLA:
 			return false;
 
@@ -140,27 +138,25 @@ public:
 
 	TaskBase* getDefaultTask() override
 	{
-		return &_loiter;  // Hold position
+		return &_loiter;
 	}
 
 	TaskBase* getFailsafeTask() override
 	{
-		return &_loiter;  // Hold position (rovers stop)
+		return &_loiter;
 	}
 
 	//========================================================================
-	// Vehicle-specific parameters
+	// Vehicle-specific Parameters
 	//========================================================================
 
 	float getAcceptanceRadius() const override
 	{
-		// Rover waypoint acceptance
 		return _param_nav_acc_rad.get();
 	}
 
-	float getCruiseSpeed() const override
+	float getCruisingSpeed() const override
 	{
-		// Rover cruise speed
 		return _param_mpc_xy_cruise.get();
 	}
 };

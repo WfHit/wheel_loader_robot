@@ -33,9 +33,21 @@
 
 /**
  * @file ModeManagerWheelLoader.hpp
+ * @brief ModeManager subclass for wheel loader vehicles
  *
- * ModeManager subclass for wheel loader vehicles.
- * Handles wheel loader specific mode selection including VLA autonomous mode.
+ * This class manages mode selection and transitions for articulated wheel loaders.
+ * Wheel loaders support a limited set of operation modes focused on ground-based
+ * construction operations.
+ *
+ * Supported modes:
+ * - Manual: Direct operator control of chassis, boom, and bucket
+ * - VLA (Vision-Language-Action): Autonomous operation using AI-guided control
+ * - Offboard: External control via MAVLink
+ *
+ * Mode transitions:
+ * - Any supported mode can transition to any other supported mode
+ * - Unsupported modes automatically fall back to Manual
+ * - Failsafe always returns to Manual mode (emergency stop)
  */
 
 #pragma once
@@ -44,14 +56,13 @@
 
 /**
  * @class ModeManagerWheelLoader
- *
- * Wheel loader specific ModeManager implementation.
+ * @brief Wheel loader specific ModeManager implementation
  *
  * Key behaviors:
- * - Supports only Manual and VLA modes
- * - VLA (Vision-Language-Action) for autonomous operation
- * - Manual mode for direct operator control
+ * - Limited mode set (Manual, VLA, Offboard only)
  * - No aerial flight modes
+ * - Manual mode as both default and failsafe
+ * - VLA mode for autonomous operations
  */
 class ModeManagerWheelLoader : public ModeManagerBase
 {
@@ -80,52 +91,56 @@ public:
 	void selectVehicleSpecificMode() override
 	{
 		const uint8_t operation_mode = _vehicle_status_sub.get().operation_mode;
-		ModeError error = ModeError::NoError;
-		bool mode_activated = false;
 
-		// Check if requested mode is available
+		// Validate requested mode availability
 		if (!isModeAvailable(operation_mode)) {
-			PX4_WARN("Mode %d not available for wheel loader", operation_mode);
+			PX4_WARN("Wheel Loader: Mode %d not available, falling back to manual",
+				 operation_mode);
 		}
 
-		// VLA 7-DOF Trajectory Following (chassis + boom + tilt) - autonomous mode
-		if (operation_mode == vehicle_status_s::OPERATION_MODE_AUTO_VLA) {
+		// Try to activate the requested mode
+		ModeError error = ModeError::NoError;
+
+		switch (operation_mode) {
+		case vehicle_status_s::OPERATION_MODE_AUTO_VLA:
 			error = switchMode(ModeIndex::VLA);
 
 			if (error == ModeError::NoError) {
-				mode_activated = true;
 				logModeSelection("VLA", true);
-
-			} else {
-				logModeSelection("VLA", false);
+				return;
 			}
-		}
 
-		// Manual mode for wheel loader
-		if (!mode_activated &&
-		    (operation_mode == vehicle_status_s::OPERATION_MODE_MANUAL ||
-		     !mode_activated)) {  // Fallback to manual
-			error = switchMode(ModeIndex::ManualWheelLoader);
+			logModeSelection("VLA", false);
+			break;
+
+		case vehicle_status_s::OPERATION_MODE_OFFBOARD:
+			error = switchMode(ModeIndex::Offboard);
 
 			if (error == ModeError::NoError) {
-				mode_activated = true;
-				logModeSelection("ManualWheelLoader", true);
-
-			} else {
-				logModeSelection("ManualWheelLoader", false);
+				logModeSelection("Offboard", true);
+				return;
 			}
+
+			logModeSelection("Offboard", false);
+			break;
+
+		default:
+			// Fall through to manual mode
+			break;
 		}
 
-		// Failsafe if no mode activated
-		if (!mode_activated) {
-			PX4_WARN("Wheel loader entering failsafe mode");
-			error = switchMode(getFailsafeModeIndex());
+		// Default/fallback: Manual mode
+		error = switchMode(ModeIndex::ManualWheelLoader);
 
-			if (error != ModeError::NoError) {
-				PX4_ERR("No valid mode available for wheel loader");
-				switchMode(ModeIndex::None);
-			}
+		if (error == ModeError::NoError) {
+			logModeSelection("ManualWheelLoader", true);
+			return;
 		}
+
+		// Last resort: failsafe
+		logModeSelection("ManualWheelLoader", false);
+		PX4_ERR("Wheel Loader: No valid mode available, entering failsafe");
+		switchMode(ModeIndex::None);
 	}
 
 	//========================================================================
@@ -134,7 +149,6 @@ public:
 
 	uint64_t getAvailableModesMask() const override
 	{
-		// Wheel loaders only support manual and VLA modes
 		return (1ULL << vehicle_status_s::OPERATION_MODE_MANUAL) |
 		       (1ULL << vehicle_status_s::OPERATION_MODE_AUTO_VLA) |
 		       (1ULL << vehicle_status_s::OPERATION_MODE_OFFBOARD);
@@ -147,21 +161,21 @@ public:
 
 	ModeIndex getFailsafeModeIndex() const override
 	{
-		// Wheel loader failsafe is manual mode (stop and wait for operator)
 		return ModeIndex::ManualWheelLoader;
 	}
 
 	ModeIndex getModeIndexForOperationMode(uint8_t operation_mode) const override
 	{
 		switch (operation_mode) {
-		case vehicle_status_s::OPERATION_MODE_MANUAL:
-			return ModeIndex::ManualWheelLoader;
-
 		case vehicle_status_s::OPERATION_MODE_AUTO_VLA:
 			return ModeIndex::VLA;
 
+		case vehicle_status_s::OPERATION_MODE_OFFBOARD:
+			return ModeIndex::Offboard;
+
+		case vehicle_status_s::OPERATION_MODE_MANUAL:
 		default:
-			return ModeIndex::ManualWheelLoader;  // Default fallback
+			return ModeIndex::ManualWheelLoader;
 		}
 	}
 
@@ -171,7 +185,7 @@ public:
 
 	bool isTransitionAllowed(uint8_t from_mode, uint8_t to_mode) const override
 	{
-		// Wheel loader allows transition between any supported modes
+		// Allow transition only between supported modes
 		return isModeAvailable(from_mode) && isModeAvailable(to_mode);
 	}
 };
