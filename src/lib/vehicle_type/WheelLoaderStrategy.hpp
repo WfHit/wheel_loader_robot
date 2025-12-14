@@ -182,6 +182,24 @@ public:
 		}
 	}
 
+	bool shouldRejectCommand(const vehicle_command_s &command) const override
+	{
+		// Wheel loaders don't support aerial commands
+		switch (command.command) {
+		case vehicle_command_s::VEHICLE_CMD_NAV_TAKEOFF:
+		case vehicle_command_s::VEHICLE_CMD_NAV_VTOL_TAKEOFF:
+		case vehicle_command_s::VEHICLE_CMD_NAV_LAND:
+		case vehicle_command_s::VEHICLE_CMD_NAV_PRECLAND:
+		case vehicle_command_s::VEHICLE_CMD_DO_ORBIT:
+		case vehicle_command_s::VEHICLE_CMD_DO_FIGUREEIGHT:
+		case vehicle_command_s::VEHICLE_CMD_DO_VTOL_TRANSITION:
+			return true;  // Reject aerial commands
+
+		default:
+			return false;  // Allow all other commands
+		}
+	}
+
 	CommandResult handleCommand(const vehicle_command_s &command) const override
 	{
 		switch (command.command) {
@@ -189,6 +207,38 @@ public:
 		// For now, delegate to default handler
 		default:
 			return CommandResult::Delegated;
+		}
+	}
+
+	uint8_t getTargetModeForCommand(uint16_t command) const override
+	{
+		// Wheel loaders have limited mode set - most commands don't apply
+		switch (command) {
+		case vehicle_command_s::VEHICLE_CMD_DO_REPOSITION:
+			// Wheel loader uses VLA mode for positioning
+			return vehicle_status_s::OPERATION_MODE_AUTO_VLA;
+
+		case vehicle_command_s::VEHICLE_CMD_MISSION_START:
+			// Mission mode (if waypoint following is implemented)
+			return vehicle_status_s::OPERATION_MODE_AUTO_MISSION;
+
+		case vehicle_command_s::VEHICLE_CMD_NAV_RETURN_TO_LAUNCH:
+			// No RTL for ground vehicles - fall back to manual
+			return vehicle_status_s::OPERATION_MODE_MANUAL;
+
+		case vehicle_command_s::VEHICLE_CMD_DO_SET_MODE:
+			// Mode is specified in params, not here
+			return vehicle_status_s::OPERATION_MODE_MAX;
+
+		// Aerial commands - should be rejected before this
+		case vehicle_command_s::VEHICLE_CMD_NAV_TAKEOFF:
+		case vehicle_command_s::VEHICLE_CMD_NAV_LAND:
+		case vehicle_command_s::VEHICLE_CMD_NAV_VTOL_TAKEOFF:
+		case vehicle_command_s::VEHICLE_CMD_DO_ORBIT:
+			return vehicle_status_s::OPERATION_MODE_MAX;  // No mode change (rejected)
+
+		default:
+			return vehicle_status_s::OPERATION_MODE_MAX;  // No mode change needed
 		}
 	}
 

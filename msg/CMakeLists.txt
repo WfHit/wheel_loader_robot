@@ -44,9 +44,14 @@ set(msg_files
 	ActuatorOutputs.msg
 	ActuatorServosTrim.msg
 	ActuatorTest.msg
+	ActuatorTestRequest.msg
 	AdcReport.msg
 	Airspeed.msg
 	AirspeedWind.msg
+	ArmingRequest.msg
+	AutomationTask.msg
+	CalibrationRequest.msg
+	AutomationTaskResult.msg
 	AutotuneAttitudeControlStatus.msg
 	BoomControlSetpoint.msg
 	BoomStatus.msg
@@ -95,6 +100,8 @@ set(msg_files
 	EstimatorStatus.msg
 	EstimatorStatusFlags.msg
 	Event.msg
+	FailsafeModeRequest.msg
+	FlightTerminationRequest.msg
 	FigureEightStatus.msg
 	FailsafeFlags.msg
 	FailureDetectorStatus.msg
@@ -149,6 +156,9 @@ set(msg_files
 	MessageFormatResponse.msg
 	Mission.msg
 	MissionResult.msg
+	ModeChangeRequest.msg
+	ModeChangeResult.msg
+	ModeStatus.msg
 	MountOrientation.msg
 	NavigatorMissionItem.msg
 	NavigatorStatus.msg
@@ -173,6 +183,8 @@ set(msg_files
 	ParameterSetValueRequest.msg
 	ParameterSetValueResponse.msg
 	ParameterUpdate.msg
+	PrearmCheckRequest.msg
+	RebootRequest.msg
 	Ping.msg
 	PositionControllerLandingStatus.msg
 	PositionControllerStatus.msg
@@ -226,6 +238,8 @@ set(msg_files
 	SensorsStatus.msg
 	SensorsStatusImu.msg
 	SensorUwb.msg
+	SetHomeRequest.msg
+	StorageRequest.msg
 	SensorAirflow.msg
 	SteeringSetpoint.msg
 	SteeringStatus.msg

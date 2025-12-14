@@ -1,0 +1,12 @@
+menuconfig MODULES_COMMAND_PROCESSOR
+	bool "command_processor"
+	default n
+	---help---
+		Enable support for command_processor module
+
+		Command Processor handles vehicle_command_s messages and dispatches them
+		to vehicle-specific command handlers. It provides:
+		- Vehicle-type specific command handling
+		- Mode change request publishing (mode_change_request)
+		- Automation task publishing (automation_task)
+		- Command acknowledgment handling

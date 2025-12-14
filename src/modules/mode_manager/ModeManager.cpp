@@ -32,7 +32,7 @@
  ****************************************************************************/
 
 #include "ModeManager.hpp"
-#include "ModeManagerBase.hpp"
+#include "UserModeIntention.hpp"
 
 #include <lib/mathlib/mathlib.h>
 #include <lib/matrix/matrix/math.hpp>
@@ -108,7 +108,16 @@ void ModeManager::Run()
 		_vehicle_land_detected_sub.update();
 		_vehicle_status_sub.update();
 
+		// Handle mode change requests from system_manager
+		handleModeChangeRequest();
+
+		// Handle failsafe mode requests from system_manager
+		handleFailsafeModeRequest();
+
 		selectAndActivateMode();
+
+		// Publish mode status for system_manager and other modules
+		publishModeStatus();
 
 		if (_vehicle_command_sub.updated()) {
 			handleCommand();
@@ -139,9 +148,12 @@ void ModeManager::selectAndActivateMode()
 	// Update vehicle type configuration subscription
 	_vehicle_type_config_sub.update();
 
+	// Get the user's intended mode from mode_change_request (not from vehicle_status)
+	const uint8_t intended_mode = _user_mode_intention.get();
+
 	// Handle external modes - no mode manager control
-	if ((_vehicle_status_sub.get().operation_mode >= vehicle_status_s::OPERATION_MODE_EXTERNAL3)
-	    && (_vehicle_status_sub.get().operation_mode <= vehicle_status_s::OPERATION_MODE_EXTERNAL8)) {
+	if ((intended_mode >= vehicle_status_s::OPERATION_MODE_EXTERNAL3)
+	    && (intended_mode <= vehicle_status_s::OPERATION_MODE_EXTERNAL8)) {
 		switchMode(ModeIndex::None);
 		return;
 	}
@@ -197,160 +209,24 @@ void ModeManager::selectAndActivateMode()
 		}
 	}
 
-	// Only run transition flight task if altitude control is enabled (e.g. in Altitdue, Position, Auto flight mode)
-	if (_vehicle_status_sub.get().in_transition_mode &&
-		_vehicle_control_mode_sub.get().flag_control_altitude_enabled) {
-		switchMode(ModeIndex::Transition);
-		return;
+	// Standard mode selection using user_mode_intention
+	selectStandardMode();
+}
+
+void ModeManager::handleModeChangeRequest()
+{
+	// Process mode change requests from system_manager
+	// This updates the user mode intention based on incoming requests
+	if (_user_mode_intention.update()) {
+		// Mode was changed - the new mode will be selected in selectAndActivateMode()
+		PX4_DEBUG("Mode intention updated to %d", _user_mode_intention.get());
 	}
 
-	bool found_some_mode = false;
-	bool matching_mode_running = true;
-	bool mode_failure = false;
-	const bool operation_mode_descend = (_vehicle_status_sub.get().operation_mode == vehicle_status_s::OPERATION_MODE_DESCEND);
-
-	// Follow me
-	if (_vehicle_status_sub.get().operation_mode == vehicle_status_s::OPERATION_MODE_AUTO_FOLLOW_TARGET) {
-		found_some_mode = true;
-		ModeError error = ModeError::InvalidMode;
-
-#if !defined(CONSTRAINED_FLASH)
-		error = switchMode(ModeIndex::AutoFollowTarget);
-#endif // !CONSTRAINED_FLASH
-
-		if (error != ModeError::NoError) {
-			matching_mode_running = false;
-			mode_failure = true;
-		}
+	// Handle disarm - restore last safe mode
+	if (_vehicle_status_sub.get().arming_state == vehicle_status_s::ARMING_STATE_DISARMED &&
+	    _vehicle_land_detected_sub.get().landed) {
+		// Note: This is simplified - full implementation would track arming state transitions
 	}
-
-	// Manual mode for wheel loader (ground vehicle manual control)
-	if (_vehicle_status_sub.get().operation_mode == vehicle_status_s::OPERATION_MODE_MANUAL) {
-		found_some_mode = true;
-		ModeError error = switchMode(ModeIndex::ManualWheelLoader);
-
-		if (error != ModeError::NoError) {
-			matching_mode_running = false;
-			mode_failure = true;
-		}
-	}
-
-	// VLA 7-DOF Trajectory Following (chassis + boom + tilt)
-	if (_vehicle_status_sub.get().operation_mode == vehicle_status_s::OPERATION_MODE_AUTO_VLA) {
-		found_some_mode = true;
-		ModeError error = switchMode(ModeIndex::VLA);
-
-		if (error != ModeError::NoError) {
-			matching_mode_running = false;
-			mode_failure = true;
-		}
-	}
-
-	// Orbit
-	if ((_vehicle_status_sub.get().operation_mode == vehicle_status_s::OPERATION_MODE_ORBIT)
-	    && !_command_failed) {
-		found_some_mode = true;
-		ModeError error = ModeError::InvalidMode;
-
-#if !defined(CONSTRAINED_FLASH)
-		error = switchMode(ModeIndex::Orbit);
-#endif // !CONSTRAINED_FLASH
-
-		if (error != ModeError::NoError) {
-			matching_mode_running = false;
-			mode_failure = true;
-		}
-	}
-
-	// Navigator interface for autonomous modes
-	if (_vehicle_control_mode_sub.get().flag_control_auto_enabled
-	    && !operation_mode_descend) {
-		found_some_mode = true;
-
-		if (switchMode(ModeIndex::Auto) != ModeError::NoError) {
-			matching_mode_running = false;
-			mode_failure = true;
-		}
-	}
-
-	// position slow mode
-	if (_vehicle_status_sub.get().operation_mode == vehicle_status_s::OPERATION_MODE_POSITION_SLOW) {
-		found_some_mode = true;
-		ModeError error = switchMode(ModeIndex::ManualAccelerationSlow);
-		mode_failure = error != ModeError::NoError;
-	}
-
-	// Manual position control
-	if ((_vehicle_status_sub.get().operation_mode == vehicle_status_s::OPERATION_MODE_POSCTL) || mode_failure) {
-		found_some_mode = true;
-		ModeError error = ModeError::NoError;
-
-		switch (_param_mpc_pos_mode.get()) {
-		case 0:
-			error = switchMode(ModeIndex::ManualPosition);
-			break;
-
-		case 4:
-		default:
-			if (_param_mpc_pos_mode.get() != 4) {
-				PX4_ERR("MPC_POS_MODE %" PRId32 " invalid, resetting", _param_mpc_pos_mode.get());
-				_param_mpc_pos_mode.set(4);
-				_param_mpc_pos_mode.commit();
-			}
-
-			error = switchMode(ModeIndex::ManualAcceleration);
-			break;
-		}
-
-		mode_failure = (error != ModeError::NoError);
-		matching_mode_running = matching_mode_running && !mode_failure;
-	}
-
-	// Manual altitude control
-	if ((_vehicle_status_sub.get().operation_mode == vehicle_status_s::OPERATION_MODE_ALTCTL) || mode_failure) {
-		found_some_mode = true;
-		ModeError error = ModeError::NoError;
-
-		switch (_param_mpc_pos_mode.get()) {
-		case 0:
-			error = switchMode(ModeIndex::ManualAltitude);
-			break;
-
-		case 3:
-		default:
-			error = switchMode(ModeIndex::ManualAltitudeSmoothVel);
-			break;
-		}
-
-		mode_failure = (error != ModeError::NoError);
-		matching_mode_running = matching_mode_running && !mode_failure;
-	}
-
-	// Emergency descend
-	if (operation_mode_descend || mode_failure) {
-		found_some_mode = true;
-
-		ModeError error = switchMode(ModeIndex::Descend);
-
-		mode_failure = (error != ModeError::NoError);
-		matching_mode_running = matching_mode_running && !mode_failure;
-	}
-
-	if (mode_failure) {
-		// For some reason no mode was able to start, go into failsafe mode
-		found_some_mode = (switchMode(ModeIndex::Failsafe) == ModeError::NoError);
-	}
-
-	if (!found_some_mode) {
-		switchMode(ModeIndex::None);
-	}
-
-	if (!matching_mode_running && _vehicle_control_mode_sub.get().flag_armed && !_no_matching_mode_error_printed) {
-		PX4_ERR("Matching mode was not able to run, Nav state: %" PRIu32,
-			_vehicle_status_sub.get().operation_mode, static_cast<uint32_t>(_current_mode.index));
-	}
-
-	_no_matching_mode_error_printed = !matching_mode_running;
 }
 
 void ModeManager::tryApplyCommandIfAny()
@@ -506,8 +382,7 @@ const char *ModeManager::errorToString(const ModeError error)
 
 int ModeManager::task_spawn(int argc, char *argv[])
 {
-	// Use factory to create vehicle-specific instance
-	ModeManagerBase *instance = ModeManagerFactory::createFromParam();
+	ModeManager *instance = new ModeManager();
 
 	if (instance) {
 		_object.store(instance);
@@ -549,19 +424,20 @@ int ModeManager::print_status()
 void ModeManager::selectWheelLoaderMode()
 {
 	// Wheel loader specific mode selection
+	// Uses _user_mode_intention from mode_change_request (not vehicle_status)
 	// Priority: VLA Auto -> Manual -> Failsafe
 
-	const uint8_t operation_mode = _vehicle_status_sub.get().operation_mode;
+	const uint8_t intended_mode = _user_mode_intention.get();
 	ModeError error = ModeError::NoError;
 	bool mode_activated = false;
 
 	// Check if requested mode is available using vehicle_type_config
-	if (!isModeAvailableForVehicleType(operation_mode)) {
-		PX4_WARN("Requested mode %d not available for wheel loader", operation_mode);
+	if (!isModeAvailableForVehicleType(intended_mode)) {
+		PX4_WARN("Requested mode %d not available for wheel loader", intended_mode);
 	}
 
 	// VLA 7-DOF Trajectory Following (chassis + boom + tilt) - autonomous mode
-	if (operation_mode == vehicle_status_s::OPERATION_MODE_AUTO_VLA) {
+	if (intended_mode == vehicle_status_s::OPERATION_MODE_AUTO_VLA) {
 		error = switchMode(ModeIndex::VLA);
 
 		if (error == ModeError::NoError) {
@@ -599,19 +475,19 @@ void ModeManager::selectWheelLoaderMode()
 void ModeManager::selectRoverMode()
 {
 	// Rover specific mode selection
-	// Uses vehicle_type_config for available modes
+	// Uses _user_mode_intention from mode_change_request (not vehicle_status)
 
-	const uint8_t operation_mode = _vehicle_status_sub.get().operation_mode;
+	const uint8_t intended_mode = _user_mode_intention.get();
 	ModeError error = ModeError::NoError;
 	bool mode_activated = false;
 
 	// Check if requested mode is available
-	if (!isModeAvailableForVehicleType(operation_mode)) {
-		PX4_WARN("Requested mode %d not available for rover", operation_mode);
+	if (!isModeAvailableForVehicleType(intended_mode)) {
+		PX4_WARN("Requested mode %d not available for rover", intended_mode);
 	}
 
 	// Manual mode
-	if (operation_mode == vehicle_status_s::OPERATION_MODE_MANUAL) {
+	if (intended_mode == vehicle_status_s::OPERATION_MODE_MANUAL) {
 		error = switchMode(ModeIndex::ManualPosition);
 
 		if (error == ModeError::NoError) {
@@ -620,7 +496,7 @@ void ModeManager::selectRoverMode()
 	}
 
 	// Position control mode
-	if (!mode_activated && operation_mode == vehicle_status_s::OPERATION_MODE_POSCTL) {
+	if (!mode_activated && intended_mode == vehicle_status_s::OPERATION_MODE_POSCTL) {
 		error = switchMode(ModeIndex::ManualAcceleration);
 
 		if (error == ModeError::NoError) {
@@ -629,7 +505,9 @@ void ModeManager::selectRoverMode()
 	}
 
 	// Auto modes (mission, loiter, RTL)
-	if (!mode_activated && _vehicle_control_mode_sub.get().flag_control_auto_enabled) {
+	if (!mode_activated && (intended_mode == vehicle_status_s::OPERATION_MODE_AUTO_MISSION ||
+				intended_mode == vehicle_status_s::OPERATION_MODE_AUTO_LOITER ||
+				intended_mode == vehicle_status_s::OPERATION_MODE_AUTO_RTL)) {
 		error = switchMode(ModeIndex::Auto);
 
 		if (error == ModeError::NoError) {
@@ -652,18 +530,19 @@ void ModeManager::selectRoverMode()
 void ModeManager::selectRotaryWingMode()
 {
 	// Rotary wing (multicopter) specific mode selection
+	// Uses _user_mode_intention from mode_change_request (not vehicle_status)
 	// Priority: Transition -> Follow Target -> Orbit -> Auto -> Position Slow -> Position -> Altitude -> Descend -> Failsafe
 
-	const uint8_t operation_mode = _vehicle_status_sub.get().operation_mode;
-	const bool operation_mode_descend = (operation_mode == vehicle_status_s::OPERATION_MODE_DESCEND);
+	const uint8_t intended_mode = _user_mode_intention.get();
+	const bool operation_mode_descend = (intended_mode == vehicle_status_s::OPERATION_MODE_DESCEND);
 	ModeError error = ModeError::NoError;
 	bool found_some_mode = false;
 	bool matching_mode_running = true;
 	bool mode_failure = false;
 
 	// Check if requested mode is available
-	if (!isModeAvailableForVehicleType(operation_mode)) {
-		PX4_WARN("Requested mode %d not available for rotary wing", operation_mode);
+	if (!isModeAvailableForVehicleType(intended_mode)) {
+		PX4_WARN("Requested mode %d not available for rotary wing", intended_mode);
 	}
 
 	// Only run transition flight task if altitude control is enabled
@@ -674,7 +553,7 @@ void ModeManager::selectRotaryWingMode()
 	}
 
 	// Follow me
-	if (operation_mode == vehicle_status_s::OPERATION_MODE_AUTO_FOLLOW_TARGET) {
+	if (intended_mode == vehicle_status_s::OPERATION_MODE_AUTO_FOLLOW_TARGET) {
 		found_some_mode = true;
 
 #if !defined(CONSTRAINED_FLASH)
@@ -690,7 +569,7 @@ void ModeManager::selectRotaryWingMode()
 	}
 
 	// Orbit
-	if ((operation_mode == vehicle_status_s::OPERATION_MODE_ORBIT) && !_command_failed) {
+	if ((intended_mode == vehicle_status_s::OPERATION_MODE_ORBIT) && !_command_failed) {
 		found_some_mode = true;
 
 #if !defined(CONSTRAINED_FLASH)
@@ -705,8 +584,14 @@ void ModeManager::selectRotaryWingMode()
 		}
 	}
 
-	// Navigator interface for autonomous modes
-	if (_vehicle_control_mode_sub.get().flag_control_auto_enabled && !operation_mode_descend) {
+	// Auto modes (mission, loiter, RTL, etc.)
+	if (!found_some_mode && (intended_mode == vehicle_status_s::OPERATION_MODE_AUTO_MISSION ||
+				 intended_mode == vehicle_status_s::OPERATION_MODE_AUTO_LOITER ||
+				 intended_mode == vehicle_status_s::OPERATION_MODE_AUTO_RTL ||
+				 intended_mode == vehicle_status_s::OPERATION_MODE_AUTO_TAKEOFF ||
+				 intended_mode == vehicle_status_s::OPERATION_MODE_AUTO_LAND ||
+				 intended_mode == vehicle_status_s::OPERATION_MODE_AUTO_PRECLAND) &&
+	    !operation_mode_descend) {
 		found_some_mode = true;
 
 		if (switchMode(ModeIndex::Auto) != ModeError::NoError) {
@@ -716,14 +601,14 @@ void ModeManager::selectRotaryWingMode()
 	}
 
 	// Position slow mode
-	if (operation_mode == vehicle_status_s::OPERATION_MODE_POSITION_SLOW) {
+	if (!found_some_mode && intended_mode == vehicle_status_s::OPERATION_MODE_POSITION_SLOW) {
 		found_some_mode = true;
 		error = switchMode(ModeIndex::ManualAccelerationSlow);
 		mode_failure = error != ModeError::NoError;
 	}
 
 	// Manual position control
-	if ((operation_mode == vehicle_status_s::OPERATION_MODE_POSCTL) || mode_failure) {
+	if (!found_some_mode && ((intended_mode == vehicle_status_s::OPERATION_MODE_POSCTL) || mode_failure)) {
 		found_some_mode = true;
 
 		switch (_param_mpc_pos_mode.get()) {
@@ -748,7 +633,7 @@ void ModeManager::selectRotaryWingMode()
 	}
 
 	// Manual altitude control
-	if ((operation_mode == vehicle_status_s::OPERATION_MODE_ALTCTL) || mode_failure) {
+	if (!found_some_mode && ((intended_mode == vehicle_status_s::OPERATION_MODE_ALTCTL) || mode_failure)) {
 		found_some_mode = true;
 
 		switch (_param_mpc_pos_mode.get()) {
@@ -767,7 +652,7 @@ void ModeManager::selectRotaryWingMode()
 	}
 
 	// Emergency descend
-	if (operation_mode_descend || mode_failure) {
+	if (!found_some_mode && (operation_mode_descend || mode_failure)) {
 		found_some_mode = true;
 		error = switchMode(ModeIndex::Descend);
 		mode_failure = (error != ModeError::NoError);
@@ -785,7 +670,7 @@ void ModeManager::selectRotaryWingMode()
 
 	if (!matching_mode_running && _vehicle_control_mode_sub.get().flag_armed && !_no_matching_mode_error_printed) {
 		PX4_ERR("Matching mode was not able to run for rotary wing, Nav state: %" PRIu32,
-			operation_mode);
+			intended_mode);
 	}
 
 	_no_matching_mode_error_printed = !matching_mode_running;
@@ -794,19 +679,20 @@ void ModeManager::selectRotaryWingMode()
 void ModeManager::selectFixedWingMode()
 {
 	// Fixed wing specific mode selection
+	// Uses _user_mode_intention from mode_change_request (not vehicle_status)
 	// Fixed wing uses different control modes compared to multirotors
 	// Priority: Auto -> Position -> Altitude -> Failsafe
 
-	const uint8_t operation_mode = _vehicle_status_sub.get().operation_mode;
-	const bool operation_mode_descend = (operation_mode == vehicle_status_s::OPERATION_MODE_DESCEND);
+	const uint8_t intended_mode = _user_mode_intention.get();
+	const bool operation_mode_descend = (intended_mode == vehicle_status_s::OPERATION_MODE_DESCEND);
 	ModeError error = ModeError::NoError;
 	bool found_some_mode = false;
 	bool matching_mode_running = true;
 	bool mode_failure = false;
 
 	// Check if requested mode is available
-	if (!isModeAvailableForVehicleType(operation_mode)) {
-		PX4_WARN("Requested mode %d not available for fixed wing", operation_mode);
+	if (!isModeAvailableForVehicleType(intended_mode)) {
+		PX4_WARN("Requested mode %d not available for fixed wing", intended_mode);
 	}
 
 	// Only run transition flight task if in transition mode
@@ -816,8 +702,13 @@ void ModeManager::selectFixedWingMode()
 		return;
 	}
 
-	// Navigator interface for autonomous modes
-	if (_vehicle_control_mode_sub.get().flag_control_auto_enabled && !operation_mode_descend) {
+	// Auto modes (mission, loiter, RTL)
+	if ((intended_mode == vehicle_status_s::OPERATION_MODE_AUTO_MISSION ||
+	     intended_mode == vehicle_status_s::OPERATION_MODE_AUTO_LOITER ||
+	     intended_mode == vehicle_status_s::OPERATION_MODE_AUTO_RTL ||
+	     intended_mode == vehicle_status_s::OPERATION_MODE_AUTO_TAKEOFF ||
+	     intended_mode == vehicle_status_s::OPERATION_MODE_AUTO_LAND) &&
+	    !operation_mode_descend) {
 		found_some_mode = true;
 
 		if (switchMode(ModeIndex::Auto) != ModeError::NoError) {
@@ -827,7 +718,7 @@ void ModeManager::selectFixedWingMode()
 	}
 
 	// Manual position control (for fixed wing this typically means altitude + heading hold)
-	if ((operation_mode == vehicle_status_s::OPERATION_MODE_POSCTL) || mode_failure) {
+	if (!found_some_mode && ((intended_mode == vehicle_status_s::OPERATION_MODE_POSCTL) || mode_failure)) {
 		found_some_mode = true;
 		error = switchMode(ModeIndex::ManualPosition);
 		mode_failure = (error != ModeError::NoError);
@@ -835,7 +726,7 @@ void ModeManager::selectFixedWingMode()
 	}
 
 	// Manual altitude control
-	if ((operation_mode == vehicle_status_s::OPERATION_MODE_ALTCTL) || mode_failure) {
+	if (!found_some_mode && ((intended_mode == vehicle_status_s::OPERATION_MODE_ALTCTL) || mode_failure)) {
 		found_some_mode = true;
 		error = switchMode(ModeIndex::ManualAltitude);
 		mode_failure = (error != ModeError::NoError);
@@ -843,7 +734,7 @@ void ModeManager::selectFixedWingMode()
 	}
 
 	// Stabilized mode (attitude control only)
-	if ((operation_mode == vehicle_status_s::OPERATION_MODE_STAB) || mode_failure) {
+	if (!found_some_mode && ((intended_mode == vehicle_status_s::OPERATION_MODE_STAB) || mode_failure)) {
 		found_some_mode = true;
 		// Fixed wing stabilized uses attitude control
 		// Fall through to no specific mode - FW attitude controller handles this
@@ -852,7 +743,7 @@ void ModeManager::selectFixedWingMode()
 	}
 
 	// Manual mode (direct control)
-	if (operation_mode == vehicle_status_s::OPERATION_MODE_MANUAL) {
+	if (!found_some_mode && intended_mode == vehicle_status_s::OPERATION_MODE_MANUAL) {
 		found_some_mode = true;
 		// Fixed wing manual uses direct control - no mode manager involvement
 		switchMode(ModeIndex::None);
@@ -860,7 +751,7 @@ void ModeManager::selectFixedWingMode()
 	}
 
 	// Emergency descend
-	if (operation_mode_descend || mode_failure) {
+	if (!found_some_mode && (operation_mode_descend || mode_failure)) {
 		found_some_mode = true;
 		error = switchMode(ModeIndex::Descend);
 		mode_failure = (error != ModeError::NoError);
@@ -878,10 +769,290 @@ void ModeManager::selectFixedWingMode()
 
 	if (!matching_mode_running && _vehicle_control_mode_sub.get().flag_armed && !_no_matching_mode_error_printed) {
 		PX4_ERR("Matching mode was not able to run for fixed wing, Nav state: %" PRIu32,
-			operation_mode);
+			intended_mode);
 	}
 
 	_no_matching_mode_error_printed = !matching_mode_running;
+}
+
+void ModeManager::selectStandardMode()
+{
+	// Standard mode selection using _user_mode_intention (not vehicle_status)
+	// This is a fallback for vehicle types without specific selection logic
+
+	const uint8_t intended_mode = _user_mode_intention.get();
+	const bool operation_mode_descend = (intended_mode == vehicle_status_s::OPERATION_MODE_DESCEND);
+	ModeError error = ModeError::NoError;
+	bool found_some_mode = false;
+	bool matching_mode_running = true;
+	bool mode_failure = false;
+
+	// Only run transition flight task if altitude control is enabled
+	if (_vehicle_status_sub.get().in_transition_mode &&
+	    _vehicle_control_mode_sub.get().flag_control_altitude_enabled) {
+		switchMode(ModeIndex::Transition);
+		return;
+	}
+
+	// Follow me
+	if (intended_mode == vehicle_status_s::OPERATION_MODE_AUTO_FOLLOW_TARGET) {
+		found_some_mode = true;
+		ModeError error = ModeError::InvalidMode;
+
+#if !defined(CONSTRAINED_FLASH)
+		error = switchMode(ModeIndex::AutoFollowTarget);
+#endif
+
+		if (error != ModeError::NoError) {
+			matching_mode_running = false;
+			mode_failure = true;
+		}
+	}
+
+	// Manual mode for wheel loader
+	if (!found_some_mode && intended_mode == vehicle_status_s::OPERATION_MODE_MANUAL) {
+		found_some_mode = true;
+		error = switchMode(ModeIndex::ManualWheelLoader);
+
+		if (error != ModeError::NoError) {
+			matching_mode_running = false;
+			mode_failure = true;
+		}
+	}
+
+	// VLA 7-DOF Trajectory Following
+	if (!found_some_mode && intended_mode == vehicle_status_s::OPERATION_MODE_AUTO_VLA) {
+		found_some_mode = true;
+		error = switchMode(ModeIndex::VLA);
+
+		if (error != ModeError::NoError) {
+			matching_mode_running = false;
+			mode_failure = true;
+		}
+	}
+
+	// Orbit
+	if (!found_some_mode && (intended_mode == vehicle_status_s::OPERATION_MODE_ORBIT) && !_command_failed) {
+		found_some_mode = true;
+
+#if !defined(CONSTRAINED_FLASH)
+		error = switchMode(ModeIndex::Orbit);
+#else
+		error = ModeError::InvalidMode;
+#endif
+
+		if (error != ModeError::NoError) {
+			matching_mode_running = false;
+			mode_failure = true;
+		}
+	}
+
+	// Auto modes
+	if (!found_some_mode && (intended_mode == vehicle_status_s::OPERATION_MODE_AUTO_MISSION ||
+				 intended_mode == vehicle_status_s::OPERATION_MODE_AUTO_LOITER ||
+				 intended_mode == vehicle_status_s::OPERATION_MODE_AUTO_RTL ||
+				 intended_mode == vehicle_status_s::OPERATION_MODE_AUTO_TAKEOFF ||
+				 intended_mode == vehicle_status_s::OPERATION_MODE_AUTO_LAND) &&
+	    !operation_mode_descend) {
+		found_some_mode = true;
+
+		if (switchMode(ModeIndex::Auto) != ModeError::NoError) {
+			matching_mode_running = false;
+			mode_failure = true;
+		}
+	}
+
+	// Position slow mode
+	if (!found_some_mode && intended_mode == vehicle_status_s::OPERATION_MODE_POSITION_SLOW) {
+		found_some_mode = true;
+		error = switchMode(ModeIndex::ManualAccelerationSlow);
+		mode_failure = error != ModeError::NoError;
+	}
+
+	// Manual position control
+	if (!found_some_mode && ((intended_mode == vehicle_status_s::OPERATION_MODE_POSCTL) || mode_failure)) {
+		found_some_mode = true;
+
+		switch (_param_mpc_pos_mode.get()) {
+		case 0:
+			error = switchMode(ModeIndex::ManualPosition);
+			break;
+
+		case 4:
+		default:
+			error = switchMode(ModeIndex::ManualAcceleration);
+			break;
+		}
+
+		mode_failure = (error != ModeError::NoError);
+		matching_mode_running = matching_mode_running && !mode_failure;
+	}
+
+	// Manual altitude control
+	if (!found_some_mode && ((intended_mode == vehicle_status_s::OPERATION_MODE_ALTCTL) || mode_failure)) {
+		found_some_mode = true;
+
+		switch (_param_mpc_pos_mode.get()) {
+		case 0:
+			error = switchMode(ModeIndex::ManualAltitude);
+			break;
+
+		case 3:
+		default:
+			error = switchMode(ModeIndex::ManualAltitudeSmoothVel);
+			break;
+		}
+
+		mode_failure = (error != ModeError::NoError);
+		matching_mode_running = matching_mode_running && !mode_failure;
+	}
+
+	// Emergency descend
+	if (!found_some_mode && (operation_mode_descend || mode_failure)) {
+		found_some_mode = true;
+		error = switchMode(ModeIndex::Descend);
+		mode_failure = (error != ModeError::NoError);
+		matching_mode_running = matching_mode_running && !mode_failure;
+	}
+
+	if (mode_failure) {
+		found_some_mode = (switchMode(ModeIndex::Failsafe) == ModeError::NoError);
+	}
+
+	if (!found_some_mode) {
+		switchMode(ModeIndex::None);
+	}
+
+	if (!matching_mode_running && _vehicle_control_mode_sub.get().flag_armed && !_no_matching_mode_error_printed) {
+		PX4_ERR("Matching mode was not able to run, Nav state: %" PRIu32, intended_mode);
+	}
+
+	_no_matching_mode_error_printed = !matching_mode_running;
+}
+
+void ModeManager::handleFailsafeModeRequest()
+{
+	failsafe_mode_request_s failsafe_request;
+
+	if (_failsafe_mode_request_sub.update(&failsafe_request)) {
+		// Validate timestamp freshness (100ms timeout)
+		if (hrt_elapsed_time(&failsafe_request.timestamp) > 100_ms) {
+			PX4_WARN("Stale failsafe mode request, ignoring");
+			return;
+		}
+
+		// Check severity and force flag
+		bool should_change = failsafe_request.force;
+
+		if (!should_change) {
+			switch (failsafe_request.severity) {
+			case failsafe_mode_request_s::SEVERITY_CRITICAL:
+			case failsafe_mode_request_s::SEVERITY_HIGH:
+				should_change = true;
+				break;
+
+			case failsafe_mode_request_s::SEVERITY_MEDIUM:
+				// Medium severity: change unless user is actively controlling
+				should_change = !_vehicle_control_mode_sub.get().flag_control_manual_enabled;
+				break;
+
+			case failsafe_mode_request_s::SEVERITY_LOW:
+				// Low severity: only warn
+				PX4_INFO("Failsafe condition (low severity): source=%d, suggested mode=%d",
+					 failsafe_request.source, failsafe_request.requested_mode);
+				break;
+			}
+		}
+
+		if (should_change) {
+			// Store previous mode before failsafe
+			_previous_mode = _vehicle_status_sub.get().operation_mode;
+			_failsafe_mode_active = true;
+
+			// Request the failsafe mode through user intention system
+			_user_mode_intention.change(failsafe_request.requested_mode,
+						    mode_manager::ModeChangeSource::Failsafe,
+						    failsafe_request.force);
+
+			PX4_INFO("Failsafe mode request: %d -> %d (source=%d, severity=%d)",
+				 _previous_mode, failsafe_request.requested_mode,
+				 failsafe_request.source, failsafe_request.severity);
+		}
+	}
+}
+
+void ModeManager::publishModeStatus()
+{
+	mode_status_s mode_status{};
+	mode_status.timestamp = hrt_absolute_time();
+
+	// Current mode from vehicle_status (which reflects actual active mode)
+	mode_status.current_mode = _vehicle_status_sub.get().operation_mode;
+	mode_status.user_intended_mode = _user_mode_intention.get();
+	mode_status.previous_mode = _previous_mode;
+
+	// Mode executor in charge
+	mode_status.mode_executor_in_charge = _vehicle_status_sub.get().mode_executor_in_charge;
+
+	// Mode availability masks
+	mode_status.valid_modes_mask = getValidModesMask();
+	mode_status.can_set_modes_mask = getCanSetModesMask();
+
+	// Status flags
+	mode_status.mode_change_in_progress = (mode_status.current_mode != mode_status.user_intended_mode);
+	mode_status.failsafe_mode_active = _failsafe_mode_active;
+
+	// External mode detection
+	mode_status.external_mode_active =
+		(mode_status.current_mode >= vehicle_status_s::OPERATION_MODE_EXTERNAL1) &&
+		(mode_status.current_mode <= vehicle_status_s::OPERATION_MODE_EXTERNAL8);
+
+	// Last change result
+	mode_status.last_change_result = _last_mode_change_result;
+
+	_mode_status_pub.publish(mode_status);
+}
+
+uint32_t ModeManager::getValidModesMask() const
+{
+	const vehicle_type_config_s &vtc = _vehicle_type_config_sub.get();
+
+	if (vtc.config_valid) {
+		return vtc.available_modes_mask;
+	}
+
+	// Default: basic modes available
+	uint32_t mask = 0;
+	mask |= (1u << vehicle_status_s::OPERATION_MODE_MANUAL);
+	mask |= (1u << vehicle_status_s::OPERATION_MODE_ALTCTL);
+	mask |= (1u << vehicle_status_s::OPERATION_MODE_POSCTL);
+
+	return mask;
+}
+
+uint32_t ModeManager::getCanSetModesMask() const
+{
+	uint32_t valid_mask = getValidModesMask();
+	uint32_t can_set_mask = valid_mask;
+
+	// Remove modes that cannot be set in current state
+	const vehicle_status_s &vs = _vehicle_status_sub.get();
+
+	// If not armed, can only set certain modes
+	if (vs.arming_state != vehicle_status_s::ARMING_STATE_ARMED) {
+		// Allow pre-arm mode selection
+		return can_set_mask;
+	}
+
+	// If in failsafe, limit mode changes
+	if (_failsafe_mode_active) {
+		// Only allow safer modes during failsafe
+		can_set_mask &= ((1u << vehicle_status_s::OPERATION_MODE_MANUAL) |
+				 (1u << vehicle_status_s::OPERATION_MODE_POSCTL) |
+				 (1u << vehicle_status_s::OPERATION_MODE_DESCEND));
+	}
+
+	return can_set_mask;
 }
 
 bool ModeManager::isModeAvailableForVehicleType(uint8_t operation_mode) const

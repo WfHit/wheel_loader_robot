@@ -37,7 +37,7 @@
  * Central registry for all module-specific vehicle strategies
  *
  * This registry provides access to strategy instances for each module
- * (SystemManager, ModeManager, Automation) based on vehicle type.
+ * (ModeManager, Automation) based on vehicle type.
  * Strategies are allocated statically as singletons.
  */
 
@@ -46,7 +46,6 @@
 #include "VehicleStrategyTypes.hpp"
 
 // Forward declarations - actual implementations in module folders
-namespace system_manager_strategy { class SystemManagerStrategyBase; }
 namespace mode_manager_strategy { class ModeManagerStrategyBase; }
 namespace automation_strategy { class AutomationStrategyBase; }
 
@@ -62,13 +61,6 @@ namespace vehicle_strategy
 class VehicleStrategyRegistry
 {
 public:
-	/**
-	 * @brief Get the SystemManager strategy for a vehicle type
-	 * @param vehicle_type Vehicle type from vehicle_status_s
-	 * @return Pointer to the strategy (never null)
-	 */
-	static const system_manager_strategy::SystemManagerStrategyBase* getSystemManagerStrategy(uint8_t vehicle_type);
-
 	/**
 	 * @brief Get the ModeManager strategy for a vehicle type
 	 * @param vehicle_type Vehicle type from vehicle_status_s

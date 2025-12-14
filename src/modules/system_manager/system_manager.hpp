@@ -41,7 +41,7 @@
 #include "mode_management.hpp"
 #include "multicopter_throw_launch/multicopter_throw_launch.hpp"
 #include "safety.hpp"
-#include "user_mode_intention.hpp"
+// Mode status received from mode_manager via uORB (replaces local UserModeIntention)
 #include "worker_thread.hpp"
 
 #include <lib/hysteresis/hysteresis.h>
@@ -55,6 +55,9 @@
 #include <uORB/topics/actuator_armed.h>
 #include <uORB/topics/actuator_test.h>
 #include <uORB/topics/failure_detector_status.h>
+#include <uORB/topics/failsafe_mode_request.h>
+#include <uORB/topics/mode_change_result.h>
+#include <uORB/topics/mode_status.h>
 #include <uORB/topics/vehicle_command_ack.h>
 #include <uORB/topics/vehicle_control_mode.h>
 #include <uORB/topics/vehicle_status.h>
@@ -69,17 +72,26 @@
 #include <uORB/SubscriptionMultiArray.hpp>
 #include <uORB/topics/action_request.h>
 #include <uORB/topics/airspeed.h>
+#include <uORB/topics/arming_request.h>
+#include <uORB/topics/actuator_test_request.h>
 #include <uORB/topics/battery_status.h>
+#include <uORB/topics/calibration_request.h>
 #include <uORB/topics/cpuload.h>
 #include <uORB/topics/distance_sensor.h>
+#include <uORB/topics/flight_termination_request.h>
 #include <uORB/topics/iridiumsbd_status.h>
 #include <uORB/topics/manual_control_setpoint.h>
 #include <uORB/topics/mission_result.h>
+#include <uORB/topics/mode_change_request.h>
 #include <uORB/topics/offboard_control_mode.h>
 #include <uORB/topics/parameter_update.h>
 #include <uORB/topics/power_button_state.h>
+#include <uORB/topics/prearm_check_request.h>
+#include <uORB/topics/reboot_request.h>
 #include <uORB/topics/rtl_time_estimate.h>
 #include <uORB/topics/sensor_gps.h>
+#include <uORB/topics/set_home_request.h>
+#include <uORB/topics/storage_request.h>
 #include <uORB/topics/system_power.h>
 #include <uORB/topics/telemetry_status.h>
 #include <uORB/topics/vehicle_command.h>
@@ -152,38 +164,51 @@ private:
 	void offboardControlCheck();
 
 	/**
-	 * @brief Handle incoming vehicle command relavant to Commander
-	 *
-	 * It ignores irrelevant vehicle commands defined inside the switch case statement
-	 * in the function.
-	 *
-	 * @param cmd 		Vehicle command to handle
+	 * @brief Handle mode change requests from CommandProcessor
 	 */
-	bool handle_command(const vehicle_command_s &cmd);
+	void handleModeChangeRequests();
 
 	/**
-	 * @brief Check if a command is supported for the current vehicle type
-	 *
-	 * Uses the vehicle_type_config supported_commands_mask to determine
-	 * if the command category is available for this vehicle type.
-	 *
-	 * @param cmd_category The command category to check (from vehicle_type_config_s::CMD_CATEGORY_*)
-	 * @return true if the command category is supported, false otherwise
+	 * @brief Handle arming requests from CommandProcessor
 	 */
-	bool isCommandSupportedForVehicleType(uint8_t cmd_category) const;
+	void handleArmingRequests();
 
 	/**
-	 * @brief Handle vehicle-type-specific command restrictions
-	 *
-	 * Returns UNSUPPORTED for commands that are not applicable to the current vehicle type.
-	 * Uses dispatcher pattern based on vehicle_type.
-	 *
-	 * @param cmd The vehicle command to check
-	 * @return true if the command should be rejected, false if it should be processed
+	 * @brief Handle calibration requests from CommandProcessor
 	 */
-	bool shouldRejectCommandForVehicleType(const vehicle_command_s &cmd) const;
+	void handleCalibrationRequests();
 
-	unsigned handleCommandActuatorTest(const vehicle_command_s &cmd);
+	/**
+	 * @brief Handle reboot requests from CommandProcessor
+	 */
+	void handleRebootRequests();
+
+	/**
+	 * @brief Handle storage requests from CommandProcessor
+	 */
+	void handleStorageRequests();
+
+	/**
+	 * @brief Handle actuator test requests from CommandProcessor
+	 */
+	void handleActuatorTestRequests();
+
+	/**
+	 * @brief Handle prearm check requests from CommandProcessor
+	 */
+	void handlePrearmCheckRequests();
+
+	/**
+	 * @brief Handle flight termination requests from CommandProcessor
+	 */
+	void handleFlightTerminationRequests();
+
+	/**
+	 * @brief Handle set home requests from CommandProcessor
+	 */
+	void handleSetHomeRequests();
+
+	unsigned handleCommandActuatorTest(const actuator_test_request_s &req);
 
 	void executeActionRequest(const action_request_s &action_request);
 
@@ -218,6 +243,24 @@ private:
 	void handleAutoDisarm();
 
 	bool handleModeIntentionAndFailsafe();
+
+	/**
+	 * @brief Publish mode change request to mode_manager
+	 * Called for RC/action-based mode changes (not from command_processor)
+	 */
+	void publishModeChangeRequest(uint8_t requested_mode, uint8_t source);
+
+	/**
+	 * @brief Publish failsafe mode request to mode_manager
+	 * Called when failsafe logic determines a mode change is needed
+	 */
+	void publishFailsafeModeRequest(uint8_t requested_mode, FailsafeBase::Action action, uint8_t severity, uint8_t source);
+
+	/**
+	 * @brief Update vehicle_status from ModeStatus subscription
+	 * Populates operation_mode from mode_manager's ModeStatus
+	 */
+	void updateFromModeStatus();
 
 	void updateParameters();
 
@@ -264,7 +307,11 @@ private:
 		_health_and_arming_checks.externalChecks()
 #endif
 	};
-	UserModeIntention	_user_mode_intention {this, _vehicle_status, _health_and_arming_checks, &_mode_management};
+
+	// Mode tracking (mode_manager is the authority, we track locally for failsafe logic)
+	uint8_t _cached_user_intended_mode{vehicle_status_s::OPERATION_MODE_AUTO_LOITER};
+	bool _ever_had_mode_change{false};
+	bool _had_mode_change{false};
 
 	const failsafe_flags_s &_failsafe_flags{_health_and_arming_checks.failsafeFlags()};
 	HomePosition 		_home_position{_failsafe_flags};
@@ -325,9 +372,17 @@ private:
 
 	// Subscriptions
 	uORB::Subscription					_action_request_sub{ORB_ID(action_request)};
+	uORB::Subscription					_arming_request_sub{ORB_ID(arming_request)};
+	uORB::Subscription					_actuator_test_request_sub{ORB_ID(actuator_test_request)};
+	uORB::Subscription					_calibration_request_sub{ORB_ID(calibration_request)};
 	uORB::Subscription					_cpuload_sub{ORB_ID(cpuload)};
+	uORB::Subscription					_flight_termination_request_sub{ORB_ID(flight_termination_request)};
 	uORB::Subscription					_iridiumsbd_status_sub{ORB_ID(iridiumsbd_status)};
 	uORB::Subscription					_manual_control_setpoint_sub{ORB_ID(manual_control_setpoint)};
+	uORB::Subscription					_prearm_check_request_sub{ORB_ID(prearm_check_request)};
+	uORB::Subscription					_reboot_request_sub{ORB_ID(reboot_request)};
+	uORB::Subscription					_set_home_request_sub{ORB_ID(set_home_request)};
+	uORB::Subscription					_storage_request_sub{ORB_ID(storage_request)};
 	uORB::Subscription					_system_power_sub{ORB_ID(system_power)};
 	uORB::Subscription					_vehicle_command_sub{ORB_ID(vehicle_command)};
 	uORB::Subscription					_vehicle_command_mode_executor_sub{ORB_ID(vehicle_command_mode_executor)};
@@ -344,11 +399,15 @@ private:
 
 	uORB::SubscriptionData<mission_result_s>		_mission_result_sub{ORB_ID(mission_result)};
 	uORB::SubscriptionData<offboard_control_mode_s>		_offboard_control_mode_sub{ORB_ID(offboard_control_mode)};
+	uORB::SubscriptionData<mode_status_s>			_mode_status_sub{ORB_ID(mode_status)};
 
 	// Publications
 	uORB::Publication<actuator_armed_s>			_actuator_armed_pub{ORB_ID(actuator_armed)};
 	uORB::Publication<actuator_test_s>			_actuator_test_pub{ORB_ID(actuator_test)};
 	uORB::Publication<failure_detector_status_s>		_failure_detector_status_pub{ORB_ID(failure_detector_status)};
+	uORB::Publication<failsafe_mode_request_s>		_failsafe_mode_request_pub{ORB_ID(failsafe_mode_request)};
+	uORB::Publication<mode_change_request_s>		_mode_change_request_pub{ORB_ID(mode_change_request)};
+	uORB::Publication<mode_change_result_s>			_mode_change_result_pub{ORB_ID(mode_change_result)};
 	uORB::Publication<vehicle_command_ack_s>		_vehicle_command_ack_pub{ORB_ID(vehicle_command_ack)};
 	uORB::Publication<vehicle_command_s>			_vehicle_command_pub{ORB_ID(vehicle_command)};
 	uORB::Publication<vehicle_control_mode_s>		_vehicle_control_mode_pub{ORB_ID(vehicle_control_mode)};

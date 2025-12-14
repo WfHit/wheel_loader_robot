@@ -1,6 +1,6 @@
 ############################################################################
 #
-#   Copyright (c) 2015 PX4 Development Team. All rights reserved.
+#   Copyright (c) 2024 PX4 Development Team. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -31,48 +31,14 @@
 #
 ############################################################################
 
-add_subdirectory(geofence_breach_avoidance)
-add_subdirectory(mission_tasks)
-
-set(AUTOMATION_SOURCES
-	automation_main.cpp
-	task_base.cpp
-	task_block.cpp
-	geofence.cpp
-	# flight_tasks
-	flight_tasks/loiter.cpp
-	flight_tasks/takeoff.cpp
-	flight_tasks/land.cpp
-	flight_tasks/precland.cpp
-	# mission_tasks
-	mission_tasks/mission_base.cpp
-	mission_tasks/mission.cpp
-	mission_tasks/mission_feasibility_checker.cpp
-	# rtl_tasks
-	rtl_tasks/rtl_task.cpp
-	rtl_tasks/rtl_direct.cpp
-	rtl_tasks/rtl_direct_mission_land.cpp
-	rtl_tasks/rtl_mission_fast.cpp
-	rtl_tasks/rtl_mission_fast_reverse.cpp
-	# vla_tasks
-	vla_tasks/vla_trajectory_task.cpp)
-
-if(CONFIG_MODE_NAVIGATOR_VTOL_TAKEOFF)
-	set(AUTOMATION_SOURCES
-		${AUTOMATION_SOURCES}
-		flight_tasks/vtol_takeoff.cpp)
-endif()
-
 px4_add_module(
-	MODULE modules__automation
-	MAIN automation
-	SRCS ${AUTOMATION_SOURCES}
+	MODULE modules__command_processor
+	MAIN command_processor
+	COMPILE_FLAGS
+	SRCS
+		CommandProcessor.cpp
+		StandardCommandHandler.cpp
+		WheelLoaderCommandHandler.cpp
 	DEPENDS
-		dataman_client
-		geo
-		adsb
-		geofence_breach_avoidance
-		motion_planning
-		mission_feasibility_checker
-		rtl_time_estimator
+		mode_util
 	)

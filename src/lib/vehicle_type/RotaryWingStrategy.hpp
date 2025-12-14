@@ -217,6 +217,62 @@ public:
 		}
 	}
 
+	bool shouldRejectCommand(const vehicle_command_s &command) const override
+	{
+		// Rotary wing supports most commands, only reject fixed-wing specific ones
+		switch (command.command) {
+		case vehicle_command_s::VEHICLE_CMD_DO_FIGUREEIGHT:
+			return true;  // Figure 8 is fixed wing only
+
+		case vehicle_command_s::VEHICLE_CMD_DO_VTOL_TRANSITION:
+			return true;  // Only for VTOLs
+
+		default:
+			return false;  // Accept most commands
+		}
+	}
+
+	uint8_t getTargetModeForCommand(uint16_t command) const override
+	{
+		switch (command) {
+		case vehicle_command_s::VEHICLE_CMD_DO_REPOSITION:
+		case vehicle_command_s::VEHICLE_CMD_DO_CHANGE_ALTITUDE:
+			return vehicle_status_s::OPERATION_MODE_AUTO_LOITER;
+
+		case vehicle_command_s::VEHICLE_CMD_NAV_RETURN_TO_LAUNCH:
+			return vehicle_status_s::OPERATION_MODE_AUTO_RTL;
+
+		case vehicle_command_s::VEHICLE_CMD_NAV_TAKEOFF:
+			return vehicle_status_s::OPERATION_MODE_AUTO_TAKEOFF;
+
+		case vehicle_command_s::VEHICLE_CMD_NAV_VTOL_TAKEOFF:
+			return vehicle_status_s::OPERATION_MODE_AUTO_VTOL_TAKEOFF;
+
+		case vehicle_command_s::VEHICLE_CMD_NAV_LAND:
+			return vehicle_status_s::OPERATION_MODE_AUTO_LAND;
+
+		case vehicle_command_s::VEHICLE_CMD_NAV_PRECLAND:
+			return vehicle_status_s::OPERATION_MODE_AUTO_PRECLAND;
+
+		case vehicle_command_s::VEHICLE_CMD_DO_ORBIT:
+			return vehicle_status_s::OPERATION_MODE_ORBIT;
+
+		case vehicle_command_s::VEHICLE_CMD_MISSION_START:
+			return vehicle_status_s::OPERATION_MODE_AUTO_MISSION;
+
+		case vehicle_command_s::VEHICLE_CMD_DO_FLIGHTTERMINATION:
+			return vehicle_status_s::OPERATION_MODE_TERMINATION;
+
+		case vehicle_command_s::VEHICLE_CMD_DO_SET_MODE:
+		case vehicle_command_s::VEHICLE_CMD_SET_NAV_STATE:
+			// Mode specified in params
+			return vehicle_status_s::OPERATION_MODE_MAX;
+
+		default:
+			return vehicle_status_s::OPERATION_MODE_MAX;  // No mode change
+		}
+	}
+
 	//========================================================================
 	// Event Reaction Configuration
 	//========================================================================

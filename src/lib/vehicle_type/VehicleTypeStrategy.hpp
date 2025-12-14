@@ -200,12 +200,15 @@ public:
 	virtual SafetyLimits getSafetyLimits() const = 0;
 
 	//========================================================================
-	// Command Set Configuration
+	// Command Set Configuration (deprecated - use command_processor module)
+	// These methods are kept for backward compatibility but command handling
+	// is now done by VehicleCommandHandler implementations in command_processor.
 	//========================================================================
 
 	/**
 	 * @brief Get the bitmask of supported command categories
 	 * @return Bitmask where each bit corresponds to CMD_CATEGORY_*
+	 * @deprecated Use command_processor::VehicleCommandHandler instead
 	 */
 	virtual uint32_t getSupportedCommandsMask() const = 0;
 
@@ -213,22 +216,9 @@ public:
 	 * @brief Check if a specific MAVLink command is supported
 	 * @param command MAVLink command ID (VEHICLE_CMD_*)
 	 * @return true if command is supported
+	 * @deprecated Use command_processor::VehicleCommandHandler::supportsCommand() instead
 	 */
 	virtual bool isCommandSupported(uint16_t command) const = 0;
-
-	/**
-	 * @brief Handle a vehicle command (vehicle-specific logic)
-	 * @param command The vehicle command to handle
-	 * @return CommandResult indicating how the command was handled
-	 *
-	 * Implement this to provide vehicle-specific command handling.
-	 * Return Delegated to use the default system_manager handling.
-	 */
-	virtual CommandResult handleCommand(const vehicle_command_s &command) const
-	{
-		(void)command;
-		return CommandResult::Delegated;
-	}
 
 	//========================================================================
 	// Event Reaction Configuration

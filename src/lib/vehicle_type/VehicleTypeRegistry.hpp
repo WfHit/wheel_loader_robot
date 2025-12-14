@@ -145,6 +145,13 @@ public:
 		return getStrategy(vehicle_type)->isAutomationTaskAvailable(task);
 	}
 
+	// Note: Command-related methods (shouldRejectCommand, getTargetModeForCommand)
+	// have been moved to command_processor module's VehicleCommandHandler implementations.
+	// See src/modules/command_processor/ for command handling.
+	{
+		return getStrategy(vehicle_type)->getEventReaction(event);
+	}
+
 private:
 	// Static strategy instances (avoid dynamic allocation)
 	static WheelLoaderStrategy _wheel_loader_strategy;

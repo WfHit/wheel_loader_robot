@@ -94,15 +94,11 @@ add_compile_options(
 	-Wno-cast-align
 ) # TODO: fix and enable
 
+# add subdirectory containing mode utilities
+add_subdirectory(mode_util)
+
 # add subdirectory containing all modes
 add_subdirectory(modes)
-
-# ModeManager vehicle strategies library
-px4_add_library(mode_manager_strategies
-	strategies/ModeManagerStrategyRegistry.cpp
-)
-target_include_directories(mode_manager_strategies PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/strategies)
-target_link_libraries(mode_manager_strategies PUBLIC vehicle_strategy)
 
 px4_add_module(
 	MODULE modules__mode_manager
@@ -114,7 +110,7 @@ px4_add_module(
 	SRCS
 		ModeManager.cpp
 		ModeManager.hpp
-		ModeManagerBase.cpp
+		UserModeIntention.cpp
 
 		${CMAKE_CURRENT_BINARY_DIR}/Modes_generated.hpp
 		${CMAKE_CURRENT_BINARY_DIR}/Modes_generated.cpp
@@ -122,8 +118,7 @@ px4_add_module(
 		px4_work_queue
 		WeatherVane
 		flightmodes_generated
-		mode_manager_strategies
-		vehicle_strategy
+		mode_util
 )
 
 # add all flight task dependencies

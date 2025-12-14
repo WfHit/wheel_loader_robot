@@ -35,6 +35,7 @@
 
 #include "Mode.hpp"
 #include "Modes_generated.hpp"
+#include "UserModeIntention.hpp"
 
 #include <drivers/drv_hrt.h>
 #include <px4_platform_common/module.h>
@@ -57,6 +58,8 @@
 #include <uORB/topics/vehicle_local_position_setpoint.h>
 #include <uORB/topics/vehicle_status.h>
 #include <uORB/topics/vehicle_type_config.h>
+#include <uORB/topics/mode_status.h>
+#include <uORB/topics/failsafe_mode_request.h>
 
 #include <new>
 
@@ -118,6 +121,12 @@ private:
 	void selectFixedWingMode();
 
 	/**
+	 * Standard mode selection (fallback when no vehicle-specific selection is available)
+	 * Uses _user_mode_intention from mode_change_request
+	 */
+	void selectStandardMode();
+
+	/**
 	 * Check if the requested mode is available for the current vehicle type
 	 * @param operation_mode Operation mode to check
 	 * @return true if mode is available, false otherwise
@@ -145,8 +154,20 @@ private:
 
 	void tryApplyCommandIfAny();
 
+	/**
+	 * @brief Handle mode change requests from system_manager
+	 *
+	 * Processes incoming mode_change_request messages and updates user mode intention.
+	 */
+	void handleModeChangeRequest();
+
 	// generated
 	int _initMode(ModeIndex mode_index);
+
+	/**
+	 * User mode intention handler - manages requested operation mode
+	 */
+	mode_manager::UserModeIntention _user_mode_intention{this};
 
 	/**
 	 * Union with all existing modes: we use it to make sure that only the memory of the largest existing
@@ -185,6 +206,33 @@ private:
 	uORB::Publication<landing_gear_s> _landing_gear_pub{ORB_ID(landing_gear)};
 	uORB::Publication<trajectory_setpoint_s> _control_setpoint_pub{ORB_ID(trajectory_setpoint)};
 	uORB::Publication<vehicle_constraints_s> _vehicle_constraints_pub{ORB_ID(vehicle_constraints)};
+	uORB::Publication<mode_status_s> _mode_status_pub{ORB_ID(mode_status)};
+
+	uORB::Subscription _failsafe_mode_request_sub{ORB_ID(failsafe_mode_request)};
+
+	/**
+	 * @brief Handle failsafe mode requests from system_manager
+	 */
+	void handleFailsafeModeRequest();
+
+	/**
+	 * @brief Publish current mode status for system_manager and other modules
+	 */
+	void publishModeStatus();
+
+	/**
+	 * @brief Get bitmask of valid modes for current vehicle type
+	 */
+	uint32_t getValidModesMask() const;
+
+	/**
+	 * @brief Get bitmask of modes that can be set in current state
+	 */
+	uint32_t getCanSetModesMask() const;
+
+	bool _failsafe_mode_active{false};		///< Current mode is due to failsafe
+	uint8_t _last_mode_change_result{mode_status_s::RESULT_SUCCESS};
+	uint8_t _previous_mode{0};
 
 	DEFINE_PARAMETERS(
 		(ParamInt<px4::params::MPC_POS_MODE>) _param_mpc_pos_mode

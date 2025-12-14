@@ -88,8 +88,9 @@
 #include <uORB/topics/vehicle_local_position.h>
 #include <uORB/topics/vehicle_roi.h>
 #include <uORB/topics/vehicle_status.h>
-#include <uORB/topics/vehicle_type_config.h>
 #include <uORB/topics/mode_completed.h>
+#include <uORB/topics/automation_task.h>
+#include <uORB/topics/automation_task_result.h>
 #include <uORB/uORB.h>
 
 using namespace time_literals;
@@ -312,8 +313,7 @@ private:
 	uORB::Subscription _land_detected_sub{ORB_ID(vehicle_land_detected)};	/**< vehicle land detected subscription */
 	uORB::Subscription _pos_ctrl_landing_status_sub{ORB_ID(position_controller_landing_status)};	/**< position controller landing status subscription */
 	uORB::Subscription _traffic_sub{ORB_ID(transponder_report)};		/**< traffic subscription */
-	uORB::Subscription _vehicle_command_sub{ORB_ID(vehicle_command)};	/**< vehicle commands (onboard and offboard) */
-	uORB::SubscriptionData<vehicle_type_config_s> _vehicle_type_config_sub{ORB_ID(vehicle_type_config)}; /**< vehicle type configuration */
+	uORB::Subscription _automation_task_sub{ORB_ID(automation_task)};	/**< automation task request subscription */
 
 	uORB::Publication<geofence_result_s>		_geofence_result_pub{ORB_ID(geofence_result)};
 	uORB::Publication<mission_result_s>		_mission_result_pub{ORB_ID(mission_result)};
@@ -323,6 +323,7 @@ private:
 	uORB::Publication<vehicle_command_s>		_vehicle_cmd_pub{ORB_ID(vehicle_command)};
 	uORB::Publication<vehicle_roi_s>		_vehicle_roi_pub{ORB_ID(vehicle_roi)};
 	uORB::Publication<mode_completed_s> _mode_completed_pub{ORB_ID(mode_completed)};
+	uORB::Publication<automation_task_result_s>	_automation_task_result_pub{ORB_ID(automation_task_result)};
 	uORB::PublicationData<distance_sensor_mode_change_request_s> _distance_sensor_mode_change_request_pub{ORB_ID(distance_sensor_mode_change_request)};
 
 	orb_advert_t	_mavlink_log_pub{nullptr};	/**< the uORB advert to send messages over mavlink */
@@ -353,8 +354,6 @@ private:
 
 	bool _automation_status_updated{false};
 	hrt_abstime _last_automation_status_publication{0};
-
-	hrt_abstime _wait_for_vehicle_status_timestamp{0}; /**< If non-zero, wait for vehicle_status update before processing next cmd */
 
 	bool		_geofence_reposition_sent{false};		/**< flag if reposition command has been sent for current geofence breach*/
 	hrt_abstime	_time_loitering_after_gf_breach{0};		/**< timestamp of when loitering after a geofence breach was started */
@@ -398,6 +397,17 @@ private:
 	void params_update();
 
 	/**
+	 * Handle automation task request and switch to the requested task
+	 */
+	void handle_automation_task();
+
+	/**
+	 * Publish automation task result
+	 */
+	void publish_automation_task_result(uint8_t task_type, uint8_t result,
+					    uint8_t source_system, uint8_t source_component, uint32_t cmd);
+
+	/**
 	 * Publish a new position setpoint triplet for position controllers
 	 */
 	void publish_position_setpoint_triplet();
@@ -414,20 +424,6 @@ private:
 	void publish_distance_sensor_mode_request();
 
 	bool geofence_allows_position(const vehicle_global_position_s &pos);
-
-	/**
-	 * Check if an automation task is available for the current vehicle type
-	 * @param task_type Automation task type from vehicle_type_config_s
-	 * @return true if task is available, false otherwise
-	 */
-	bool isAutomationTaskAvailable(uint8_t task_type);
-
-	/**
-	 * Update and get the vehicle type configuration
-	 * Note: This method updates the subscription before returning the data
-	 * @return const reference to the current vehicle type configuration
-	 */
-	const vehicle_type_config_s &updateAndGetVehicleTypeConfig() { _vehicle_type_config_sub.update(); return _vehicle_type_config_sub.get(); }
 
 	DEFINE_PARAMETERS(
 		(ParamFloat<px4::params::NAV_LOITER_RAD>)   _param_nav_loiter_rad,	/**< loiter radius for fixedwing */

@@ -32,7 +32,7 @@
  ****************************************************************************/
 
 #include "common.hpp"
-#include "../mode_util/mode_requirements.hpp"
+#include <mode_util/mode_requirements.hpp>
 
 void Report::getHealthReport(health_report_s &report) const
 {
