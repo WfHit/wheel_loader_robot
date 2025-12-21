@@ -37,6 +37,7 @@
 #include <uORB/topics/actuator_outputs.h>
 #include <uORB/topics/vehicle_control_mode.h>
 #include <uORB/topics/vehicle_status.h>
+#include <uORB/topics/mode_status.h>
 
 class MavlinkStreamHILActuatorControls : public MavlinkStream
 {
@@ -62,6 +63,7 @@ private:
 
 	uORB::Subscription _act_sub{ORB_ID(actuator_outputs)};
 	uORB::Subscription _vehicle_status_sub{ORB_ID(vehicle_status)};
+	uORB::Subscription _mode_status_sub{ORB_ID(mode_status)};
 	uORB::Subscription _vehicle_control_mode_sub{ORB_ID(vehicle_control_mode)};
 
 	bool send() override
@@ -105,8 +107,11 @@ private:
 				if (status.hil_state == vehicle_status_s::HIL_STATE_ON) {
 					msg.mode |= MAV_MODE_FLAG_HIL_ENABLED;
 				}
+			}
 
-				if (status.operation_mode == vehicle_status_s::OPERATION_MODE_AUTO_MISSION) {
+			mode_status_s mode_status;
+			if (_mode_status_sub.copy(&mode_status)) {
+				if (mode_status.current_mode == mode_status_s::OPERATION_MODE_AUTO_MISSION) {
 					msg.mode |= MAV_MODE_FLAG_GUIDED_ENABLED;
 				}
 			}

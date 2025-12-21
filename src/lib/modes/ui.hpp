@@ -45,28 +45,28 @@ namespace mode_util
  */
 static inline uint32_t getValidOperationModes()
 {
-	return (1u << vehicle_status_s::OPERATION_MODE_MANUAL) |
-	       (1u << vehicle_status_s::OPERATION_MODE_ALTCTL) |
-	       (1u << vehicle_status_s::OPERATION_MODE_POSCTL) |
-	       (1u << vehicle_status_s::OPERATION_MODE_AUTO_MISSION) |
-	       (1u << vehicle_status_s::OPERATION_MODE_AUTO_LOITER) |
-	       (1u << vehicle_status_s::OPERATION_MODE_AUTO_RTL) |
-	       (1u << vehicle_status_s::OPERATION_MODE_POSITION_SLOW) |
-	       (1u << vehicle_status_s::OPERATION_MODE_ACRO) |
-	       (1u << vehicle_status_s::OPERATION_MODE_TERMINATION) |
-	       (1u << vehicle_status_s::OPERATION_MODE_OFFBOARD) |
-	       (1u << vehicle_status_s::OPERATION_MODE_STAB) |
-	       (1u << vehicle_status_s::OPERATION_MODE_AUTO_TAKEOFF) |
-	       (1u << vehicle_status_s::OPERATION_MODE_AUTO_LAND) |
-	       (1u << vehicle_status_s::OPERATION_MODE_AUTO_FOLLOW_TARGET) |
-	       (1u << vehicle_status_s::OPERATION_MODE_AUTO_PRECLAND) |
-	       (1u << vehicle_status_s::OPERATION_MODE_ORBIT) |
-	       (1u << vehicle_status_s::OPERATION_MODE_AUTO_VTOL_TAKEOFF);
+	return (1u << mode_status_s::OPERATION_MODE_MANUAL) |
+	       (1u << mode_status_s::OPERATION_MODE_ALTCTL) |
+	       (1u << mode_status_s::OPERATION_MODE_POSCTL) |
+	       (1u << mode_status_s::OPERATION_MODE_AUTO_MISSION) |
+	       (1u << mode_status_s::OPERATION_MODE_AUTO_LOITER) |
+	       (1u << mode_status_s::OPERATION_MODE_AUTO_RTL) |
+	       (1u << mode_status_s::OPERATION_MODE_POSITION_SLOW) |
+	       (1u << mode_status_s::OPERATION_MODE_ACRO) |
+	       (1u << mode_status_s::OPERATION_MODE_TERMINATION) |
+	       (1u << mode_status_s::OPERATION_MODE_OFFBOARD) |
+	       (1u << mode_status_s::OPERATION_MODE_STAB) |
+	       (1u << mode_status_s::OPERATION_MODE_AUTO_TAKEOFF) |
+	       (1u << mode_status_s::OPERATION_MODE_AUTO_LAND) |
+	       (1u << mode_status_s::OPERATION_MODE_AUTO_FOLLOW_TARGET) |
+	       (1u << mode_status_s::OPERATION_MODE_AUTO_PRECLAND) |
+	       (1u << mode_status_s::OPERATION_MODE_ORBIT) |
+	       (1u << mode_status_s::OPERATION_MODE_AUTO_VTOL_TAKEOFF);
 
-	static_assert(vehicle_status_s::OPERATION_MODE_MAX  == 31, "update valid nav states");
+	static_assert(mode_status_s::OPERATION_MODE_MAX  == 31, "update valid nav states");
 }
 
-const char *const operation_mode_names[vehicle_status_s::OPERATION_MODE_MAX] = {
+const char *const operation_mode_names[mode_status_s::OPERATION_MODE_MAX] = {
 	"Manual",
 	"Altitude",
 	"Position",
@@ -106,25 +106,25 @@ const char *const operation_mode_names[vehicle_status_s::OPERATION_MODE_MAX] = {
 static inline bool isAdvanced(uint8_t nav_state)
 {
 	switch (nav_state) {
-	case vehicle_status_s::OPERATION_MODE_ALTCTL: return false;
+	case mode_status_s::OPERATION_MODE_ALTCTL: return false;
 
-	case vehicle_status_s::OPERATION_MODE_POSCTL: return false;
+	case mode_status_s::OPERATION_MODE_POSCTL: return false;
 
-	case vehicle_status_s::OPERATION_MODE_EXTERNAL1: return false;
+	case mode_status_s::OPERATION_MODE_EXTERNAL1: return false;
 
-	case vehicle_status_s::OPERATION_MODE_EXTERNAL2: return false;
+	case mode_status_s::OPERATION_MODE_EXTERNAL2: return false;
 
-	case vehicle_status_s::OPERATION_MODE_EXTERNAL3: return false;
+	case mode_status_s::OPERATION_MODE_EXTERNAL3: return false;
 
-	case vehicle_status_s::OPERATION_MODE_EXTERNAL4: return false;
+	case mode_status_s::OPERATION_MODE_EXTERNAL4: return false;
 
-	case vehicle_status_s::OPERATION_MODE_EXTERNAL5: return false;
+	case mode_status_s::OPERATION_MODE_EXTERNAL5: return false;
 
-	case vehicle_status_s::OPERATION_MODE_EXTERNAL6: return false;
+	case mode_status_s::OPERATION_MODE_EXTERNAL6: return false;
 
-	case vehicle_status_s::OPERATION_MODE_EXTERNAL7: return false;
+	case mode_status_s::OPERATION_MODE_EXTERNAL7: return false;
 
-	case vehicle_status_s::OPERATION_MODE_EXTERNAL8: return false;
+	case mode_status_s::OPERATION_MODE_EXTERNAL8: return false;
 
 	}
 

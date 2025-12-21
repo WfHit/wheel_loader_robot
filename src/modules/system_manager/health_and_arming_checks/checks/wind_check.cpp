@@ -69,8 +69,8 @@ void WindChecks::checkAndReport(const Context &context, Report &reporter)
 		} else if (_param_com_wind_max_act.get() == 1 // warning only
 			   && wind_limit_exceeded
 			   && warning_timeout_passed
-			   && context.status().operation_mode != vehicle_status_s::OPERATION_MODE_AUTO_RTL
-			   && context.status().operation_mode != vehicle_status_s::OPERATION_MODE_AUTO_LAND) {
+			   && context.currentMode() != mode_status_s::OPERATION_MODE_AUTO_RTL
+			   && context.currentMode() != mode_status_s::OPERATION_MODE_AUTO_LAND) {
 
 			events::send<float>(events::ID("check_above_wind_limits_warning"),
 			{events::Log::Warning, events::LogInternal::Warning},
@@ -80,8 +80,8 @@ void WindChecks::checkAndReport(const Context &context, Report &reporter)
 		} else if (_param_com_wind_warn.get() > FLT_EPSILON
 			   && wind.longerThan(_param_com_wind_warn.get())
 			   && warning_timeout_passed
-			   && context.status().operation_mode != vehicle_status_s::OPERATION_MODE_AUTO_RTL
-			   && context.status().operation_mode != vehicle_status_s::OPERATION_MODE_AUTO_LAND) {
+			   && context.currentMode() != mode_status_s::OPERATION_MODE_AUTO_RTL
+			   && context.currentMode() != mode_status_s::OPERATION_MODE_AUTO_LAND) {
 
 			events::send<float>(events::ID("check_high_wind_warning"),
 			{events::Log::Warning, events::LogInternal::Info},

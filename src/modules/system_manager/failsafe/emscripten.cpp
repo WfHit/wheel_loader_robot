@@ -35,7 +35,7 @@
 #include <parameters/param.h>
 
 #include "failsafe.h"
-#include <mode_util/mode_requirements.hpp>
+#include "../failsafe_flags.hpp"
 #include <uORB/topics/vehicle_status.h>
 
 #include <emscripten/emscripten.h>
@@ -176,7 +176,7 @@ int failsafe_update(bool armed, bool vtol_in_transition_mode, bool mission_finis
 	state.mission_finished = mission_finished;
 	state.user_intended_mode = user_intended_mode;
 	state.vehicle_type = vehicle_type;
-	mode_util::getModeRequirements(vehicle_type, status_flags);
+	fill_failsafe_flags(vehicle_type, status_flags);
 	failsafe_instance.current().deferFailsafes(defer_failsafes, 0);
 	return failsafe_instance.current().update(time_ms * 1000, state, false, user_override, status_flags);
 }

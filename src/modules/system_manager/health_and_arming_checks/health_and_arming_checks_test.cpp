@@ -65,13 +65,13 @@ TEST_F(ReporterTest, basic_no_checks)
 {
 	failsafe_flags_s failsafe_flags{};
 	Report reporter{failsafe_flags, 0_s};
-	ASSERT_FALSE(reporter.canArm(vehicle_status_s::OPERATION_MODE_AUTO_MISSION));
+	ASSERT_FALSE(reporter.canArm(mode_status_s::OPERATION_MODE_AUTO_MISSION));
 
 	reporter.reset();
 	reporter.finalize();
 	reporter.report(false);
 
-	ASSERT_TRUE(reporter.canArm(vehicle_status_s::OPERATION_MODE_AUTO_MISSION));
+	ASSERT_TRUE(reporter.canArm(mode_status_s::OPERATION_MODE_AUTO_MISSION));
 	ASSERT_EQ((uint8_t)reporter.armingCheckResults().can_arm, 0xff);
 	ASSERT_EQ((uint64_t)reporter.armingCheckResults().error, 0);
 	ASSERT_EQ((uint64_t)reporter.armingCheckResults().warning, 0);
@@ -87,7 +87,7 @@ TEST_F(ReporterTest, basic_fail_all_modes)
 	Report reporter{failsafe_flags, 0_s};
 
 	// ensure arming is always denied with a NavModes::All failure
-	for (uint8_t nav_state = 0; nav_state < vehicle_status_s::OPERATION_MODE_MAX; ++nav_state) {
+	for (uint8_t nav_state = 0; nav_state < mode_status_s::OPERATION_MODE_MAX; ++nav_state) {
 		reporter.reset();
 		reporter.armingCheckFailure(NavModes::All, health_component_t::remote_control,
 					    events::ID("arming_test_basic_fail_all_modes_fail1"), events::Log::Info, "");
@@ -115,9 +115,9 @@ TEST_F(ReporterTest, arming_checks_mode_category)
 	reporter.finalize();
 	reporter.report(false);
 
-	ASSERT_TRUE(reporter.canArm(vehicle_status_s::OPERATION_MODE_AUTO_MISSION));
-	ASSERT_TRUE(reporter.canRun(vehicle_status_s::OPERATION_MODE_AUTO_MISSION));
-	ASSERT_FALSE(reporter.canRun(vehicle_status_s::OPERATION_MODE_POSCTL));
+	ASSERT_TRUE(reporter.canArm(mode_status_s::OPERATION_MODE_AUTO_MISSION));
+	ASSERT_TRUE(reporter.canRun(mode_status_s::OPERATION_MODE_AUTO_MISSION));
+	ASSERT_FALSE(reporter.canRun(mode_status_s::OPERATION_MODE_POSCTL));
 
 	ASSERT_EQ((uint8_t)reporter.armingCheckResults().can_arm, (uint8_t)~(NavModes::PositionControl | NavModes::Stabilized));
 	ASSERT_EQ((uint64_t)reporter.armingCheckResults().error, 0);
@@ -140,7 +140,7 @@ TEST_F(ReporterTest, arming_checks_mode_category2)
 	reporter.finalize();
 	reporter.report(false);
 
-	ASSERT_FALSE(reporter.canArm(vehicle_status_s::OPERATION_MODE_AUTO_MISSION));
+	ASSERT_FALSE(reporter.canArm(mode_status_s::OPERATION_MODE_AUTO_MISSION));
 
 	ASSERT_EQ((uint8_t)reporter.armingCheckResults().can_arm, (uint8_t)~(NavModes::Mission));
 	ASSERT_EQ((uint64_t)reporter.armingCheckResults().error, 0);
@@ -179,7 +179,7 @@ TEST_F(ReporterTest, reporting)
 
 			reporter.finalize();
 			reporter.report(false);
-			ASSERT_FALSE(reporter.canArm(vehicle_status_s::OPERATION_MODE_POSCTL));
+			ASSERT_FALSE(reporter.canArm(mode_status_s::OPERATION_MODE_POSCTL));
 
 			if (i == 0) {
 				ASSERT_TRUE(event_sub.update(&event));
@@ -220,7 +220,7 @@ TEST_F(ReporterTest, reporting)
 
 			reporter.finalize();
 			reporter.report(false);
-			ASSERT_FALSE(reporter.canArm(vehicle_status_s::OPERATION_MODE_POSCTL));
+			ASSERT_FALSE(reporter.canArm(mode_status_s::OPERATION_MODE_POSCTL));
 
 			if (i == 0) {
 				ASSERT_TRUE(event_sub.update(&event));
@@ -266,7 +266,7 @@ TEST_F(ReporterTest, reporting_multiple)
 						     events::ID("arming_test_reporting_multiple_fail3"), events::Log::Warning, "", 55);
 		reporter.finalize();
 		reporter.report(false);
-		ASSERT_FALSE(reporter.canArm(vehicle_status_s::OPERATION_MODE_POSCTL));
+		ASSERT_FALSE(reporter.canArm(mode_status_s::OPERATION_MODE_POSCTL));
 
 		if (i == 0) {
 			ASSERT_TRUE(event_sub.update(&event));

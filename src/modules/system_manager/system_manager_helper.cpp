@@ -53,6 +53,7 @@
 
 #include <uORB/uORB.h>
 #include <uORB/topics/vehicle_status.h>
+#include <uORB/topics/vehicle_identity.h>
 #include <uORB/topics/vehicle_control_mode.h>
 #include <uORB/topics/led_control.h>
 #include <uORB/topics/tune_control.h>
@@ -81,45 +82,45 @@
 
 #define BLINK_MSG_TIME	700000	// 3 fast blinks (in us)
 
-bool is_multirotor(const vehicle_status_s &current_status)
+bool is_multirotor(const vehicle_identity_s &identity)
 {
-	return ((current_status.system_type == VEHICLE_TYPE_QUADROTOR) ||
-		(current_status.system_type == VEHICLE_TYPE_HEXAROTOR) ||
-		(current_status.system_type == VEHICLE_TYPE_OCTOROTOR) ||
-		(current_status.system_type == VEHICLE_TYPE_TRICOPTER));
+	return ((identity.system_type == VEHICLE_TYPE_QUADROTOR) ||
+		(identity.system_type == VEHICLE_TYPE_HEXAROTOR) ||
+		(identity.system_type == VEHICLE_TYPE_OCTOROTOR) ||
+		(identity.system_type == VEHICLE_TYPE_TRICOPTER));
 }
 
-bool is_rotary_wing(const vehicle_status_s &current_status)
+bool is_rotary_wing(const vehicle_identity_s &identity)
 {
 	return is_multirotor(current_status)
-	       || (current_status.system_type == VEHICLE_TYPE_HELICOPTER)
-	       || (current_status.system_type == VEHICLE_TYPE_COAXIAL);
+	       || (identity.system_type == VEHICLE_TYPE_HELICOPTER)
+	       || (identity.system_type == VEHICLE_TYPE_COAXIAL);
 }
 
-bool is_vtol(const vehicle_status_s &current_status)
+bool is_vtol(const vehicle_identity_s &identity)
 {
-	return (current_status.system_type == VEHICLE_TYPE_VTOL_TAILSITTER_DUOROTOR ||
-		current_status.system_type == VEHICLE_TYPE_VTOL_TAILSITTER_QUADROTOR ||
-		current_status.system_type == VEHICLE_TYPE_VTOL_TILTROTOR ||
-		current_status.system_type == VEHICLE_TYPE_VTOL_FIXEDROTOR ||
-		current_status.system_type == VEHICLE_TYPE_VTOL_TAILSITTER);
+	return (identity.system_type == VEHICLE_TYPE_VTOL_TAILSITTER_DUOROTOR ||
+		identity.system_type == VEHICLE_TYPE_VTOL_TAILSITTER_QUADROTOR ||
+		identity.system_type == VEHICLE_TYPE_VTOL_TILTROTOR ||
+		identity.system_type == VEHICLE_TYPE_VTOL_FIXEDROTOR ||
+		identity.system_type == VEHICLE_TYPE_VTOL_TAILSITTER);
 }
 
-bool is_vtol_tailsitter(const vehicle_status_s &current_status)
+bool is_vtol_tailsitter(const vehicle_identity_s &identity)
 {
-	return (current_status.system_type == VEHICLE_TYPE_VTOL_TAILSITTER_DUOROTOR ||
-		current_status.system_type == VEHICLE_TYPE_VTOL_TAILSITTER_QUADROTOR ||
-		current_status.system_type == VEHICLE_TYPE_VTOL_TAILSITTER);
+	return (identity.system_type == VEHICLE_TYPE_VTOL_TAILSITTER_DUOROTOR ||
+		identity.system_type == VEHICLE_TYPE_VTOL_TAILSITTER_QUADROTOR ||
+		identity.system_type == VEHICLE_TYPE_VTOL_TAILSITTER);
 }
 
-bool is_fixed_wing(const vehicle_status_s &current_status)
+bool is_fixed_wing(const vehicle_identity_s &identity)
 {
-	return current_status.system_type == VEHICLE_TYPE_FIXED_WING;
+	return identity.system_type == VEHICLE_TYPE_FIXED_WING;
 }
 
-bool is_ground_vehicle(const vehicle_status_s &current_status)
+bool is_ground_vehicle(const vehicle_identity_s &identity)
 {
-	return (current_status.system_type == VEHICLE_TYPE_BOAT || current_status.system_type == VEHICLE_TYPE_GROUND_ROVER);
+	return (identity.system_type == VEHICLE_TYPE_BOAT || identity.system_type == VEHICLE_TYPE_GROUND_ROVER);
 }
 
 // End time for currently blinking LED message, 0 if no blink message

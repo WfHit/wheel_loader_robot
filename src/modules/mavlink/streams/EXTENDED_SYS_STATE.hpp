@@ -37,6 +37,7 @@
 #include <uORB/topics/position_setpoint_triplet.h>
 #include <uORB/topics/vehicle_control_mode.h>
 #include <uORB/topics/vehicle_status.h>
+#include <uORB/topics/vehicle_identity.h>
 #include <uORB/topics/vehicle_land_detected.h>
 
 class MavlinkStreamExtendedSysState : public MavlinkStream
@@ -78,7 +79,7 @@ private:
 			updated = true;
 
 			if (status.is_vtol) {
-				if (!status.in_transition_mode && status.vehicle_type == vehicle_status_s::VEHICLE_TYPE_ROTARY_WING) {
+				if (!status.in_transition_mode && status.vehicle_type == vehicle_identity_s::VEHICLE_TYPE_ROTARY_WING) {
 					_msg.vtol_state = MAV_VTOL_STATE_MC;
 
 				} else if (!status.in_transition_mode) {

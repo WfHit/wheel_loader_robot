@@ -34,14 +34,15 @@
 #pragma once
 
 /*   Helper classes  */
+#include "arming_handler.hpp"
+#include "calibration_handler.hpp"
+#include "failsafe_handler.hpp"
 #include "failsafe/failsafe.h"
 #include "failure_detector/failure_detector.hpp"
 #include "health_and_arming_checks/health_and_arming_checks.hpp"
 #include "home_position.hpp"
-#include "mode_management.hpp"
-#include "multicopter_throw_launch/multicopter_throw_launch.hpp"
 #include "safety.hpp"
-// Mode status received from mode_manager via uORB (replaces local UserModeIntention)
+// Mode status received from mode_manager via uORB (replaces local ModeIntention)
 #include "worker_thread.hpp"
 
 #include <lib/hysteresis/hysteresis.h>
@@ -53,18 +54,14 @@
 // publications
 #include <uORB/Publication.hpp>
 #include <uORB/topics/actuator_armed.h>
-#include <uORB/topics/actuator_test.h>
 #include <uORB/topics/failure_detector_status.h>
 #include <uORB/topics/failsafe_mode_request.h>
 #include <uORB/topics/mode_change_result.h>
 #include <uORB/topics/mode_status.h>
 #include <uORB/topics/vehicle_command_ack.h>
 #include <uORB/topics/vehicle_control_mode.h>
+#include <uORB/topics/vehicle_identity.h>
 #include <uORB/topics/vehicle_status.h>
-#include <uORB/topics/vehicle_type_config.h>
-
-// vehicle type strategy library
-#include <vehicle_type/VehicleTypeRegistry.hpp>
 
 // subscriptions
 #include <uORB/Subscription.hpp>
@@ -73,9 +70,7 @@
 #include <uORB/topics/action_request.h>
 #include <uORB/topics/airspeed.h>
 #include <uORB/topics/arming_request.h>
-#include <uORB/topics/actuator_test_request.h>
 #include <uORB/topics/battery_status.h>
-#include <uORB/topics/calibration_request.h>
 #include <uORB/topics/cpuload.h>
 #include <uORB/topics/distance_sensor.h>
 #include <uORB/topics/flight_termination_request.h>
@@ -83,15 +78,13 @@
 #include <uORB/topics/manual_control_setpoint.h>
 #include <uORB/topics/mission_result.h>
 #include <uORB/topics/mode_change_request.h>
-#include <uORB/topics/offboard_control_mode.h>
 #include <uORB/topics/parameter_update.h>
 #include <uORB/topics/power_button_state.h>
+#include <uORB/topics/throw_launch_status.h>
 #include <uORB/topics/prearm_check_request.h>
-#include <uORB/topics/reboot_request.h>
 #include <uORB/topics/rtl_time_estimate.h>
 #include <uORB/topics/sensor_gps.h>
 #include <uORB/topics/set_home_request.h>
-#include <uORB/topics/storage_request.h>
 #include <uORB/topics/system_power.h>
 #include <uORB/topics/telemetry_status.h>
 #include <uORB/topics/vehicle_command.h>
@@ -139,10 +132,8 @@ public:
 	void enable_hil();
 
 private:
-	bool isArmed() const {
+	bool is_armed() const {
 		return (_vehicle_status.arming_state == vehicle_status_s::ARMING_STATE_ARMED); }
-
-	static ModeChangeSource getSourceFromCommand(const vehicle_command_s &cmd);
 
 	void answer_command(const vehicle_command_s &cmd, uint8_t result);
 
@@ -157,127 +148,68 @@ private:
 	/**
 	 * Checks the status of all available data links and handles switching between different system telemetry states.
 	 */
-	void dataLinkCheck();
+	void data_link_check();
 
-	void manualControlCheck();
-
-	void offboardControlCheck();
+	void manual_control_check();
 
 	/**
 	 * @brief Handle mode change requests from CommandProcessor
 	 */
-	void handleModeChangeRequests();
+	void handle_mode_change_requests();
 
-	/**
-	 * @brief Handle arming requests from CommandProcessor
-	 */
-	void handleArmingRequests();
 
-	/**
-	 * @brief Handle calibration requests from CommandProcessor
-	 */
-	void handleCalibrationRequests();
-
-	/**
-	 * @brief Handle reboot requests from CommandProcessor
-	 */
-	void handleRebootRequests();
-
-	/**
-	 * @brief Handle storage requests from CommandProcessor
-	 */
-	void handleStorageRequests();
-
-	/**
-	 * @brief Handle actuator test requests from CommandProcessor
-	 */
-	void handleActuatorTestRequests();
-
-	/**
-	 * @brief Handle prearm check requests from CommandProcessor
-	 */
-	void handlePrearmCheckRequests();
-
-	/**
-	 * @brief Handle flight termination requests from CommandProcessor
-	 */
-	void handleFlightTerminationRequests();
 
 	/**
 	 * @brief Handle set home requests from CommandProcessor
 	 */
-	void handleSetHomeRequests();
+	void handle_set_home_requests();
 
-	unsigned handleCommandActuatorTest(const actuator_test_request_s &req);
-
-	void executeActionRequest(const action_request_s &action_request);
-
-	void printRejectMode(uint8_t nav_state);
-
-	void updateControlMode();
+	// Note: update_control_mode moved to mode_manager
 
 	void send_parachute_command();
 
-	void checkForMissionUpdate();
+	void check_mission_result();
 
-	void handlePowerButtonState();
+	void handle_power_button_state();
 
-	void systemPowerUpdate();
+	void system_power_update();
 
-	void landDetectorUpdate();
+	void land_detector_update();
 
-	void safetyButtonUpdate();
+	void safety_button_update();
 
-	bool isThrowLaunchInProgress() const;
+	bool is_throw_launch_in_progress() const;
 
-	void throwLaunchUpdate();
+	void throw_launch_update();
 
-	void vtolStatusUpdate();
+	void vtol_status_update();
 
-	void updateTunes();
+	void update_tunes();
 
-	void checkWorkerThread();
+	void check_worker_thread();
 
-	bool getPrearmState() const;
-
-	void handleAutoDisarm();
-
-	bool handleModeIntentionAndFailsafe();
+	bool get_prearm_state() const;
 
 	/**
 	 * @brief Publish mode change request to mode_manager
 	 * Called for RC/action-based mode changes (not from command_processor)
 	 */
-	void publishModeChangeRequest(uint8_t requested_mode, uint8_t source);
-
-	/**
-	 * @brief Publish failsafe mode request to mode_manager
-	 * Called when failsafe logic determines a mode change is needed
-	 */
-	void publishFailsafeModeRequest(uint8_t requested_mode, FailsafeBase::Action action, uint8_t severity, uint8_t source);
+	void publish_mode_change_request(uint8_t requested_mode, uint8_t source);
 
 	/**
 	 * @brief Update vehicle_status from ModeStatus subscription
 	 * Populates operation_mode from mode_manager's ModeStatus
 	 */
-	void updateFromModeStatus();
+	void update_mode_status();
 
-	void updateParameters();
+	// External/executor mode functions removed - now handled by mode_manager
 
-	void checkAndInformReadyForTakeoff();
+	void update_parameters();
 
-	void handleCommandsFromModeExecutors();
+	void check_and_inform_ready_for_takeoff();
 
-	void modeManagementUpdate();
-
-	/**
-	 * Update and publish the vehicle type configuration message.
-	 * This informs mode_manager and automation about vehicle-specific settings.
-	 */
-	void updateVehicleTypeConfig();
-
-	static void onFailsafeNotifyUserTrampoline(void *arg);
-	void onFailsafeNotifyUser();
+	// on_failsafe_notify_user moved to FailsafeHandler
+	// handle_commands_from_mode_executors removed - mode executor management now in mode_manager
 
 	enum class PrearmedMode {
 		DISABLED = 0,
@@ -287,46 +219,36 @@ private:
 
 	enum class RcOverrideBits : int32_t {
 		AUTO_MODE_BIT = (1 << 0),
-		OFFBOARD_MODE_BIT = (1 << 1),
 	};
 
 	/* Decouple update interval and hysteresis counters, all depends on intervals */
 	static constexpr uint64_t COMMANDER_MONITORING_INTERVAL{10_ms};
 
 	vehicle_status_s        _vehicle_status{};
+	vehicle_identity_s      _vehicle_identity{};
 
-	Failsafe		_failsafe_instance{this};
-	FailsafeBase		&_failsafe{_failsafe_instance};
+	FailsafeHandler		_failsafe_handler{this};
 	FailureDetector		_failure_detector{this};
 	HealthAndArmingChecks	_health_and_arming_checks{this, _vehicle_status};
-	MulticopterThrowLaunch  _multicopter_throw_launch{this};
-	Safety			_safety{};
-	WorkerThread 		_worker_thread{};
-	ModeManagement  	_mode_management{
-#ifndef CONSTRAINED_FLASH
-		_health_and_arming_checks.externalChecks()
-#endif
-	};
-
-	// Mode tracking (mode_manager is the authority, we track locally for failsafe logic)
-	uint8_t _cached_user_intended_mode{vehicle_status_s::OPERATION_MODE_AUTO_LOITER};
-	bool _ever_had_mode_change{false};
-	bool _had_mode_change{false};
-
 	const failsafe_flags_s &_failsafe_flags{_health_and_arming_checks.failsafeFlags()};
 	HomePosition 		_home_position{_failsafe_flags};
+	Safety			_safety{};
+	WorkerThread 		_worker_thread{};
+	CalibrationHandler	_calibration_handler{this, _safety, _worker_thread};
+	ArmingHandler		_arming_handler{this, _health_and_arming_checks, _safety, _home_position};
+
+	// Mode tracking (mode_manager is the authority, we track locally for failsafe logic)
+	uint8_t _cached_user_intended_mode{mode_status_s::OPERATION_MODE_AUTO_LOITER};
+	uint8_t _current_operation_mode{mode_status_s::OPERATION_MODE_AUTO_LOITER};  // Current active mode from mode_manager
+	hrt_abstime _operation_mode_timestamp{0};  // Time when current operation mode was activated
+	bool _ever_had_mode_change{false};
+	bool _had_mode_change{false};
 	config_overrides_s   _config_overrides{};
-
-
-	Hysteresis _auto_disarm_landed{false};
-	Hysteresis _auto_disarm_killed{false};
 
 	hrt_abstime _datalink_last_heartbeat_open_drone_id_system{0};
 	hrt_abstime _datalink_last_heartbeat_gcs{0};
 	hrt_abstime _datalink_last_heartbeat_onboard_controller{0};
 	hrt_abstime _datalink_last_heartbeat_parachute_system{0};
-
-	hrt_abstime _last_print_mode_reject_time{0};	///< To remember when last notification was sent
 
 	hrt_abstime _high_latency_datalink_timestamp{0};
 	hrt_abstime _high_latency_datalink_lost{0};
@@ -361,31 +283,19 @@ private:
 	bool _have_taken_off_since_arming{false};
 	bool _status_changed{true};
 
-	uint8_t _last_vehicle_type_config{UINT8_MAX};	///< Last vehicle type for config tracking
-
 	vehicle_land_detected_s	_vehicle_land_detected{};
 
 	// system_manager publications
-	actuator_armed_s        _actuator_armed{};
-	vehicle_control_mode_s  _vehicle_control_mode{};
 	vtol_vehicle_status_s	_vtol_vehicle_status{};
 
 	// Subscriptions
-	uORB::Subscription					_action_request_sub{ORB_ID(action_request)};
-	uORB::Subscription					_arming_request_sub{ORB_ID(arming_request)};
-	uORB::Subscription					_actuator_test_request_sub{ORB_ID(actuator_test_request)};
-	uORB::Subscription					_calibration_request_sub{ORB_ID(calibration_request)};
 	uORB::Subscription					_cpuload_sub{ORB_ID(cpuload)};
-	uORB::Subscription					_flight_termination_request_sub{ORB_ID(flight_termination_request)};
+	uORB::SubscriptionData<vehicle_control_mode_s>		_vehicle_control_mode_sub{ORB_ID(vehicle_control_mode)};
 	uORB::Subscription					_iridiumsbd_status_sub{ORB_ID(iridiumsbd_status)};
 	uORB::Subscription					_manual_control_setpoint_sub{ORB_ID(manual_control_setpoint)};
-	uORB::Subscription					_prearm_check_request_sub{ORB_ID(prearm_check_request)};
-	uORB::Subscription					_reboot_request_sub{ORB_ID(reboot_request)};
 	uORB::Subscription					_set_home_request_sub{ORB_ID(set_home_request)};
-	uORB::Subscription					_storage_request_sub{ORB_ID(storage_request)};
 	uORB::Subscription					_system_power_sub{ORB_ID(system_power)};
 	uORB::Subscription					_vehicle_command_sub{ORB_ID(vehicle_command)};
-	uORB::Subscription					_vehicle_command_mode_executor_sub{ORB_ID(vehicle_command_mode_executor)};
 	uORB::Subscription					_vehicle_land_detected_sub{ORB_ID(vehicle_land_detected)};
 	uORB::Subscription					_vtol_vehicle_status_sub{ORB_ID(vtol_vehicle_status)};
 
@@ -398,23 +308,18 @@ private:
 #endif // BOARD_HAS_POWER_CONTROL
 
 	uORB::SubscriptionData<mission_result_s>		_mission_result_sub{ORB_ID(mission_result)};
-	uORB::SubscriptionData<offboard_control_mode_s>		_offboard_control_mode_sub{ORB_ID(offboard_control_mode)};
 	uORB::SubscriptionData<mode_status_s>			_mode_status_sub{ORB_ID(mode_status)};
+	uORB::SubscriptionData<throw_launch_status_s>		_throw_launch_status_sub{ORB_ID(throw_launch_status)};
 
 	// Publications
-	uORB::Publication<actuator_armed_s>			_actuator_armed_pub{ORB_ID(actuator_armed)};
-	uORB::Publication<actuator_test_s>			_actuator_test_pub{ORB_ID(actuator_test)};
 	uORB::Publication<failure_detector_status_s>		_failure_detector_status_pub{ORB_ID(failure_detector_status)};
-	uORB::Publication<failsafe_mode_request_s>		_failsafe_mode_request_pub{ORB_ID(failsafe_mode_request)};
 	uORB::Publication<mode_change_request_s>		_mode_change_request_pub{ORB_ID(mode_change_request)};
 	uORB::Publication<mode_change_result_s>			_mode_change_result_pub{ORB_ID(mode_change_result)};
 	uORB::Publication<vehicle_command_ack_s>		_vehicle_command_ack_pub{ORB_ID(vehicle_command_ack)};
 	uORB::Publication<vehicle_command_s>			_vehicle_command_pub{ORB_ID(vehicle_command)};
-	uORB::Publication<vehicle_control_mode_s>		_vehicle_control_mode_pub{ORB_ID(vehicle_control_mode)};
+	// Note: vehicle_control_mode publication moved to mode_manager
+	uORB::Publication<vehicle_identity_s>			_vehicle_identity_pub{ORB_ID(vehicle_identity)};
 	uORB::Publication<vehicle_status_s>			_vehicle_status_pub{ORB_ID(vehicle_status)};
-	uORB::Publication<vehicle_type_config_s>		_vehicle_type_config_pub{ORB_ID(vehicle_type_config)};
-
-	vehicle_type_config_s _vehicle_type_config{};	///< Vehicle type configuration
 
 	orb_advert_t _mavlink_log_pub{nullptr};
 
@@ -443,7 +348,6 @@ private:
 		(ParamInt<px4::params::COM_RC_OVERRIDE>)    _param_com_rc_override,
 		(ParamFloat<px4::params::COM_SPOOLUP_TIME>) _param_com_spoolup_time,
 		(ParamInt<px4::params::COM_FLIGHT_UUID>)    _param_com_flight_uuid,
-		(ParamInt<px4::params::COM_TAKEOFF_ACT>)    _param_com_takeoff_act,
 		(ParamFloat<px4::params::COM_CPU_MAX>)      _param_com_cpu_max
 	)
 };

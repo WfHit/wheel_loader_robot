@@ -71,7 +71,7 @@ public:
 
 	uint8_t getVehicleType() const override
 	{
-		return vehicle_status_s::VEHICLE_TYPE_ROVER;
+		return vehicle_identity_s::VEHICLE_TYPE_ROVER;
 	}
 
 	const char *getName() const override
@@ -85,11 +85,11 @@ public:
 
 	uint32_t getAvailableModesMask() const override
 	{
-		return (1u << vehicle_status_s::OPERATION_MODE_MANUAL) |
-		       (1u << vehicle_status_s::OPERATION_MODE_POSCTL) |
-		       (1u << vehicle_status_s::OPERATION_MODE_AUTO_MISSION) |
-		       (1u << vehicle_status_s::OPERATION_MODE_AUTO_RTL) |
-		       (1u << vehicle_status_s::OPERATION_MODE_AUTO_LOITER);
+		return (1u << mode_status_s::OPERATION_MODE_MANUAL) |
+		       (1u << mode_status_s::OPERATION_MODE_POSCTL) |
+		       (1u << mode_status_s::OPERATION_MODE_AUTO_MISSION) |
+		       (1u << mode_status_s::OPERATION_MODE_AUTO_RTL) |
+		       (1u << mode_status_s::OPERATION_MODE_AUTO_LOITER);
 	}
 
 	uint32_t getAvailableAutomationTasksMask() const override
@@ -101,12 +101,12 @@ public:
 
 	uint8_t getDefaultMode() const override
 	{
-		return vehicle_status_s::OPERATION_MODE_MANUAL;
+		return mode_status_s::OPERATION_MODE_MANUAL;
 	}
 
 	uint8_t getFailsafeMode() const override
 	{
-		return vehicle_status_s::OPERATION_MODE_AUTO_RTL;
+		return mode_status_s::OPERATION_MODE_AUTO_RTL;
 	}
 
 	uint8_t getModeChangeLogic() const override
@@ -216,21 +216,21 @@ public:
 		switch (command) {
 		case vehicle_command_s::VEHICLE_CMD_DO_REPOSITION:
 		case vehicle_command_s::VEHICLE_CMD_DO_CHANGE_ALTITUDE:
-			return vehicle_status_s::OPERATION_MODE_AUTO_LOITER;
+			return mode_status_s::OPERATION_MODE_AUTO_LOITER;
 
 		case vehicle_command_s::VEHICLE_CMD_NAV_RETURN_TO_LAUNCH:
-			return vehicle_status_s::OPERATION_MODE_AUTO_RTL;
+			return mode_status_s::OPERATION_MODE_AUTO_RTL;
 
 		case vehicle_command_s::VEHICLE_CMD_MISSION_START:
-			return vehicle_status_s::OPERATION_MODE_AUTO_MISSION;
+			return mode_status_s::OPERATION_MODE_AUTO_MISSION;
 
 		case vehicle_command_s::VEHICLE_CMD_DO_SET_MODE:
 		case vehicle_command_s::VEHICLE_CMD_SET_NAV_STATE:
 			// Mode specified in params
-			return vehicle_status_s::OPERATION_MODE_MAX;
+			return mode_status_s::OPERATION_MODE_MAX;
 
 		default:
-			return vehicle_status_s::OPERATION_MODE_MAX;  // No mode change
+			return mode_status_s::OPERATION_MODE_MAX;  // No mode change
 		}
 	}
 

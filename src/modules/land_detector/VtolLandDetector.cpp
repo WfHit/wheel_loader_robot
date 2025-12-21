@@ -55,7 +55,7 @@ void VtolLandDetector::_update_topics()
 bool VtolLandDetector::_get_maybe_landed_state()
 {
 	// If in Fixed-wing mode, only trigger if disarmed
-	if (_vehicle_status.vehicle_type == vehicle_status_s::VEHICLE_TYPE_FIXED_WING) {
+	if (_vehicle_status.vehicle_type == vehicle_identity_s::VEHICLE_TYPE_FIXED_WING) {
 		return !_armed;
 	}
 
@@ -65,7 +65,7 @@ bool VtolLandDetector::_get_maybe_landed_state()
 bool VtolLandDetector::_get_landed_state()
 {
 	// If in Fixed-wing mode, only trigger if disarmed
-	if (_vehicle_status.vehicle_type == vehicle_status_s::VEHICLE_TYPE_FIXED_WING) {
+	if (_vehicle_status.vehicle_type == vehicle_identity_s::VEHICLE_TYPE_FIXED_WING) {
 		return !_armed;
 	}
 
@@ -78,7 +78,7 @@ bool VtolLandDetector::_get_freefall_state()
 	bool free_fall_detected = MulticopterLandDetector::_get_freefall_state();
 
 	// only return a positive free fall detected if not in fixed-wing mode
-	return _vehicle_status.vehicle_type != vehicle_status_s::VEHICLE_TYPE_FIXED_WING && free_fall_detected;
+	return _vehicle_status.vehicle_type != vehicle_identity_s::VEHICLE_TYPE_FIXED_WING && free_fall_detected;
 }
 
 } // namespace land_detector

@@ -291,6 +291,12 @@ void ExternalChecks::update()
 		request.timestamp = hrt_absolute_time();
 		_arming_check_request_pub.publish(request);
 	}
+
+	// Update from external mode status (from mode_manager)
+	updateFromProxyModeStatus();
+
+	// Publish registration status for mode_manager
+	publishRegistrationStatus();
 }
 
 void ExternalChecks::setExternalOperationModes(uint8_t first_external_operation_mode, uint8_t last_external_operation_mode)
@@ -317,7 +323,7 @@ void ExternalChecks::checkNonRegisteredModes(const Context &context, Report &rep
 		}
 
 		if (!found) {
-			if (external_operation_mode == context.status().operation_mode_user_intention) {
+			if (external_operation_mode == context.currentMode()_user_intention) {
 				report_mode_not_available = true;
 			}
 
@@ -331,9 +337,66 @@ void ExternalChecks::checkNonRegisteredModes(const Context &context, Report &rep
 		 * @description
 		 * The application running the mode is not started.
 		 */
-		reporter.armingCheckFailure(reporter.getModeGroup(context.status().operation_mode_user_intention),
+		reporter.armingCheckFailure(reporter.getModeGroup(context.currentMode()_user_intention),
 					    health_component_t::system,
 					    events::ID("check_external_modes_unavailable"),
 					    events::Log::Error, "Mode is not registered");
+	}
+}
+
+void ExternalChecks::publishRegistrationStatus()
+{
+	const hrt_abstime now = hrt_absolute_time();
+
+	// Publish at 2Hz
+	if (hrt_elapsed_time(&_last_status_publish) < 500_ms) {
+		return;
+	}
+
+	_last_status_publish = now;
+
+	proxy_mode_registration_status_s status{};
+	status.timestamp = now;
+	status.active_registrations_mask = _active_registrations_mask;
+	status.allow_update_while_armed = allowUpdateWhileArmed();
+
+	for (int i = 0; i < MAX_NUM_REGISTRATIONS; ++i) {
+		status.registration_valid[i] = registrationValid(i);
+		status.registration_unresponsive[i] = _registrations[i].unresponsive;
+		status.nav_mode_id[i] = _registrations[i].nav_mode_id;
+		status.replaces_operation_mode[i] = _registrations[i].replaces_operation_mode;
+	}
+
+	_proxy_mode_registration_status_pub.publish(status);
+}
+
+void ExternalChecks::updateFromProxyModeStatus()
+{
+	// Update from mode_manager's proxy_mode_status
+	// This allows ExternalChecks to sync registration info from mode_manager
+	if (_proxy_mode_status_sub.update(&_proxy_mode_status)) {
+		// Sync arming check registration IDs from mode_manager
+		for (int i = 0; i < proxy_mode_status_s::MAX_EXTERNAL_MODES; ++i) {
+			if (_proxy_mode_status.mode_valid[i]) {
+				int8_t arming_check_id = _proxy_mode_status.arming_check_registration_id[i];
+
+				if (arming_check_id >= 0 && arming_check_id < MAX_NUM_REGISTRATIONS) {
+					// Ensure registration exists
+					if (!registrationValid(arming_check_id)) {
+						// Create registration if mode_manager has one we don't know about
+						_active_registrations_mask |= 1u << arming_check_id;
+						_registrations[arming_check_id].nav_mode_id = _proxy_mode_status.external_mode_nav_states[i];
+						_registrations[arming_check_id].replaces_operation_mode = _proxy_mode_status.replaces_operation_mode[i];
+						_registrations[arming_check_id].waiting_for_first_response = true;
+						_registrations[arming_check_id].num_no_response = 0;
+						_registrations[arming_check_id].unresponsive = false;
+
+						if (!_registrations[arming_check_id].reply) {
+							_registrations[arming_check_id].reply = new arming_check_reply_s();
+						}
+					}
+				}
+			}
+		}
 	}
 }

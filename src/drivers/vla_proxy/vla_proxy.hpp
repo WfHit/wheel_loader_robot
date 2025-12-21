@@ -57,6 +57,7 @@
 #include <uORB/topics/bucket_status.h>
 #include <uORB/topics/chassis_status.h>
 #include <uORB/topics/vla_trajectory_setpoint.h>
+#include <uORB/topics/mode_status.h>
 
 #include <termios.h>
 #include <fcntl.h>
@@ -164,6 +165,7 @@ private:
 
 	// uORB topics
 	uORB::Subscription _vehicle_status_sub{ORB_ID(vehicle_status)};
+	uORB::Subscription _mode_status_sub{ORB_ID(mode_status)};
 	uORB::Subscription _vehicle_local_position_sub{ORB_ID(vehicle_local_position)};
 	uORB::Subscription _vehicle_attitude_sub{ORB_ID(vehicle_attitude)};
 	uORB::Subscription _vehicle_angular_velocity_sub{ORB_ID(vehicle_angular_velocity)};

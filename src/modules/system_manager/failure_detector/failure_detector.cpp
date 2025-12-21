@@ -223,7 +223,7 @@ void FailureDetector::updateAttitudeStatus(const vehicle_status_s &vehicle_statu
 				roll = 0.f;
 				pitch = 0.f;
 
-			} else if (vehicle_status.vehicle_type == vehicle_status_s::VEHICLE_TYPE_FIXED_WING) {
+			} else if (vehicle_status.vehicle_type == vehicle_identity_s::VEHICLE_TYPE_FIXED_WING) {
 				// in FW flight rotate the attitude by 90° around pitch (level FW flight = 0° pitch)
 				const matrix::Eulerf euler_rotated = matrix::Eulerf(matrix::Quatf(attitude.q) * matrix::Quatf(matrix::Eulerf(0.f,
 								     M_PI_2_F, 0.f)));

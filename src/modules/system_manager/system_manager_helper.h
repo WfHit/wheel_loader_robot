@@ -43,6 +43,7 @@
 #define COMMANDER_HELPER_H_
 
 #include <uORB/uORB.h>
+#include <uORB/topics/vehicle_identity.h>
 #include <uORB/topics/vehicle_status.h>
 #include <uORB/topics/actuator_armed.h>
 #include <uORB/topics/vehicle_control_mode.h>
@@ -50,12 +51,12 @@
 #include <drivers/drv_board_led.h>
 
 
-bool is_multirotor(const vehicle_status_s &current_status);
-bool is_rotary_wing(const vehicle_status_s &current_status);
-bool is_vtol(const vehicle_status_s &current_status);
-bool is_vtol_tailsitter(const vehicle_status_s &current_status);
-bool is_fixed_wing(const vehicle_status_s &current_status);
-bool is_ground_vehicle(const vehicle_status_s &current_status);
+bool is_multirotor(const vehicle_identity_s &identity);
+bool is_rotary_wing(const vehicle_identity_s &identity);
+bool is_vtol(const vehicle_identity_s &identity);
+bool is_vtol_tailsitter(const vehicle_identity_s &identity);
+bool is_fixed_wing(const vehicle_identity_s &identity);
+bool is_ground_vehicle(const vehicle_identity_s &identity);
 
 int buzzer_init(void);
 void buzzer_deinit(void);

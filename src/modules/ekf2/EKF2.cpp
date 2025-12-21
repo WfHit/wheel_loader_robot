@@ -2594,7 +2594,7 @@ void EKF2::UpdateSystemFlagsSample(ekf2_timestamps_s &ekf2_timestamps)
 			flags.in_air = (vehicle_status.arming_state == vehicle_status_s::ARMING_STATE_ARMED);
 
 			// let the EKF know if the vehicle motion is that of a fixed wing (forward flight only relative to wind)
-			flags.is_fixed_wing = (vehicle_status.vehicle_type == vehicle_status_s::VEHICLE_TYPE_FIXED_WING);
+			flags.is_fixed_wing = (vehicle_status.vehicle_type == vehicle_identity_s::VEHICLE_TYPE_FIXED_WING);
 
 #if defined(CONFIG_EKF2_SIDESLIP)
 

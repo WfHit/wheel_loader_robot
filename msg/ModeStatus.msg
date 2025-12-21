@@ -3,7 +3,42 @@
 
 uint64 timestamp				# time since system start (microseconds)
 
-uint8 current_mode				# Current operation mode (vehicle_status_s::OPERATION_MODE_*)
+# Operation mode constants
+uint8 OPERATION_MODE_MANUAL = 0               # Manual mode
+uint8 OPERATION_MODE_ALTCTL = 1               # Altitude control mode
+uint8 OPERATION_MODE_POSCTL = 2               # Position control mode
+uint8 OPERATION_MODE_AUTO_MISSION = 3         # Auto mission mode
+uint8 OPERATION_MODE_AUTO_LOITER = 4          # Auto loiter mode
+uint8 OPERATION_MODE_AUTO_RTL = 5             # Auto return to launch mode
+uint8 OPERATION_MODE_POSITION_SLOW = 6
+uint8 OPERATION_MODE_FREE5 = 7
+uint8 OPERATION_MODE_FREE4 = 8
+uint8 OPERATION_MODE_FREE3 = 9
+uint8 OPERATION_MODE_ACRO = 10                # Acro mode
+uint8 OPERATION_MODE_FREE2 = 11
+uint8 OPERATION_MODE_DESCEND = 12             # Descend mode (no position control)
+uint8 OPERATION_MODE_TERMINATION = 13         # Termination mode
+uint8 OPERATION_MODE_OFFBOARD = 14
+uint8 OPERATION_MODE_STAB = 15                # Stabilized mode
+uint8 OPERATION_MODE_FREE1 = 16
+uint8 OPERATION_MODE_AUTO_TAKEOFF = 17        # Takeoff
+uint8 OPERATION_MODE_AUTO_LAND = 18           # Land
+uint8 OPERATION_MODE_AUTO_FOLLOW_TARGET = 19  # Auto Follow
+uint8 OPERATION_MODE_AUTO_PRECLAND = 20       # Precision land with landing target
+uint8 OPERATION_MODE_ORBIT = 21               # Orbit in a circle
+uint8 OPERATION_MODE_AUTO_VTOL_TAKEOFF = 22   # Takeoff, transition, establish loiter
+uint8 OPERATION_MODE_AUTO_VLA = 23            # Auto VLA 7-DOF control (chassis + boom + tilt)
+uint8 OPERATION_MODE_EXTERNAL1 = 24           # External mode 1 (proxy mode)
+uint8 OPERATION_MODE_EXTERNAL2 = 25           # External mode 2 (proxy mode)
+uint8 OPERATION_MODE_EXTERNAL3 = 26           # External mode 3 (proxy mode)
+uint8 OPERATION_MODE_EXTERNAL4 = 27           # External mode 4 (proxy mode)
+uint8 OPERATION_MODE_EXTERNAL5 = 28           # External mode 5 (proxy mode)
+uint8 OPERATION_MODE_EXTERNAL6 = 29           # External mode 6 (proxy mode)
+uint8 OPERATION_MODE_EXTERNAL7 = 30           # External mode 7 (proxy mode)
+uint8 OPERATION_MODE_EXTERNAL8 = 31           # External mode 8 (proxy mode)
+uint8 OPERATION_MODE_MAX = 32
+
+uint8 current_mode				# Current operation mode (OPERATION_MODE_*)
 uint8 user_intended_mode			# Mode the user requested
 uint8 previous_mode				# Previous mode before last change
 

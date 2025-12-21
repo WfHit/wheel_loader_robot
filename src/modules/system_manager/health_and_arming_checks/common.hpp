@@ -71,7 +71,7 @@ enum class NavModes : uint32_t {
 	All = 0xffffffff
 };
 static_assert(sizeof(navigation_mode_group_t) == sizeof(NavModes), "type mismatch");
-static_assert(vehicle_status_s::OPERATION_MODE_MAX <= CHAR_BIT *sizeof(navigation_mode_group_t),
+static_assert(mode_status_s::OPERATION_MODE_MAX <= CHAR_BIT *sizeof(navigation_mode_group_t),
 	      "type too small, use next larger type");
 
 // Type to pass two mode groups in one struct to have the same number of function arguments to facilitate events parsing
@@ -138,10 +138,14 @@ public:
 
 	void setIsArmingRequest(bool is_arming_request) { _is_arming_request = is_arming_request; }
 
+	uint8_t currentMode() const { return _current_mode; }
+	void setCurrentMode(uint8_t mode) { _current_mode = mode; }
+
 	const vehicle_status_s &status() const { return _status; }
 
 private:
 	const vehicle_status_s &_status;
+	uint8_t _current_mode{mode_status_s::OPERATION_MODE_AUTO_LOITER};  // Current operation mode
 	bool _is_arming_request{false};	// true if we currently have an arming request
 };
 

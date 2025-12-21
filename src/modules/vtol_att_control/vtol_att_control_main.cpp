@@ -103,8 +103,8 @@ void VtolAttitudeControl::vehicle_status_poll()
 	_vehicle_status_sub.copy(&_vehicle_status);
 
 	// abort front transition when RTL is triggered
-	if (_vehicle_status.operation_mode == vehicle_status_s::OPERATION_MODE_AUTO_RTL
-	    && _operation_mode_prev != vehicle_status_s::OPERATION_MODE_AUTO_RTL && _vtol_type->get_mode() == mode::TRANSITION_TO_FW) {
+	if (_vehicle_status.operation_mode == mode_status_s::OPERATION_MODE_AUTO_RTL
+	    && _operation_mode_prev != mode_status_s::OPERATION_MODE_AUTO_RTL && _vtol_type->get_mode() == mode::TRANSITION_TO_FW) {
 		_transition_command = vtol_vehicle_status_s::VEHICLE_VTOL_STATE_MC;
 	}
 
@@ -151,10 +151,10 @@ void VtolAttitudeControl::vehicle_cmd_poll()
 
 			// deny transition from MC to FW in Takeoff, Land, RTL and Orbit
 			if (transition_command_param1 == vtol_vehicle_status_s::VEHICLE_VTOL_STATE_FW &&
-			    (_vehicle_status.operation_mode == vehicle_status_s::OPERATION_MODE_AUTO_TAKEOFF
-			     || _vehicle_status.operation_mode == vehicle_status_s::OPERATION_MODE_AUTO_LAND
-			     || _vehicle_status.operation_mode == vehicle_status_s::OPERATION_MODE_AUTO_RTL
-			     ||  _vehicle_status.operation_mode == vehicle_status_s::OPERATION_MODE_ORBIT)) {
+			    (_vehicle_status.operation_mode == mode_status_s::OPERATION_MODE_AUTO_TAKEOFF
+			     || _vehicle_status.operation_mode == mode_status_s::OPERATION_MODE_AUTO_LAND
+			     || _vehicle_status.operation_mode == mode_status_s::OPERATION_MODE_AUTO_RTL
+			     ||  _vehicle_status.operation_mode == mode_status_s::OPERATION_MODE_ORBIT)) {
 
 				result = vehicle_command_ack_s::VEHICLE_CMD_RESULT_TEMPORARILY_REJECTED;
 
@@ -464,7 +464,7 @@ VtolAttitudeControl::Run()
 			float spoiler_control = 0.f;
 
 			if ((_pos_sp_triplet.current.valid && _pos_sp_triplet.current.type == position_setpoint_s::SETPOINT_TYPE_LAND) ||
-			    _vehicle_status.operation_mode == vehicle_status_s::OPERATION_MODE_DESCEND) {
+			    _vehicle_status.operation_mode == mode_status_s::OPERATION_MODE_DESCEND) {
 				spoiler_control = _param_vt_spoiler_mc_ld.get();
 			}
 

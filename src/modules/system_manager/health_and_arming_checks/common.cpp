@@ -32,7 +32,7 @@
  ****************************************************************************/
 
 #include "common.hpp"
-#include <mode_util/mode_requirements.hpp>
+#include "../failsafe_flags.hpp"
 
 void Report::getHealthReport(health_report_s &report) const
 {
@@ -40,7 +40,7 @@ void Report::getHealthReport(health_report_s &report) const
 	report.can_arm_mode_flags = 0;
 	report.can_run_mode_flags = 0;
 
-	for (int i = 0; i < vehicle_status_s::OPERATION_MODE_MAX; ++i) {
+	for (int i = 0; i < mode_status_s::OPERATION_MODE_MAX; ++i) {
 		NavModes group = getModeGroup(i);
 
 		if ((uint32_t)(current_results.arming_checks.can_arm & group)) {
@@ -210,7 +210,7 @@ void Report::reset()
 void Report::prepare(uint8_t vehicle_type)
 {
 	// Get mode requirements before running any checks (in particular the mode checks require them)
-	mode_util::getModeRequirements(vehicle_type, _failsafe_flags);
+	fill_failsafe_flags(vehicle_type, _failsafe_flags);
 }
 
 NavModes Report::getModeGroup(uint8_t nav_state) const

@@ -670,7 +670,7 @@ FixedwingPositionControl::updateManualTakeoffStatus()
 	if (!_completed_manual_takeoff) {
 		const bool at_controllable_airspeed = _airspeed_eas > _performance_model.getMinimumCalibratedAirspeed(getLoadFactor())
 						      || !_airspeed_valid;
-		const bool is_hovering = _vehicle_status.vehicle_type == vehicle_status_s::VEHICLE_TYPE_ROTARY_WING
+		const bool is_hovering = _vehicle_status.vehicle_type == vehicle_identity_s::VEHICLE_TYPE_ROTARY_WING
 					 && _control_mode.flag_armed;
 		_completed_manual_takeoff = (!_landed && at_controllable_airspeed) || is_hovering;
 	}
@@ -680,7 +680,7 @@ void
 FixedwingPositionControl::set_control_mode_current(const hrt_abstime &now)
 {
 	/* only run position controller in fixed-wing mode and during transitions for VTOL */
-	if (_vehicle_status.vehicle_type == vehicle_status_s::VEHICLE_TYPE_ROTARY_WING && !_vehicle_status.in_transition_mode) {
+	if (_vehicle_status.vehicle_type == vehicle_identity_s::VEHICLE_TYPE_ROTARY_WING && !_vehicle_status.in_transition_mode) {
 		_control_mode_current = FW_POSCTRL_MODE_OTHER;
 		return; // do not publish the setpoint
 	}
@@ -1555,7 +1555,7 @@ FixedwingPositionControl::control_auto_takeoff(const hrt_abstime &now, const flo
 		// by default set the takeoff bearing to the takeoff yaw, but override in a mission takeoff with bearing to takeoff WP
 		float takeoff_bearing = _launch_current_yaw;
 
-		if (_vehicle_status.operation_mode == vehicle_status_s::OPERATION_MODE_AUTO_MISSION) {
+		if (_vehicle_status.operation_mode == mode_status_s::OPERATION_MODE_AUTO_MISSION) {
 			// the bearing from runway start to the takeoff waypoint is followed until the clearance altitude is exceeded
 			const Vector2f takeoff_bearing_vector = takeoff_waypoint_local - start_pos_local;
 
@@ -1657,7 +1657,7 @@ FixedwingPositionControl::control_auto_takeoff(const hrt_abstime &now, const flo
 		// by default set the takeoff bearing to the takeoff yaw, but override in a mission takeoff with bearing to takeoff WP
 		float takeoff_bearing = _launch_current_yaw;
 
-		if (_vehicle_status.operation_mode == vehicle_status_s::OPERATION_MODE_AUTO_MISSION) {
+		if (_vehicle_status.operation_mode == mode_status_s::OPERATION_MODE_AUTO_MISSION) {
 			// the bearing from launch to the takeoff waypoint is followed until the clearance altitude is exceeded
 			const Vector2f takeoff_bearing_vector = takeoff_waypoint_local - launch_local_position;
 
@@ -2770,7 +2770,7 @@ FixedwingPositionControl::Run()
 				_attitude_sp_pub.publish(_att_sp);
 
 				// only publish status in full FW mode
-				if (_vehicle_status.vehicle_type == vehicle_status_s::VEHICLE_TYPE_FIXED_WING
+				if (_vehicle_status.vehicle_type == vehicle_identity_s::VEHICLE_TYPE_FIXED_WING
 				    || _vehicle_status.in_transition_mode) {
 					status_publish();
 
@@ -2799,7 +2799,7 @@ FixedwingPositionControl::Run()
 
 		// In Manual modes flaps and spoilers are directly controlled in the Attitude controller and not published here
 		if (_control_mode.flag_control_auto_enabled
-		    && _vehicle_status.vehicle_type == vehicle_status_s::VEHICLE_TYPE_FIXED_WING) {
+		    && _vehicle_status.vehicle_type == vehicle_identity_s::VEHICLE_TYPE_FIXED_WING) {
 			normalized_unsigned_setpoint_s flaps_setpoint;
 			flaps_setpoint.normalized_setpoint = _flaps_setpoint;
 			flaps_setpoint.timestamp = hrt_absolute_time();
@@ -2855,7 +2855,7 @@ FixedwingPositionControl::tecs_update_pitch_throttle(const float control_interva
 		bool disable_underspeed_detection, float hgt_rate_sp)
 {
 	// do not run TECS if vehicle is a VTOL and we are in rotary wing mode or in transition
-	if (_vehicle_status.is_vtol && (_vehicle_status.vehicle_type == vehicle_status_s::VEHICLE_TYPE_ROTARY_WING
+	if (_vehicle_status.is_vtol && (_vehicle_status.vehicle_type == vehicle_identity_s::VEHICLE_TYPE_ROTARY_WING
 					|| _vehicle_status.in_transition_mode)) {
 		_tecs_is_running = false;
 		return;
@@ -2897,7 +2897,7 @@ FixedwingPositionControl::tecs_update_pitch_throttle(const float control_interva
 	tecs_status_publish(alt_sp, airspeed_sp, airspeed_rate_estimate, throttle_trim_compensated);
 
 	if (_tecs_is_running && !_vehicle_status.in_transition_mode
-	    && (_vehicle_status.vehicle_type == vehicle_status_s::VEHICLE_TYPE_FIXED_WING)) {
+	    && (_vehicle_status.vehicle_type == vehicle_identity_s::VEHICLE_TYPE_FIXED_WING)) {
 		const TECS::DebugOutput &tecs_output{_tecs.getStatus()};
 
 		// Check level flight: the height rate setpoint is not set or set to 0 and we are close to the target altitude and target altitude is not moving

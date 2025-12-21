@@ -76,7 +76,7 @@ void DriverLampController::update_lamp_mode()
 
 	if (_vehicle_status_sub.update(&status)) {
 		// Check for reverse gear (simplified - you may need different logic)
-		if (status.operation_mode == vehicle_status_s::OPERATION_MODE_AUTO_RTL) {
+		if (status.operation_mode == mode_status_s::OPERATION_MODE_AUTO_RTL) {
 			_current_mode = LampMode::REVERSE;
 			perf_end(_mode_update_perf);
 			return;

@@ -37,6 +37,7 @@
 #include <uORB/topics/actuator_armed.h>
 #include <uORB/topics/vehicle_control_mode.h>
 #include <uORB/topics/vehicle_status.h>
+#include <uORB/topics/mode_status.h>
 
 class MavlinkStreamHeartbeat : public MavlinkStream
 {
@@ -62,6 +63,7 @@ private:
 	uORB::Subscription _acturator_armed_sub{ORB_ID(actuator_armed)};
 	uORB::Subscription _vehicle_control_mode_sub{ORB_ID(vehicle_control_mode)};
 	uORB::Subscription _vehicle_status_sub{ORB_ID(vehicle_status)};
+	uORB::Subscription _mode_status_sub{ORB_ID(mode_status)};
 
 	bool send() override
 	{
@@ -69,6 +71,9 @@ private:
 			// always send the heartbeat, independent of the update status of the topics
 			vehicle_status_s vehicle_status{};
 			_vehicle_status_sub.copy(&vehicle_status);
+
+			mode_status_s mode_status{};
+			_mode_status_sub.copy(&mode_status);
 
 			vehicle_control_mode_s vehicle_control_mode{};
 			_vehicle_control_mode_sub.copy(&vehicle_control_mode);
@@ -101,7 +106,7 @@ private:
 
 
 			// uint32_t custom_mode - A bitfield for use for autopilot-specific flags
-			union px4_custom_mode custom_mode {get_px4_custom_mode(vehicle_status.operation_mode)};
+			union px4_custom_mode custom_mode {get_px4_custom_mode(mode_status.current_mode)};
 
 
 			// uint8_t system_status (MAV_STATE) - System status flag.
@@ -121,7 +126,7 @@ private:
 			// system_status overrides
 			if (actuator_armed.force_failsafe || (actuator_armed.lockdown
 							      && vehicle_status.hil_state == vehicle_status_s::HIL_STATE_OFF) || actuator_armed.manual_lockdown
-			    || vehicle_status.operation_mode == vehicle_status_s::OPERATION_MODE_TERMINATION) {
+			    || mode_status.current_mode == mode_status_s::OPERATION_MODE_TERMINATION) {
 
 				system_status = MAV_STATE_FLIGHT_TERMINATION;
 			}

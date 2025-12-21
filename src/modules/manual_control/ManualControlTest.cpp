@@ -45,12 +45,12 @@ static constexpr uint8_t ACTION_VTOL_TRANSITION_TO_MULTICOPTER =
 	action_request_s::ACTION_VTOL_TRANSITION_TO_MULTICOPTER;
 static constexpr uint8_t ACTION_SWITCH_MODE = action_request_s::ACTION_SWITCH_MODE;
 
-static constexpr uint8_t OPERATION_MODE_MANUAL = vehicle_status_s::OPERATION_MODE_MANUAL;
-static constexpr uint8_t OPERATION_MODE_ALTCTL = vehicle_status_s::OPERATION_MODE_ALTCTL;
-static constexpr uint8_t OPERATION_MODE_POSCTL = vehicle_status_s::OPERATION_MODE_POSCTL;
-static constexpr uint8_t OPERATION_MODE_AUTO_MISSION = vehicle_status_s::OPERATION_MODE_AUTO_MISSION;
-static constexpr uint8_t OPERATION_MODE_AUTO_LOITER = vehicle_status_s::OPERATION_MODE_AUTO_LOITER;
-static constexpr uint8_t OPERATION_MODE_ACRO = vehicle_status_s::OPERATION_MODE_ACRO;
+static constexpr uint8_t OPERATION_MODE_MANUAL = mode_status_s::OPERATION_MODE_MANUAL;
+static constexpr uint8_t OPERATION_MODE_ALTCTL = mode_status_s::OPERATION_MODE_ALTCTL;
+static constexpr uint8_t OPERATION_MODE_POSCTL = mode_status_s::OPERATION_MODE_POSCTL;
+static constexpr uint8_t OPERATION_MODE_AUTO_MISSION = mode_status_s::OPERATION_MODE_AUTO_MISSION;
+static constexpr uint8_t OPERATION_MODE_AUTO_LOITER = mode_status_s::OPERATION_MODE_AUTO_LOITER;
+static constexpr uint8_t OPERATION_MODE_ACRO = mode_status_s::OPERATION_MODE_ACRO;
 
 class TestManualControl : public ManualControl
 {

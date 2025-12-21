@@ -626,12 +626,12 @@ void MavlinkReceiver::handle_message_command_both(mavlink_message_t *msg, const 
 				param_t atune_start;
 
 				switch (vehicle_status.vehicle_type) {
-				case vehicle_status_s::VEHICLE_TYPE_FIXED_WING:
+				case vehicle_identity_s::VEHICLE_TYPE_FIXED_WING:
 					atune_start = param_find("FW_AT_START");
 
 					break;
 
-				case vehicle_status_s::VEHICLE_TYPE_ROTARY_WING:
+				case vehicle_identity_s::VEHICLE_TYPE_ROTARY_WING:
 					atune_start = param_find("MC_AT_START");
 
 					break;
@@ -1126,10 +1126,10 @@ MavlinkReceiver::handle_message_set_position_target_local_ned(mavlink_message_t 
 			ocm.timestamp = hrt_absolute_time();
 			_offboard_control_mode_pub.publish(ocm);
 
-			vehicle_status_s vehicle_status{};
-			_vehicle_status_sub.copy(&vehicle_status);
+			mode_status_s mode_status{};
+			_mode_status_sub.copy(&mode_status);
 
-			if (vehicle_status.operation_mode == vehicle_status_s::OPERATION_MODE_OFFBOARD) {
+			if (mode_status.current_mode == mode_status_s::OPERATION_MODE_OFFBOARD) {
 				// only publish setpoint once in OFFBOARD
 				setpoint.timestamp = hrt_absolute_time();
 				_trajectory_setpoint_pub.publish(setpoint);
@@ -1248,10 +1248,10 @@ MavlinkReceiver::handle_message_set_position_target_global_int(mavlink_message_t
 			ocm.timestamp = hrt_absolute_time();
 			_offboard_control_mode_pub.publish(ocm);
 
-			vehicle_status_s vehicle_status{};
-			_vehicle_status_sub.copy(&vehicle_status);
+			mode_status_s mode_status{};
+			_mode_status_sub.copy(&mode_status);
 
-			if (vehicle_status.operation_mode == vehicle_status_s::OPERATION_MODE_OFFBOARD) {
+			if (mode_status.current_mode == mode_status_s::OPERATION_MODE_OFFBOARD) {
 				// only publish setpoint once in OFFBOARD
 				setpoint.timestamp = hrt_absolute_time();
 				_trajectory_setpoint_pub.publish(setpoint);
@@ -1586,12 +1586,12 @@ void MavlinkReceiver::fill_thrust(float *thrust_body_array, uint8_t vehicle_type
 	case MAV_TYPE_VTOL_TILTWING:
 	case MAV_TYPE_VTOL_RESERVED5:
 		switch (vehicle_type) {
-		case vehicle_status_s::VEHICLE_TYPE_FIXED_WING:
+		case vehicle_identity_s::VEHICLE_TYPE_FIXED_WING:
 			thrust_body_array[0] = thrust;
 
 			break;
 
-		case vehicle_status_s::VEHICLE_TYPE_ROTARY_WING:
+		case vehicle_identity_s::VEHICLE_TYPE_ROTARY_WING:
 			thrust_body_array[2] = -thrust;
 
 			break;
@@ -1626,6 +1626,9 @@ MavlinkReceiver::handle_message_set_attitude_target(mavlink_message_t *msg)
 		vehicle_status_s vehicle_status{};
 		_vehicle_status_sub.copy(&vehicle_status);
 
+		mode_status_s mode_status{};
+		_mode_status_sub.copy(&mode_status);
+
 		if (attitude || body_rates) {
 			offboard_control_mode_s ocm{};
 			ocm.attitude = attitude;
@@ -1654,13 +1657,13 @@ MavlinkReceiver::handle_message_set_attitude_target(mavlink_message_t *msg)
 			}
 
 			// Publish attitude setpoint only once in OFFBOARD
-			if (vehicle_status.operation_mode == vehicle_status_s::OPERATION_MODE_OFFBOARD) {
+			if (mode_status.current_mode == mode_status_s::OPERATION_MODE_OFFBOARD) {
 				attitude_setpoint.timestamp = hrt_absolute_time();
 
-				if (vehicle_status.is_vtol && (vehicle_status.vehicle_type == vehicle_status_s::VEHICLE_TYPE_ROTARY_WING)) {
+				if (vehicle_status.is_vtol && (vehicle_status.vehicle_type == vehicle_identity_s::VEHICLE_TYPE_ROTARY_WING)) {
 					_mc_virtual_att_sp_pub.publish(attitude_setpoint);
 
-				} else if (vehicle_status.is_vtol && (vehicle_status.vehicle_type == vehicle_status_s::VEHICLE_TYPE_FIXED_WING)) {
+				} else if (vehicle_status.is_vtol && (vehicle_status.vehicle_type == vehicle_identity_s::VEHICLE_TYPE_FIXED_WING)) {
 					_fw_virtual_att_sp_pub.publish(attitude_setpoint);
 
 				} else {
@@ -1684,7 +1687,7 @@ MavlinkReceiver::handle_message_set_attitude_target(mavlink_message_t *msg)
 			}
 
 			// Publish rate setpoint only once in OFFBOARD
-			if (vehicle_status.operation_mode == vehicle_status_s::OPERATION_MODE_OFFBOARD) {
+			if (mode_status.current_mode == mode_status_s::OPERATION_MODE_OFFBOARD) {
 				setpoint.timestamp = hrt_absolute_time();
 				_rates_sp_pub.publish(setpoint);
 			}

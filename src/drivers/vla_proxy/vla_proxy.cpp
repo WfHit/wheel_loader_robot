@@ -409,11 +409,16 @@ void VLAProxy::collect_robot_status(WheelloaderStatus &status)
 {
 	status.timestamp = hrt_absolute_time();
 
-	// Get vehicle status
+	// Get vehicle status for arming state
 	vehicle_status_s vehicle_status;
 	if (_vehicle_status_sub.copy(&vehicle_status)) {
 		status.armed = (vehicle_status.arming_state == vehicle_status_s::ARMING_STATE_ARMED) ? 1 : 0;
-		status.operation_mode = vehicle_status.operation_mode;
+	}
+
+	// Get operation mode from mode_status (authoritative source)
+	mode_status_s mode_status;
+	if (_mode_status_sub.copy(&mode_status)) {
+		status.operation_mode = mode_status.current_mode;
 	}
 
 	// Get position and velocity

@@ -165,23 +165,23 @@ msp_status_BF_t construct_STATUS(const vehicle_status_s &vehicle_status)
 		status_BF.flight_mode_flags |= ARM_ACRO_BF;
 
 		switch (vehicle_status.operation_mode) {
-		case vehicle_status_s::OPERATION_MODE_MANUAL:
+		case mode_status_s::OPERATION_MODE_MANUAL:
 			status_BF.flight_mode_flags |= 0;
 			break;
 
-		case vehicle_status_s::OPERATION_MODE_ACRO:
+		case mode_status_s::OPERATION_MODE_ACRO:
 			status_BF.flight_mode_flags |= 0;
 			break;
 
-		case vehicle_status_s::OPERATION_MODE_STAB:
+		case mode_status_s::OPERATION_MODE_STAB:
 			status_BF.flight_mode_flags |= STAB_BF;
 			break;
 
-		case vehicle_status_s::OPERATION_MODE_AUTO_RTL:
+		case mode_status_s::OPERATION_MODE_AUTO_RTL:
 			status_BF.flight_mode_flags |= RESC_BF;
 			break;
 
-		case vehicle_status_s::OPERATION_MODE_TERMINATION:
+		case mode_status_s::OPERATION_MODE_TERMINATION:
 			status_BF.flight_mode_flags |= FS_BF;
 			break;
 

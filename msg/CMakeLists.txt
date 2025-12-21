@@ -78,6 +78,8 @@ set(msg_files
 	DifferentialVelocitySetpoint.msg
 	DistanceSensor.msg
 	DistanceSensorModeChangeRequest.msg
+	ProxyModeRegistrationStatus.msg
+	ProxyModeStatus.msg
 	DrivetrainEncoders.msg
 	DrivetrainSetpoint.msg
 	DrivetrainStatus.msg
@@ -303,6 +305,7 @@ set(msg_files
 	versioned/VehicleCommand.msg
 	versioned/VehicleControlMode.msg
 	versioned/VehicleGlobalPosition.msg
+	VehicleIdentity.msg
 	versioned/VehicleLandDetected.msg
 	versioned/VehicleLocalPosition.msg
 	versioned/VehicleOdometry.msg

@@ -94,9 +94,6 @@ add_compile_options(
 	-Wno-cast-align
 ) # TODO: fix and enable
 
-# add subdirectory containing mode utilities
-add_subdirectory(mode_util)
-
 # add subdirectory containing all modes
 add_subdirectory(modes)
 
@@ -108,9 +105,10 @@ px4_add_module(
 		${CMAKE_CURRENT_SOURCE_DIR}
 		${CMAKE_CURRENT_BINARY_DIR}
 	SRCS
-		ModeManager.cpp
-		ModeManager.hpp
-		UserModeIntention.cpp
+		control_flags.cpp
+		mode_manager.cpp
+		mode_manager.hpp
+		mode_intention.cpp
 
 		${CMAKE_CURRENT_BINARY_DIR}/Modes_generated.hpp
 		${CMAKE_CURRENT_BINARY_DIR}/Modes_generated.cpp
@@ -118,7 +116,6 @@ px4_add_module(
 		px4_work_queue
 		WeatherVane
 		flightmodes_generated
-		mode_util
 )
 
 # add all flight task dependencies

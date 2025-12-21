@@ -44,7 +44,7 @@ AirspeedChecks::AirspeedChecks()
 void AirspeedChecks::checkAndReport(const Context &context, Report &reporter)
 {
 	if (_param_sys_has_num_aspd.get() <= 0 ||
-	    (context.status().vehicle_type != vehicle_status_s::VEHICLE_TYPE_FIXED_WING && !context.status().is_vtol)) {
+	    (context.status().vehicle_type != vehicle_identity_s::VEHICLE_TYPE_FIXED_WING && !context.status().is_vtol)) {
 		return;
 	}
 

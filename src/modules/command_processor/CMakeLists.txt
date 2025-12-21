@@ -36,9 +36,9 @@ px4_add_module(
 	MAIN command_processor
 	COMPILE_FLAGS
 	SRCS
-		CommandProcessor.cpp
-		StandardCommandHandler.cpp
-		WheelLoaderCommandHandler.cpp
+		command_processor.cpp
+		airplane_command_handler.cpp
+		wheel_loader_command_handler.cpp
 	DEPENDS
 		mode_util
 	)

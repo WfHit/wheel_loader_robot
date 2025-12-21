@@ -184,7 +184,7 @@ void ModeChecks::checkAndReport(const Context &context, Report &reporter)
 
 void ModeChecks::checkArmingRequirement(const Context &context, Report &reporter)
 {
-	if (reporter.failsafeFlags().mode_req_prevent_arming & (1u << context.status().operation_mode)) {
+	if (reporter.failsafeFlags().mode_req_prevent_arming & (1u << context.currentMode())) {
 		/* EVENT
 		 * @description
 		 * Switch to another mode first.

@@ -34,6 +34,7 @@
 #pragma once
 
 #include <uORB/topics/vehicle_status.h>
+#include <uORB/topics/vehicle_identity.h>
 
 #include <stdint.h>
 
@@ -62,12 +63,12 @@ enum class StandardMode : uint8_t {
 static inline StandardMode getStandardModeFromNavState(uint8_t nav_state, uint8_t vehicle_type, bool is_vtol)
 {
 	// Handle wheel loader specific modes first
-	if (vehicle_type == vehicle_status_s::VEHICLE_TYPE_WHEEL_LOADER) {
+	if (vehicle_type == vehicle_identity_s::VEHICLE_TYPE_WHEEL_LOADER) {
 		switch (nav_state) {
-		case vehicle_status_s::OPERATION_MODE_MANUAL:
+		case mode_status_s::OPERATION_MODE_MANUAL:
 			return StandardMode::WHEEL_LOADER_MANUAL;
 
-		case vehicle_status_s::OPERATION_MODE_AUTO_VLA:
+		case mode_status_s::OPERATION_MODE_AUTO_VLA:
 			return StandardMode::WHEEL_LOADER_VLA_AUTO;
 
 		default:
@@ -76,36 +77,36 @@ static inline StandardMode getStandardModeFromNavState(uint8_t nav_state, uint8_
 	}
 
 	switch (nav_state) {
-	case vehicle_status_s::OPERATION_MODE_AUTO_RTL: return StandardMode::SAFE_RECOVERY;
+	case mode_status_s::OPERATION_MODE_AUTO_RTL: return StandardMode::SAFE_RECOVERY;
 
-	case vehicle_status_s::OPERATION_MODE_AUTO_MISSION: return StandardMode::MISSION;
+	case mode_status_s::OPERATION_MODE_AUTO_MISSION: return StandardMode::MISSION;
 
-	case vehicle_status_s::OPERATION_MODE_AUTO_LAND: return StandardMode::LAND;
+	case mode_status_s::OPERATION_MODE_AUTO_LAND: return StandardMode::LAND;
 
-	case vehicle_status_s::OPERATION_MODE_AUTO_TAKEOFF: return StandardMode::TAKEOFF;
+	case mode_status_s::OPERATION_MODE_AUTO_TAKEOFF: return StandardMode::TAKEOFF;
 
-	case vehicle_status_s::OPERATION_MODE_ALTCTL:
-		if (is_vtol || vehicle_type == vehicle_status_s::VEHICLE_TYPE_ROTARY_WING
-		    || vehicle_type == vehicle_status_s::VEHICLE_TYPE_FIXED_WING) {
+	case mode_status_s::OPERATION_MODE_ALTCTL:
+		if (is_vtol || vehicle_type == vehicle_identity_s::VEHICLE_TYPE_ROTARY_WING
+		    || vehicle_type == vehicle_identity_s::VEHICLE_TYPE_FIXED_WING) {
 			return StandardMode::ALTITUDE_HOLD;
 		}
 
 		break;
 
-	case vehicle_status_s::OPERATION_MODE_POSCTL:
-		if (!is_vtol && vehicle_type == vehicle_status_s::VEHICLE_TYPE_ROTARY_WING) {
+	case mode_status_s::OPERATION_MODE_POSCTL:
+		if (!is_vtol && vehicle_type == vehicle_identity_s::VEHICLE_TYPE_ROTARY_WING) {
 			return StandardMode::POSITION_HOLD;
 		}
 
-		if (!is_vtol && vehicle_type == vehicle_status_s::VEHICLE_TYPE_FIXED_WING) {
+		if (!is_vtol && vehicle_type == vehicle_identity_s::VEHICLE_TYPE_FIXED_WING) {
 			return StandardMode::CRUISE;
 		}
 
 		break;
 
-	case vehicle_status_s::OPERATION_MODE_ORBIT:
-		if (is_vtol || vehicle_type == vehicle_status_s::VEHICLE_TYPE_ROTARY_WING
-		    || vehicle_type == vehicle_status_s::VEHICLE_TYPE_FIXED_WING) {
+	case mode_status_s::OPERATION_MODE_ORBIT:
+		if (is_vtol || vehicle_type == vehicle_identity_s::VEHICLE_TYPE_ROTARY_WING
+		    || vehicle_type == vehicle_identity_s::VEHICLE_TYPE_FIXED_WING) {
 			return StandardMode::ORBIT;
 		}
 
@@ -116,62 +117,62 @@ static inline StandardMode getStandardModeFromNavState(uint8_t nav_state, uint8_
 }
 
 /**
- * @return Get nav_state from a standard mode, or vehicle_status_s::OPERATION_MODE_MAX if not supported
+ * @return Get nav_state from a standard mode, or mode_status_s::OPERATION_MODE_MAX if not supported
  */
 static inline uint8_t getNavStateFromStandardMode(StandardMode mode, uint8_t vehicle_type, bool is_vtol)
 {
 	// Handle wheel loader specific modes
-	if (vehicle_type == vehicle_status_s::VEHICLE_TYPE_WHEEL_LOADER) {
+	if (vehicle_type == vehicle_identity_s::VEHICLE_TYPE_WHEEL_LOADER) {
 		switch (mode) {
 		case StandardMode::WHEEL_LOADER_MANUAL:
-			return vehicle_status_s::OPERATION_MODE_MANUAL;
+			return mode_status_s::OPERATION_MODE_MANUAL;
 
 		case StandardMode::WHEEL_LOADER_VLA_AUTO:
-			return vehicle_status_s::OPERATION_MODE_AUTO_VLA;
+			return mode_status_s::OPERATION_MODE_AUTO_VLA;
 
 		default:
-			return vehicle_status_s::OPERATION_MODE_MAX;
+			return mode_status_s::OPERATION_MODE_MAX;
 		}
 	}
 
 	switch (mode) {
-	case StandardMode::SAFE_RECOVERY: return vehicle_status_s::OPERATION_MODE_AUTO_RTL;
+	case StandardMode::SAFE_RECOVERY: return mode_status_s::OPERATION_MODE_AUTO_RTL;
 
-	case StandardMode::MISSION: return vehicle_status_s::OPERATION_MODE_AUTO_MISSION;
+	case StandardMode::MISSION: return mode_status_s::OPERATION_MODE_AUTO_MISSION;
 
-	case StandardMode::LAND: return vehicle_status_s::OPERATION_MODE_AUTO_LAND;
+	case StandardMode::LAND: return mode_status_s::OPERATION_MODE_AUTO_LAND;
 
-	case StandardMode::TAKEOFF: return vehicle_status_s::OPERATION_MODE_AUTO_TAKEOFF;
+	case StandardMode::TAKEOFF: return mode_status_s::OPERATION_MODE_AUTO_TAKEOFF;
 
 	case StandardMode::ALTITUDE_HOLD:
-		if (is_vtol || vehicle_type == vehicle_status_s::VEHICLE_TYPE_ROTARY_WING
-		    || vehicle_type == vehicle_status_s::VEHICLE_TYPE_FIXED_WING) {
-			return vehicle_status_s::OPERATION_MODE_ALTCTL;
+		if (is_vtol || vehicle_type == vehicle_identity_s::VEHICLE_TYPE_ROTARY_WING
+		    || vehicle_type == vehicle_identity_s::VEHICLE_TYPE_FIXED_WING) {
+			return mode_status_s::OPERATION_MODE_ALTCTL;
 		}
 
 		break;
 
 	case StandardMode::POSITION_HOLD:
-		if (!is_vtol && vehicle_type == vehicle_status_s::VEHICLE_TYPE_ROTARY_WING) {
-			return vehicle_status_s::OPERATION_MODE_POSCTL;
+		if (!is_vtol && vehicle_type == vehicle_identity_s::VEHICLE_TYPE_ROTARY_WING) {
+			return mode_status_s::OPERATION_MODE_POSCTL;
 		}
 
 		break;
 
 	case StandardMode::CRUISE:
-		if (!is_vtol && vehicle_type == vehicle_status_s::VEHICLE_TYPE_FIXED_WING) {
-			return vehicle_status_s::OPERATION_MODE_POSCTL;
+		if (!is_vtol && vehicle_type == vehicle_identity_s::VEHICLE_TYPE_FIXED_WING) {
+			return mode_status_s::OPERATION_MODE_POSCTL;
 		}
 
 		break;
 
 	case StandardMode::ORBIT:
-		if (vehicle_type == vehicle_status_s::VEHICLE_TYPE_ROTARY_WING) {
-			return vehicle_status_s::OPERATION_MODE_ORBIT;
+		if (vehicle_type == vehicle_identity_s::VEHICLE_TYPE_ROTARY_WING) {
+			return mode_status_s::OPERATION_MODE_ORBIT;
 		}
 
-		if (vehicle_type == vehicle_status_s::VEHICLE_TYPE_FIXED_WING) {
-			return vehicle_status_s::OPERATION_MODE_AUTO_LOITER;
+		if (vehicle_type == vehicle_identity_s::VEHICLE_TYPE_FIXED_WING) {
+			return mode_status_s::OPERATION_MODE_AUTO_LOITER;
 		}
 
 		break;
@@ -179,7 +180,7 @@ static inline uint8_t getNavStateFromStandardMode(StandardMode mode, uint8_t veh
 	default: break;
 	}
 
-	return vehicle_status_s::OPERATION_MODE_MAX;
+	return mode_status_s::OPERATION_MODE_MAX;
 }
 
 

@@ -28,48 +28,6 @@ uint8 ARM_DISARM_REASON_FAILURE_DETECTOR = 11
 uint8 ARM_DISARM_REASON_SHUTDOWN = 12
 uint8 ARM_DISARM_REASON_UNIT_TEST = 13
 
-uint64 operation_mode_timestamp # time when current operation_mode activated
-
-uint8 operation_mode_user_intention             # Mode that the user selected (might be different from operation_mode in a failsafe situation)
-
-uint8 operation_mode                            # Currently active mode
-uint8 OPERATION_MODE_MANUAL = 0               # Manual mode
-uint8 OPERATION_MODE_ALTCTL = 1               # Altitude control mode
-uint8 OPERATION_MODE_POSCTL = 2               # Position control mode
-uint8 OPERATION_MODE_AUTO_MISSION = 3         # Auto mission mode
-uint8 OPERATION_MODE_AUTO_LOITER = 4          # Auto loiter mode
-uint8 OPERATION_MODE_AUTO_RTL = 5             # Auto return to launch mode
-uint8 OPERATION_MODE_POSITION_SLOW = 6
-uint8 OPERATION_MODE_FREE5 = 7
-uint8 OPERATION_MODE_FREE4 = 8
-uint8 OPERATION_MODE_FREE3 = 9
-uint8 OPERATION_MODE_ACRO = 10                # Acro mode
-uint8 OPERATION_MODE_FREE2 = 11
-uint8 OPERATION_MODE_DESCEND = 12             # Descend mode (no position control)
-uint8 OPERATION_MODE_TERMINATION = 13         # Termination mode
-uint8 OPERATION_MODE_OFFBOARD = 14
-uint8 OPERATION_MODE_STAB = 15                # Stabilized mode
-uint8 OPERATION_MODE_FREE1 = 16
-uint8 OPERATION_MODE_AUTO_TAKEOFF = 17        # Takeoff
-uint8 OPERATION_MODE_AUTO_LAND = 18           # Land
-uint8 OPERATION_MODE_AUTO_FOLLOW_TARGET = 19  # Auto Follow
-uint8 OPERATION_MODE_AUTO_PRECLAND = 20       # Precision land with landing target
-uint8 OPERATION_MODE_ORBIT = 21               # Orbit in a circle
-uint8 OPERATION_MODE_AUTO_VTOL_TAKEOFF = 22   # Takeoff, transition, establish loiter
-uint8 OPERATION_MODE_AUTO_VLA = 23            # Auto VLA 7-DOF control (chassis + boom + tilt)
-uint8 OPERATION_MODE_EXTERNAL3 = 24
-uint8 OPERATION_MODE_EXTERNAL4 = 25
-uint8 OPERATION_MODE_EXTERNAL5 = 26
-uint8 OPERATION_MODE_EXTERNAL6 = 27
-uint8 OPERATION_MODE_EXTERNAL7 = 28
-uint8 OPERATION_MODE_EXTERNAL8 = 29
-uint8 OPERATION_MODE_MAX = 30
-
-uint8 executor_in_charge                        # Current mode executor in charge (0=Autopilot)
-
-uint32 valid_operation_modes_mask               # Bitmask for all valid operation_mode values
-uint32 can_set_operation_modes_mask             # Bitmask for all modes that a user can select
-
 # Bitmask of detected failures
 uint16 failure_detector_status
 uint16 FAILURE_NONE = 0
@@ -85,13 +43,6 @@ uint16 FAILURE_MOTOR = 128           # (1 << 7)
 uint8 hil_state
 uint8 HIL_STATE_OFF = 0
 uint8 HIL_STATE_ON = 1
-
-# Current vehicle locomotion method. A vehicle can have different methods (e.g. VTOL transitions from RW to FW method)
-uint8 vehicle_type
-uint8 VEHICLE_TYPE_ROTARY_WING = 1
-uint8 VEHICLE_TYPE_FIXED_WING = 2
-uint8 VEHICLE_TYPE_ROVER = 3
-uint8 VEHICLE_TYPE_WHEEL_LOADER = 4  # Articulated wheel loader with boom and bucket
 
 uint8 FAILSAFE_DEFER_STATE_DISABLED = 0
 uint8 FAILSAFE_DEFER_STATE_ENABLED = 1
@@ -112,11 +63,6 @@ bool is_vtol_tailsitter  # True if the system performs a 90° pitch down rotatio
 bool in_transition_mode  # True if VTOL is doing a transition
 bool in_transition_to_fw # True if VTOL is doing a transition from MC to FW
 
-# MAVLink identification
-uint8 system_type  # system type, contains mavlink MAV_TYPE
-uint8 system_id	   # system id, contains MAVLink's system ID field
-uint8 component_id # subsystem / component id, contains MAVLink's component ID field
-
 bool safety_button_available # Set to true if a safety button is connected
 bool safety_off # Set to true if safety is off
 
@@ -132,4 +78,4 @@ bool parachute_system_healthy
 bool rc_calibration_in_progress
 bool calibration_enabled
 
-bool pre_flight_checks_pass		# true if all checks necessary to arm pass
+bool pre_flight_checks_pass             # true if all checks necessary to arm pass

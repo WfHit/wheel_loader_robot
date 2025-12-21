@@ -71,7 +71,7 @@ public:
 
 	uint8_t getVehicleType() const override
 	{
-		return vehicle_status_s::VEHICLE_TYPE_WHEEL_LOADER;
+		return vehicle_identity_s::VEHICLE_TYPE_WHEEL_LOADER;
 	}
 
 	const char *getName() const override
@@ -85,8 +85,8 @@ public:
 
 	uint32_t getAvailableModesMask() const override
 	{
-		return (1u << vehicle_status_s::OPERATION_MODE_MANUAL) |
-		       (1u << vehicle_status_s::OPERATION_MODE_AUTO_VLA);
+		return (1u << mode_status_s::OPERATION_MODE_MANUAL) |
+		       (1u << mode_status_s::OPERATION_MODE_AUTO_VLA);
 	}
 
 	uint32_t getAvailableAutomationTasksMask() const override
@@ -96,12 +96,12 @@ public:
 
 	uint8_t getDefaultMode() const override
 	{
-		return vehicle_status_s::OPERATION_MODE_MANUAL;
+		return mode_status_s::OPERATION_MODE_MANUAL;
 	}
 
 	uint8_t getFailsafeMode() const override
 	{
-		return vehicle_status_s::OPERATION_MODE_MANUAL;
+		return mode_status_s::OPERATION_MODE_MANUAL;
 	}
 
 	uint8_t getModeChangeLogic() const override
@@ -216,29 +216,29 @@ public:
 		switch (command) {
 		case vehicle_command_s::VEHICLE_CMD_DO_REPOSITION:
 			// Wheel loader uses VLA mode for positioning
-			return vehicle_status_s::OPERATION_MODE_AUTO_VLA;
+			return mode_status_s::OPERATION_MODE_AUTO_VLA;
 
 		case vehicle_command_s::VEHICLE_CMD_MISSION_START:
 			// Mission mode (if waypoint following is implemented)
-			return vehicle_status_s::OPERATION_MODE_AUTO_MISSION;
+			return mode_status_s::OPERATION_MODE_AUTO_MISSION;
 
 		case vehicle_command_s::VEHICLE_CMD_NAV_RETURN_TO_LAUNCH:
 			// No RTL for ground vehicles - fall back to manual
-			return vehicle_status_s::OPERATION_MODE_MANUAL;
+			return mode_status_s::OPERATION_MODE_MANUAL;
 
 		case vehicle_command_s::VEHICLE_CMD_DO_SET_MODE:
 			// Mode is specified in params, not here
-			return vehicle_status_s::OPERATION_MODE_MAX;
+			return mode_status_s::OPERATION_MODE_MAX;
 
 		// Aerial commands - should be rejected before this
 		case vehicle_command_s::VEHICLE_CMD_NAV_TAKEOFF:
 		case vehicle_command_s::VEHICLE_CMD_NAV_LAND:
 		case vehicle_command_s::VEHICLE_CMD_NAV_VTOL_TAKEOFF:
 		case vehicle_command_s::VEHICLE_CMD_DO_ORBIT:
-			return vehicle_status_s::OPERATION_MODE_MAX;  // No mode change (rejected)
+			return mode_status_s::OPERATION_MODE_MAX;  // No mode change (rejected)
 
 		default:
-			return vehicle_status_s::OPERATION_MODE_MAX;  // No mode change needed
+			return mode_status_s::OPERATION_MODE_MAX;  // No mode change needed
 		}
 	}
 

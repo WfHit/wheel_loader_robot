@@ -37,6 +37,7 @@
 #include <uORB/topics/battery_status.h>
 #include <uORB/topics/cpuload.h>
 #include <uORB/topics/vehicle_status.h>
+#include <uORB/topics/mode_status.h>
 #include <uORB/topics/health_report.h>
 #include <px4_platform_common/events.h>
 
@@ -60,6 +61,7 @@ private:
 	explicit MavlinkStreamSysStatus(Mavlink *mavlink) : MavlinkStream(mavlink) {}
 
 	uORB::Subscription _status_sub{ORB_ID(vehicle_status)};
+	uORB::Subscription _mode_status_sub{ORB_ID(mode_status)};
 	uORB::Subscription _cpuload_sub{ORB_ID(cpuload)};
 	uORB::Subscription _health_report{ORB_ID(health_report)};
 	uORB::SubscriptionMultiArray<battery_status_s, battery_status_s::MAX_INSTANCES> _battery_status_subs{ORB_ID::battery_status};
@@ -109,6 +111,9 @@ private:
 			vehicle_status_s status{};
 			_status_sub.copy(&status);
 
+			mode_status_s mode_status{};
+			_mode_status_sub.copy(&mode_status);
+
 			cpuload_s cpuload{};
 			_cpuload_sub.copy(&cpuload);
 
@@ -137,7 +142,7 @@ private:
 
 			mavlink_sys_status_t msg{};
 
-			if (health_report.can_arm_mode_flags & (1u << status.operation_mode)) {
+			if (health_report.can_arm_mode_flags & (1u << mode_status.current_mode)) {
 				msg.onboard_control_sensors_health |= MAV_SYS_STATUS_PREARM_CHECK;
 			}
 

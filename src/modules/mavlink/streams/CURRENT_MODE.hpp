@@ -35,6 +35,7 @@
 #define CURRENT_MODE_HPP
 
 #include <uORB/topics/vehicle_status.h>
+#include <uORB/topics/mode_status.h>
 #include <lib/modes/standard_modes.hpp>
 
 class MavlinkStreamCurrentMode : public MavlinkStream
@@ -57,16 +58,20 @@ private:
 	explicit MavlinkStreamCurrentMode(Mavlink *mavlink) : MavlinkStream(mavlink) {}
 
 	uORB::Subscription _vehicle_status_sub{ORB_ID(vehicle_status)};
+	uORB::Subscription _mode_status_sub{ORB_ID(mode_status)};
 
 	bool send() override
 	{
 		vehicle_status_s vehicle_status;
+		mode_status_s mode_status;
 
-		if (_vehicle_status_sub.update(&vehicle_status)) {
+		if (_mode_status_sub.update(&mode_status)) {
+			_vehicle_status_sub.copy(&vehicle_status);
+
 			mavlink_current_mode_t current_mode{};
-			current_mode.custom_mode = get_px4_custom_mode(vehicle_status.operation_mode).data;
-			current_mode.intended_custom_mode = get_px4_custom_mode(vehicle_status.operation_mode_user_intention).data;
-			current_mode.standard_mode = (uint8_t) mode_util::getStandardModeFromNavState(vehicle_status.operation_mode,
+			current_mode.custom_mode = get_px4_custom_mode(mode_status.current_mode).data;
+			current_mode.intended_custom_mode = get_px4_custom_mode(mode_status.user_intended_mode).data;
+			current_mode.standard_mode = (uint8_t) mode_util::getStandardModeFromNavState(mode_status.current_mode,
 						     vehicle_status.vehicle_type, vehicle_status.is_vtol);
 			mavlink_msg_current_mode_send_struct(_mavlink->get_channel(), &current_mode);
 			return true;

@@ -35,6 +35,7 @@
 
 #include "../../arming/arm_authorization/arm_authorization.h"
 #include <lib/circuit_breaker/circuit_breaker.h>
+#include <uORB/topics/vehicle_identity.h>
 #include <uORB/topics/vehicle_command_ack.h>
 
 void SystemChecks::checkAndReport(const Context &context, Report &reporter)
@@ -135,7 +136,7 @@ void SystemChecks::checkAndReport(const Context &context, Report &reporter)
 		}
 
 		if (!circuit_breaker_enabled_by_val(_param_cbrk_vtolarming.get(), CBRK_VTOLARMING_KEY)
-		    && context.status().vehicle_type != vehicle_status_s::VEHICLE_TYPE_ROTARY_WING) {
+		    && context.status().vehicle_type != vehicle_identity_s::VEHICLE_TYPE_ROTARY_WING) {
 			/* EVENT
 			 * @description
 			 * <profile name="dev">

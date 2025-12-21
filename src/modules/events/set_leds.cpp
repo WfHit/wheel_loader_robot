@@ -78,14 +78,14 @@ void StatusDisplay::set_leds()
 	// set the led mask for the status led which are the back LED
 	_led_control.led_mask = BOARD_REAR_LED_MASK;
 
-	if (nav_state == vehicle_status_s::OPERATION_MODE_AUTO_RTL
-	    || nav_state == vehicle_status_s::OPERATION_MODE_AUTO_LAND) {
+	if (nav_state == mode_status_s::OPERATION_MODE_AUTO_RTL
+	    || nav_state == mode_status_s::OPERATION_MODE_AUTO_LAND) {
 		_led_control.color = led_control_s::COLOR_PURPLE;
 
-	} else if (nav_state == vehicle_status_s::OPERATION_MODE_ALTCTL) {
+	} else if (nav_state == mode_status_s::OPERATION_MODE_ALTCTL) {
 		_led_control.color = led_control_s::COLOR_BLUE;
 
-	} else if (nav_state == vehicle_status_s::OPERATION_MODE_AUTO_MISSION) {
+	} else if (nav_state == mode_status_s::OPERATION_MODE_AUTO_MISSION) {
 		_led_control.color = led_control_s::COLOR_GREEN;
 
 	} else {

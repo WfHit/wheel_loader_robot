@@ -55,6 +55,8 @@
 #include <uORB/topics/vehicle_local_position.h>
 #include <uORB/topics/vehicle_attitude.h>
 #include <uORB/topics/vehicle_status.h>
+#include <uORB/topics/vehicle_identity.h>
+#include <uORB/topics/mode_status.h>
 #include <uORB/topics/failsafe_flags.h>
 #include <uORB/topics/health_report.h>
 #include <uORB/topics/vehicle_air_data.h>
@@ -458,8 +460,10 @@ private:
 				msg->failure_flags |= HL_FAILURE_FLAG_ENGINE;
 			}
 
-			// flight mode
-			union px4_custom_mode custom_mode {get_px4_custom_mode(status.operation_mode)};
+			// flight mode from mode_status (authoritative source)
+			mode_status_s mode_status;
+			_mode_status_sub.copy(&mode_status);
+			union px4_custom_mode custom_mode {get_px4_custom_mode(mode_status.current_mode)};
 			msg->custom_mode = custom_mode.custom_mode_hl;
 
 			return true;
@@ -584,7 +588,7 @@ private:
 			if (status.arming_state == vehicle_status_s::ARMING_STATE_ARMED) {
 				vehicle_thrust_setpoint_s vehicle_thrust_setpoint{};
 
-				if (status.is_vtol && status.vehicle_type == vehicle_status_s::VEHICLE_TYPE_FIXED_WING) {
+				if (status.is_vtol && status.vehicle_type == vehicle_identity_s::VEHICLE_TYPE_FIXED_WING) {
 					if (_vehicle_thrust_setpoint_1_sub.copy(&vehicle_thrust_setpoint)) {
 						_throttle.add_value(vehicle_thrust_setpoint.xyz[0], _update_rate_filtered);
 					}
@@ -665,6 +669,7 @@ private:
 	uORB::Subscription _gps_sub{ORB_ID(vehicle_gps_position)};
 	uORB::Subscription _mission_result_sub{ORB_ID(mission_result)};
 	uORB::Subscription _status_sub{ORB_ID(vehicle_status)};
+	uORB::Subscription _mode_status_sub{ORB_ID(mode_status)};
 	uORB::Subscription _failsafe_flags_sub{ORB_ID(failsafe_flags)};
 	uORB::Subscription _tecs_status_sub{ORB_ID(tecs_status)};
 	uORB::Subscription _wind_sub{ORB_ID(wind)};

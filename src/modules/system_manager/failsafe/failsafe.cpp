@@ -35,6 +35,7 @@
 
 #include <px4_platform_common/log.h>
 #include <uORB/topics/vehicle_status.h>
+#include <uORB/topics/vehicle_identity.h>
 #include <uORB/topics/battery_status.h>
 #include <lib/circuit_breaker/circuit_breaker.h>
 
@@ -285,37 +286,37 @@ FailsafeBase::Action Failsafe::fromOffboardLossActParam(int param_value, uint8_t
 	case offboard_loss_failsafe_mode::Position_mode:
 	default:
 		action = Action::FallbackPosCtrl;
-		user_intended_mode = vehicle_status_s::OPERATION_MODE_POSCTL;
+		user_intended_mode = mode_status_s::OPERATION_MODE_POSCTL;
 		break;
 
 	case offboard_loss_failsafe_mode::Altitude_mode:
 		action = Action::FallbackAltCtrl;
-		user_intended_mode = vehicle_status_s::OPERATION_MODE_ALTCTL;
+		user_intended_mode = mode_status_s::OPERATION_MODE_ALTCTL;
 		break;
 
 	case offboard_loss_failsafe_mode::Stabilized:
 		action = Action::FallbackStab;
-		user_intended_mode = vehicle_status_s::OPERATION_MODE_STAB;
+		user_intended_mode = mode_status_s::OPERATION_MODE_STAB;
 		break;
 
 	case offboard_loss_failsafe_mode::Return_mode:
 		action = Action::RTL;
-		user_intended_mode = vehicle_status_s::OPERATION_MODE_AUTO_RTL;
+		user_intended_mode = mode_status_s::OPERATION_MODE_AUTO_RTL;
 		break;
 
 	case offboard_loss_failsafe_mode::Land_mode:
 		action = Action::Land;
-		user_intended_mode = vehicle_status_s::OPERATION_MODE_AUTO_LAND;
+		user_intended_mode = mode_status_s::OPERATION_MODE_AUTO_LAND;
 		break;
 
 	case offboard_loss_failsafe_mode::Hold_mode:
 		action = Action::Hold;
-		user_intended_mode = vehicle_status_s::OPERATION_MODE_AUTO_LOITER;
+		user_intended_mode = mode_status_s::OPERATION_MODE_AUTO_LOITER;
 		break;
 
 	case offboard_loss_failsafe_mode::Terminate:
 		action = Action::Terminate;
-		user_intended_mode = vehicle_status_s::OPERATION_MODE_TERMINATION;
+		user_intended_mode = mode_status_s::OPERATION_MODE_TERMINATION;
 		break;
 
 	case offboard_loss_failsafe_mode::Disarm:
@@ -447,13 +448,13 @@ void Failsafe::checkStateAndMode(const hrt_abstime &time_us, const State &state,
 {
 	updateArmingState(time_us, state.armed, status_flags);
 
-	const bool in_forward_flight = state.vehicle_type == vehicle_status_s::VEHICLE_TYPE_FIXED_WING
+	const bool in_forward_flight = state.vehicle_type == vehicle_identity_s::VEHICLE_TYPE_FIXED_WING
 				       || state.vtol_in_transition_mode;
 
 	// Do not enter failsafe while doing a vtol takeoff after the vehicle has started a transition and before it reaches the loiter
 	// altitude. The vtol takeoff navigaton mode will set mission_finished to true as soon as the loiter is established
 	const bool ignore_any_link_loss_vtol_takeoff_fixedwing = state.user_intended_mode ==
-			vehicle_status_s::OPERATION_MODE_AUTO_VTOL_TAKEOFF
+			mode_status_s::OPERATION_MODE_AUTO_VTOL_TAKEOFF
 			&& in_forward_flight && !state.mission_finished;
 
 	// Manual control (RC) loss
@@ -462,14 +463,14 @@ void Failsafe::checkStateAndMode(const hrt_abstime &time_us, const State &state,
 		_manual_control_lost_at_arming = false;
 	}
 
-	const bool rc_loss_ignored_current_auto_mission = state.user_intended_mode == vehicle_status_s::OPERATION_MODE_AUTO_MISSION
+	const bool rc_loss_ignored_current_auto_mission = state.user_intended_mode == mode_status_s::OPERATION_MODE_AUTO_MISSION
 					     && (_param_com_rcl_except.get() & (int)ManualControlLossExceptionBits::Mission);
-	const bool rc_loss_ignored_loiter = state.user_intended_mode == vehicle_status_s::OPERATION_MODE_AUTO_LOITER
+	const bool rc_loss_ignored_loiter = state.user_intended_mode == mode_status_s::OPERATION_MODE_AUTO_LOITER
 					    && (_param_com_rcl_except.get() & (int)ManualControlLossExceptionBits::Hold);
-	const bool rc_loss_ignored_offboard = state.user_intended_mode == vehicle_status_s::OPERATION_MODE_OFFBOARD
+	const bool rc_loss_ignored_offboard = state.user_intended_mode == mode_status_s::OPERATION_MODE_OFFBOARD
 					      && (_param_com_rcl_except.get() & (int)ManualControlLossExceptionBits::Offboard);
-	const bool rc_loss_ignored_takeoff = (state.user_intended_mode == vehicle_status_s::OPERATION_MODE_AUTO_TAKEOFF ||
-					      state.user_intended_mode == vehicle_status_s::OPERATION_MODE_AUTO_VTOL_TAKEOFF)
+	const bool rc_loss_ignored_takeoff = (state.user_intended_mode == mode_status_s::OPERATION_MODE_AUTO_TAKEOFF ||
+					      state.user_intended_mode == mode_status_s::OPERATION_MODE_AUTO_VTOL_TAKEOFF)
 					     && (_param_com_rcl_except.get() & (int)ManualControlLossExceptionBits::Hold);
 
 	const bool rc_loss_ignored = rc_loss_ignored_mission || rc_loss_ignored_loiter || rc_loss_ignored_offboard ||
@@ -482,17 +483,17 @@ void Failsafe::checkStateAndMode(const hrt_abstime &time_us, const State &state,
 	}
 
 	// GCS connection loss
-	const bool dll_loss_ignored_land = state.user_intended_mode == vehicle_status_s::OPERATION_MODE_AUTO_LAND
-					   || state.user_intended_mode == vehicle_status_s::OPERATION_MODE_AUTO_PRECLAND;
+	const bool dll_loss_ignored_land = state.user_intended_mode == mode_status_s::OPERATION_MODE_AUTO_LAND
+					   || state.user_intended_mode == mode_status_s::OPERATION_MODE_AUTO_PRECLAND;
 
-	const bool dll_loss_ignored_current_auto_mission = state.user_intended_mode == vehicle_status_s::OPERATION_MODE_AUTO_MISSION
+	const bool dll_loss_ignored_current_auto_mission = state.user_intended_mode == mode_status_s::OPERATION_MODE_AUTO_MISSION
 					      && (_param_com_dll_except.get() & (int)DatalinkLossExceptionBits::Mission);
-	const bool dll_loss_ignored_loiter = state.user_intended_mode == vehicle_status_s::OPERATION_MODE_AUTO_LOITER
+	const bool dll_loss_ignored_loiter = state.user_intended_mode == mode_status_s::OPERATION_MODE_AUTO_LOITER
 					     && (_param_com_dll_except.get() & (int)DatalinkLossExceptionBits::Hold);
-	const bool dll_loss_ignored_offboard = state.user_intended_mode == vehicle_status_s::OPERATION_MODE_OFFBOARD
+	const bool dll_loss_ignored_offboard = state.user_intended_mode == mode_status_s::OPERATION_MODE_OFFBOARD
 					       && (_param_com_dll_except.get() & (int)DatalinkLossExceptionBits::Offboard);
-	const bool dll_loss_ignored_takeoff = (state.user_intended_mode == vehicle_status_s::OPERATION_MODE_AUTO_TAKEOFF ||
-					       state.user_intended_mode == vehicle_status_s::OPERATION_MODE_AUTO_VTOL_TAKEOFF)
+	const bool dll_loss_ignored_takeoff = (state.user_intended_mode == mode_status_s::OPERATION_MODE_AUTO_TAKEOFF ||
+					       state.user_intended_mode == mode_status_s::OPERATION_MODE_AUTO_VTOL_TAKEOFF)
 					      && (_param_com_dll_except.get() & (int)DatalinkLossExceptionBits::Hold);
 
 	const bool dll_loss_ignored = dll_loss_ignored_mission || dll_loss_ignored_loiter || dll_loss_ignored_offboard ||
@@ -504,15 +505,15 @@ void Failsafe::checkStateAndMode(const hrt_abstime &time_us, const State &state,
 	}
 
 	// VTOL transition failure (quadchute)
-	if (state.user_intended_mode == vehicle_status_s::OPERATION_MODE_AUTO_MISSION ||
-	    state.user_intended_mode == vehicle_status_s::OPERATION_MODE_AUTO_LOITER ||
-	    state.user_intended_mode == vehicle_status_s::OPERATION_MODE_AUTO_TAKEOFF ||
-	    state.user_intended_mode == vehicle_status_s::OPERATION_MODE_AUTO_VTOL_TAKEOFF) {
+	if (state.user_intended_mode == mode_status_s::OPERATION_MODE_AUTO_MISSION ||
+	    state.user_intended_mode == mode_status_s::OPERATION_MODE_AUTO_LOITER ||
+	    state.user_intended_mode == mode_status_s::OPERATION_MODE_AUTO_TAKEOFF ||
+	    state.user_intended_mode == mode_status_s::OPERATION_MODE_AUTO_VTOL_TAKEOFF) {
 		CHECK_FAILSAFE(status_flags, vtol_fixed_wing_system_failure, fromQuadchuteActParam(_param_com_qc_act.get()));
 	}
 
 	// Mission
-	if (state.user_intended_mode == vehicle_status_s::OPERATION_MODE_AUTO_MISSION) {
+	if (state.user_intended_mode == mode_status_s::OPERATION_MODE_AUTO_MISSION) {
 		CHECK_FAILSAFE(status_flags, mission_failure, Action::RTL);
 
 		// If manual control loss and GCS connection loss are disabled and we lose both command links and the mission finished,
@@ -530,13 +531,13 @@ void Failsafe::checkStateAndMode(const hrt_abstime &time_us, const State &state,
 	CHECK_FAILSAFE(status_flags, flight_time_limit_exceeded, ActionOptions(Action::RTL).cannotBeDeferred());
 
 	// trigger Low Position Accuracy Failsafe (only in auto mission and auto loiter)
-	if (state.user_intended_mode == vehicle_status_s::OPERATION_MODE_AUTO_MISSION ||
-	    state.user_intended_mode == vehicle_status_s::OPERATION_MODE_AUTO_LOITER) {
+	if (state.user_intended_mode == mode_status_s::OPERATION_MODE_AUTO_MISSION ||
+	    state.user_intended_mode == mode_status_s::OPERATION_MODE_AUTO_LOITER) {
 		CHECK_FAILSAFE(status_flags, local_position_accuracy_low, fromPosLowActParam(_param_com_pos_low_act.get()));
 	}
 
-	if (state.user_intended_mode == vehicle_status_s::OPERATION_MODE_AUTO_TAKEOFF ||
-	    state.user_intended_mode == vehicle_status_s::OPERATION_MODE_AUTO_RTL) {
+	if (state.user_intended_mode == mode_status_s::OPERATION_MODE_AUTO_TAKEOFF ||
+	    state.user_intended_mode == mode_status_s::OPERATION_MODE_AUTO_RTL) {
 		CHECK_FAILSAFE(status_flags, navigator_failure,
 			       ActionOptions(Action::Land).clearOn(ClearCondition::OnModeChangeOrDisarm));
 
@@ -662,18 +663,18 @@ FailsafeBase::Action Failsafe::checkModeFallback(const failsafe_flags_s &status_
 	case position_control_navigation_loss_response::Altitude_Manual: // AltCtrl/Manual
 
 		// PosCtrl/PositionSlow -> AltCtrl
-		if ((user_intended_mode == vehicle_status_s::OPERATION_MODE_POSCTL ||
-		     user_intended_mode == vehicle_status_s::OPERATION_MODE_POSITION_SLOW)
+		if ((user_intended_mode == mode_status_s::OPERATION_MODE_POSCTL ||
+		     user_intended_mode == mode_status_s::OPERATION_MODE_POSITION_SLOW)
 		    && !modeCanRun(status_flags, user_intended_mode)) {
 			action = Action::FallbackAltCtrl;
-			user_intended_mode = vehicle_status_s::OPERATION_MODE_ALTCTL;
+			user_intended_mode = mode_status_s::OPERATION_MODE_ALTCTL;
 		}
 
 		// AltCtrl -> Stabilized
-		if (user_intended_mode == vehicle_status_s::OPERATION_MODE_ALTCTL
+		if (user_intended_mode == mode_status_s::OPERATION_MODE_ALTCTL
 		    && !modeCanRun(status_flags, user_intended_mode)) {
 			action = Action::FallbackStab;
-			user_intended_mode = vehicle_status_s::OPERATION_MODE_STAB;
+			user_intended_mode = mode_status_s::OPERATION_MODE_STAB;
 		}
 
 		break;
@@ -681,16 +682,16 @@ FailsafeBase::Action Failsafe::checkModeFallback(const failsafe_flags_s &status_
 	case position_control_navigation_loss_response::Land_Descend: // Land/Terminate
 
 		// PosCtrl/PositionSlow -> Land
-		if ((user_intended_mode == vehicle_status_s::OPERATION_MODE_POSCTL ||
-		     user_intended_mode == vehicle_status_s::OPERATION_MODE_POSITION_SLOW)
+		if ((user_intended_mode == mode_status_s::OPERATION_MODE_POSCTL ||
+		     user_intended_mode == mode_status_s::OPERATION_MODE_POSITION_SLOW)
 		    && !modeCanRun(status_flags, user_intended_mode)) {
 			action = Action::Land;
-			user_intended_mode = vehicle_status_s::OPERATION_MODE_AUTO_LAND;
+			user_intended_mode = mode_status_s::OPERATION_MODE_AUTO_LAND;
 
 			// Land -> Descend
 			if (!modeCanRun(status_flags, user_intended_mode)) {
 				action = Action::Descend;
-				user_intended_mode = vehicle_status_s::OPERATION_MODE_DESCEND;
+				user_intended_mode = mode_status_s::OPERATION_MODE_DESCEND;
 			}
 		}
 
@@ -701,7 +702,7 @@ FailsafeBase::Action Failsafe::checkModeFallback(const failsafe_flags_s &status_
 	// Last, check can_run for intended mode
 	if (!modeCanRun(status_flags, user_intended_mode)) {
 		action = Action::RTL;
-		user_intended_mode = vehicle_status_s::OPERATION_MODE_AUTO_RTL;
+		user_intended_mode = mode_status_s::OPERATION_MODE_AUTO_RTL;
 	}
 
 	return action;
@@ -712,9 +713,9 @@ uint8_t Failsafe::modifyUserIntendedMode(Action previous_action, Action current_
 {
 	// If we switch from a failsafe back into orbit, switch to loiter instead
 	if ((int)previous_action > (int)Action::Warn
-	    && modeFromAction(current_action, user_intended_mode) == vehicle_status_s::OPERATION_MODE_ORBIT) {
+	    && modeFromAction(current_action, user_intended_mode) == mode_status_s::OPERATION_MODE_ORBIT) {
 		PX4_DEBUG("Failsafe cleared, switching from ORBIT to LOITER");
-		return vehicle_status_s::OPERATION_MODE_AUTO_LOITER;
+		return mode_status_s::OPERATION_MODE_AUTO_LOITER;
 	}
 
 	return user_intended_mode;

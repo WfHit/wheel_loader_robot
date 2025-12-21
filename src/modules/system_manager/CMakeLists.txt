@@ -36,26 +36,27 @@ add_subdirectory(calibration)
 add_subdirectory(failsafe)
 add_subdirectory(failure_detector)
 add_subdirectory(health_and_arming_checks)
-add_subdirectory(multicopter_throw_launch)
 
 px4_add_module(
 	MODULE modules__system_manager
 	MAIN system_manager
 	COMPILE_FLAGS
 	INCLUDES
-		${CMAKE_SOURCE_DIR}/src/modules/mode_manager
 	SRCS
+		arming_handler.cpp
 		calibration/accelerometer_calibration.cpp
 		calibration/airspeed_calibration.cpp
 		calibration/baro_calibration.cpp
 		calibration/calibration_routines.cpp
+		calibration_handler.cpp
+		failsafe_flags.cpp
+		failsafe_handler.cpp
 		system_manager.cpp
 		system_manager_helper.cpp
 		calibration/esc_calibration.cpp
 		calibration/factory_calibration_storage.cpp
 		calibration/gyro_calibration.cpp
 		home_position.cpp
-		mode_management.cpp
 		calibration/level_calibration.cpp
 		calibration/lm_fit.cpp
 		calibration/mag_calibration.cpp
@@ -72,13 +73,10 @@ px4_add_module(
 		geo
 		health_and_arming_checks
 		hysteresis
-		mode_util
-		multicopter_throw_launch
 		sensor_calibration
-		vehicle_type
 		world_magnetic_model
 		atmosphere
 	)
 
 px4_add_unit_gtest(SRC calibration/mag_calibration_test.cpp LINKLIBS modules__system_manager)
-px4_add_functional_gtest(SRC mode_management_test.cpp LINKLIBS modules__system_manager)
+# mode_management_test.cpp is now in mode_manager

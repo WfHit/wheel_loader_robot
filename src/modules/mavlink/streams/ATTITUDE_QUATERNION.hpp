@@ -37,6 +37,7 @@
 #include <uORB/topics/vehicle_attitude.h>
 #include <uORB/topics/vehicle_angular_velocity.h>
 #include <uORB/topics/vehicle_status.h>
+#include <uORB/topics/vehicle_identity.h>
 
 class MavlinkStreamAttitudeQuaternion : public MavlinkStream
 {
@@ -83,7 +84,7 @@ private:
 			msg.pitchspeed = angular_velocity.xyz[1];
 			msg.yawspeed = angular_velocity.xyz[2];
 
-			if (status.is_vtol && status.is_vtol_tailsitter && (status.vehicle_type == vehicle_status_s::VEHICLE_TYPE_FIXED_WING)) {
+			if (status.is_vtol && status.is_vtol_tailsitter && (status.vehicle_type == vehicle_identity_s::VEHICLE_TYPE_FIXED_WING)) {
 				// This is a tailsitter VTOL flying in fixed wing mode:
 				// indicate that reported attitude should be rotated by
 				// 90 degrees upward pitch for user display

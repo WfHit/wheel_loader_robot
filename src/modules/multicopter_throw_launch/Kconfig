@@ -1,0 +1,12 @@
+menuconfig MODULES_MC_THROW_LAUNCH
+	bool "multicopter_throw_launch"
+	default n
+	---help---
+		Enable support for multicopter throw launch
+
+menuconfig USER_MC_THROW_LAUNCH
+	bool "multicopter_throw_launch running as userspace module"
+	default y
+	depends on BOARD_PROTECTED && MODULES_MC_THROW_LAUNCH
+	---help---
+		Put multicopter_throw_launch in userspace memory

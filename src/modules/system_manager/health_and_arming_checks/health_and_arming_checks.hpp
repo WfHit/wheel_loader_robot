@@ -83,11 +83,12 @@ public:
 	/**
 	 * Run arming checks and report if necessary.
 	 * This should be called regularly (e.g. 1Hz).
+	 * @param current_mode the current operation mode
 	 * @param force_reporting if true, force reporting even if nothing changed
 	 * @param is_arming_request if true, then we are running the checks based on an actual arming request
 	 * @return true if there was a report (also when force_reporting=true)
 	 */
-	bool update(bool force_reporting = false, bool is_arming_request = false);
+	bool update(uint8_t current_mode, bool force_reporting = false, bool is_arming_request = false);
 
 	bool reportIfUnreportedDifferences();
 

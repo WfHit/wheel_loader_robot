@@ -36,10 +36,20 @@
 #include "../common.hpp"
 #include <uORB/topics/arming_check_request.h>
 #include <uORB/topics/arming_check_reply.h>
+#include <uORB/topics/proxy_mode_status.h>
+#include <uORB/topics/proxy_mode_registration_status.h>
 #include <uORB/Subscription.hpp>
 #include <uORB/Publication.hpp>
 #include <px4_platform_common/module_params.h>
 
+/**
+ * @brief External checks for arming validation
+ *
+ * Handles arming check registrations from external modes (ROS2/MAVROS).
+ * Communicates with ProxyModeManagement in mode_manager via uORB:
+ * - Subscribes to proxy_mode_status for mode info
+ * - Publishes proxy_mode_registration_status for registration health
+ */
 class ExternalChecks : public HealthAndArmingCheckBase
 {
 public:
@@ -48,11 +58,16 @@ public:
 	ExternalChecks() = default;
 	~ExternalChecks() = default;
 
+	/**
+	 * @brief Set the range of external operation modes
+	 * @note Called from system_manager initialization
+	 */
 	void setExternalOperationModes(uint8_t first_external_operation_mode, uint8_t last_external_operation_mode);
 
 	void checkAndReport(const Context &context, Report &reporter) override;
 
 	bool hasFreeRegistrations() const { return _active_registrations_mask != (1u << MAX_NUM_REGISTRATIONS) - 1; }
+
 	/**
 	 * Add registration
 	 * @param nav_mode_id associated mode, -1 if none
@@ -61,27 +76,32 @@ public:
 	 */
 	int addRegistration(int8_t nav_mode_id, int8_t replaces_operation_mode);
 	bool removeRegistration(int registration_id, int8_t nav_mode_id);
+
+	/**
+	 * @brief Update registrations and publish status
+	 */
 	void update();
 
 	bool isUnresponsive(int registration_id);
 	bool allowUpdateWhileArmed() const { return _param_com_mode_arm_chk.get(); }
+
 private:
 	static constexpr hrt_abstime REQUEST_TIMEOUT = 50_ms;
 	static constexpr hrt_abstime UPDATE_INTERVAL = 300_ms;
 	static_assert(REQUEST_TIMEOUT < UPDATE_INTERVAL, "keep timeout < update interval");
-	static constexpr int NUM_NO_REPLY_UNTIL_UNRESPONSIVE = 3; ///< Mode timeout = this value * UPDATE_INTERVAL
-	/// Timeout directly after registering (in some cases ROS can take a while until the subscription gets the first
-	/// sample, around 800ms was observed)
+	static constexpr int NUM_NO_REPLY_UNTIL_UNRESPONSIVE = 3;
 	static constexpr int NUM_NO_REPLY_UNTIL_UNRESPONSIVE_INIT = 10;
 
 	void checkNonRegisteredModes(const Context &context, Report &reporter) const;
+	void publishRegistrationStatus();
+	void updateFromProxyModeStatus();
 
 	bool registrationValid(int reg_idx) const { return ((1u << reg_idx) & _active_registrations_mask) != 0; }
 
 	struct Registration {
 		~Registration() { delete reply; }
 
-		int8_t nav_mode_id{-1}; ///< associated mode, -1 if none
+		int8_t nav_mode_id{-1};
 		int8_t replaces_operation_mode{-1};
 
 		bool waiting_for_first_response{true};
@@ -94,19 +114,28 @@ private:
 	unsigned _active_registrations_mask{0};
 	Registration _registrations[MAX_NUM_REGISTRATIONS] {};
 
-	uint8_t _first_external_operation_mode = vehicle_status_s::OPERATION_MODE_MAX;
-	uint8_t _last_external_operation_mode = vehicle_status_s::OPERATION_MODE_MAX;
+	uint8_t _first_external_operation_mode = mode_status_s::OPERATION_MODE_MAX;
+	uint8_t _last_external_operation_mode = mode_status_s::OPERATION_MODE_MAX;
 
 	// Current requests (async updates)
 	hrt_abstime _last_update{0};
+	hrt_abstime _last_status_publish{0};
 	unsigned _reply_received_mask{0};
 	bool _had_timeout{false};
 
 	uint8_t _current_request_id{0};
 
+	// Subscriptions
 	uORB::Subscription _arming_check_reply_sub{ORB_ID(arming_check_reply)};
+	uORB::Subscription _proxy_mode_status_sub{ORB_ID(proxy_mode_status)};
 
+	// Publications
 	uORB::Publication<arming_check_request_s> _arming_check_request_pub{ORB_ID(arming_check_request)};
+	uORB::Publication<proxy_mode_registration_status_s> _proxy_mode_registration_status_pub{ORB_ID(proxy_mode_registration_status)};
+
+	// Cached external mode status from mode_manager
+	proxy_mode_status_s _proxy_mode_status{};
+
 	DEFINE_PARAMETERS_CUSTOM_PARENT(HealthAndArmingCheckBase,
 					(ParamBool<px4::params::COM_MODE_ARM_CHK>) _param_com_mode_arm_chk
 				       );

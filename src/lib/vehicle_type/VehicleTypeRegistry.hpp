@@ -69,16 +69,16 @@ public:
 	static const VehicleTypeStrategy *getStrategy(uint8_t vehicle_type)
 	{
 		switch (vehicle_type) {
-		case vehicle_status_s::VEHICLE_TYPE_WHEEL_LOADER:
+		case vehicle_identity_s::VEHICLE_TYPE_WHEEL_LOADER:
 			return &_wheel_loader_strategy;
 
-		case vehicle_status_s::VEHICLE_TYPE_ROVER:
+		case vehicle_identity_s::VEHICLE_TYPE_ROVER:
 			return &_rover_strategy;
 
-		case vehicle_status_s::VEHICLE_TYPE_ROTARY_WING:
+		case vehicle_identity_s::VEHICLE_TYPE_ROTARY_WING:
 			return &_rotary_wing_strategy;
 
-		case vehicle_status_s::VEHICLE_TYPE_FIXED_WING:
+		case vehicle_identity_s::VEHICLE_TYPE_FIXED_WING:
 		default:
 			return &_fixed_wing_strategy;
 		}

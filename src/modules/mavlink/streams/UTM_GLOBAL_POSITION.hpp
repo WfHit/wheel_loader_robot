@@ -38,6 +38,7 @@
 #include <uORB/topics/vehicle_local_position.h>
 #include <uORB/topics/vehicle_global_position.h>
 #include <uORB/topics/vehicle_status.h>
+#include <uORB/topics/mode_status.h>
 #include <uORB/topics/vehicle_land_detected.h>
 
 class MavlinkStreamUTMGlobalPosition : public MavlinkStream
@@ -65,6 +66,7 @@ private:
 	uORB::Subscription _global_pos_sub{ORB_ID(vehicle_global_position)};
 	uORB::Subscription _position_setpoint_triplet_sub{ORB_ID(position_setpoint_triplet)};
 	uORB::Subscription _vehicle_status_sub{ORB_ID(vehicle_status)};
+	uORB::Subscription _mode_status_sub{ORB_ID(mode_status)};
 	uORB::Subscription _land_detected_sub{ORB_ID(vehicle_land_detected)};
 
 	bool send() override
@@ -138,14 +140,17 @@ private:
 			vehicle_status_s vehicle_status{};
 			_vehicle_status_sub.copy(&vehicle_status);
 
-			bool vehicle_in_auto_mode = (vehicle_status.timestamp > 0)
-						    && (vehicle_status.operation_mode == vehicle_status_s::OPERATION_MODE_AUTO_FOLLOW_TARGET
-							|| vehicle_status.operation_mode == vehicle_status_s::OPERATION_MODE_AUTO_LAND
-							|| vehicle_status.operation_mode == vehicle_status_s::OPERATION_MODE_AUTO_PRECLAND
-							|| vehicle_status.operation_mode == vehicle_status_s::OPERATION_MODE_AUTO_MISSION
-							|| vehicle_status.operation_mode == vehicle_status_s::OPERATION_MODE_AUTO_LOITER
-							|| vehicle_status.operation_mode == vehicle_status_s::OPERATION_MODE_AUTO_TAKEOFF
-							|| vehicle_status.operation_mode == vehicle_status_s::OPERATION_MODE_AUTO_RTL);
+			mode_status_s mode_status{};
+			_mode_status_sub.copy(&mode_status);
+
+			bool vehicle_in_auto_mode = (mode_status.timestamp > 0)
+						    && (mode_status.current_mode == mode_status_s::OPERATION_MODE_AUTO_FOLLOW_TARGET
+							|| mode_status.current_mode == mode_status_s::OPERATION_MODE_AUTO_LAND
+							|| mode_status.current_mode == mode_status_s::OPERATION_MODE_AUTO_PRECLAND
+							|| mode_status.current_mode == mode_status_s::OPERATION_MODE_AUTO_MISSION
+							|| mode_status.current_mode == mode_status_s::OPERATION_MODE_AUTO_LOITER
+							|| mode_status.current_mode == mode_status_s::OPERATION_MODE_AUTO_TAKEOFF
+							|| mode_status.current_mode == mode_status_s::OPERATION_MODE_AUTO_RTL);
 
 			// Handle next waypoint if it is valid
 			position_setpoint_triplet_s position_setpoint_triplet;

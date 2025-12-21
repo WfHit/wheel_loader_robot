@@ -133,48 +133,48 @@ bool CRSFTelemetry::send_flight_mode()
 	const char *flight_mode = "(unknown)";
 
 	switch (vehicle_status.operation_mode) {
-	case vehicle_status_s::OPERATION_MODE_MANUAL:
+	case mode_status_s::OPERATION_MODE_MANUAL:
 		flight_mode = "Manual";
 		break;
 
-	case vehicle_status_s::OPERATION_MODE_ALTCTL:
+	case mode_status_s::OPERATION_MODE_ALTCTL:
 		flight_mode = "Altitude";
 		break;
 
-	case vehicle_status_s::OPERATION_MODE_POSCTL:
+	case mode_status_s::OPERATION_MODE_POSCTL:
 		flight_mode = "Position";
 		break;
 
-	case vehicle_status_s::OPERATION_MODE_AUTO_RTL:
+	case mode_status_s::OPERATION_MODE_AUTO_RTL:
 		flight_mode = "Return";
 		break;
 
-	case vehicle_status_s::OPERATION_MODE_AUTO_MISSION:
+	case mode_status_s::OPERATION_MODE_AUTO_MISSION:
 		flight_mode = "Mission";
 		break;
 
-	case vehicle_status_s::OPERATION_MODE_AUTO_LOITER:
-	case vehicle_status_s::OPERATION_MODE_DESCEND:
-	case vehicle_status_s::OPERATION_MODE_AUTO_TAKEOFF:
-	case vehicle_status_s::OPERATION_MODE_AUTO_LAND:
-	case vehicle_status_s::OPERATION_MODE_AUTO_FOLLOW_TARGET:
-	case vehicle_status_s::OPERATION_MODE_AUTO_PRECLAND:
+	case mode_status_s::OPERATION_MODE_AUTO_LOITER:
+	case mode_status_s::OPERATION_MODE_DESCEND:
+	case mode_status_s::OPERATION_MODE_AUTO_TAKEOFF:
+	case mode_status_s::OPERATION_MODE_AUTO_LAND:
+	case mode_status_s::OPERATION_MODE_AUTO_FOLLOW_TARGET:
+	case mode_status_s::OPERATION_MODE_AUTO_PRECLAND:
 		flight_mode = "Auto";
 		break;
 
-	case vehicle_status_s::OPERATION_MODE_ACRO:
+	case mode_status_s::OPERATION_MODE_ACRO:
 		flight_mode = "Acro";
 		break;
 
-	case vehicle_status_s::OPERATION_MODE_TERMINATION:
+	case mode_status_s::OPERATION_MODE_TERMINATION:
 		flight_mode = "Terminate";
 		break;
 
-	case vehicle_status_s::OPERATION_MODE_OFFBOARD:
+	case mode_status_s::OPERATION_MODE_OFFBOARD:
 		flight_mode = "Offboard";
 		break;
 
-	case vehicle_status_s::OPERATION_MODE_STAB:
+	case mode_status_s::OPERATION_MODE_STAB:
 		flight_mode = "Stabilized";
 		break;
 	}

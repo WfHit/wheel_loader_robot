@@ -65,6 +65,7 @@
 #include <uORB/topics/vehicle_land_detected.h>
 #include <uORB/topics/vehicle_local_position.h>
 #include <uORB/topics/vehicle_status.h>
+#include <uORB/topics/vehicle_identity.h>
 #include <uORB/topics/vtol_vehicle_status.h>
 #include <uORB/topics/airspeed_wind.h>
 
@@ -357,7 +358,7 @@ AirspeedModule::Run()
 		// for fixed-wing landings.
 		const bool in_air_fixed_wing = !_vehicle_land_detected.landed &&
 					       _position_setpoint.type != position_setpoint_s::SETPOINT_TYPE_LAND &&
-					       _vehicle_status.vehicle_type == vehicle_status_s::VEHICLE_TYPE_FIXED_WING;
+					       _vehicle_status.vehicle_type == vehicle_identity_s::VEHICLE_TYPE_FIXED_WING;
 
 		const matrix::Vector3f vI(_vehicle_local_position.vx, _vehicle_local_position.vy, _vehicle_local_position.vz);
 
@@ -548,7 +549,7 @@ void AirspeedModule::poll_topics()
 		vehicle_attitude_s vehicle_attitude;
 		_vehicle_attitude_sub.update(&vehicle_attitude);
 
-		if (_vehicle_status.is_vtol_tailsitter && _vehicle_status.vehicle_type == vehicle_status_s::VEHICLE_TYPE_FIXED_WING) {
+		if (_vehicle_status.is_vtol_tailsitter && _vehicle_status.vehicle_type == vehicle_identity_s::VEHICLE_TYPE_FIXED_WING) {
 
 			// if the vehicle is a tailsitter we have to rotate the attitude by 90° to get to the airspeed frame
 			_q_att = Quatf(vehicle_attitude.q) * Quatf(matrix::Eulerf(0.f, M_PI_2_F, 0.f));
@@ -571,7 +572,7 @@ void AirspeedModule::update_wind_estimator_sideslip()
 	_wind_estimator_sideslip.update(_time_now_usec);
 
 	if (_gnss_lpos_valid
-	    && _vehicle_status.vehicle_type == vehicle_status_s::VEHICLE_TYPE_FIXED_WING
+	    && _vehicle_status.vehicle_type == vehicle_identity_s::VEHICLE_TYPE_FIXED_WING
 	    && !_vehicle_land_detected.landed) {
 		Vector3f vI(_vehicle_local_position.vx, _vehicle_local_position.vy, _vehicle_local_position.vz);
 

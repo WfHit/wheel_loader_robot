@@ -157,7 +157,7 @@ float FixedwingAttitudeControl::get_airspeed_constrained()
 		// VTOL: if we have no airspeed available and we are in hover mode then assume the lowest airspeed possible
 		// this assumption is good as long as the vehicle is not hovering in a headwind which is much larger
 		// than the stall airspeed
-		if (_vehicle_status.is_vtol && _vehicle_status.vehicle_type == vehicle_status_s::VEHICLE_TYPE_ROTARY_WING
+		if (_vehicle_status.is_vtol && _vehicle_status.vehicle_type == vehicle_identity_s::VEHICLE_TYPE_ROTARY_WING
 		    && !_vehicle_status.in_transition_mode) {
 			airspeed = _param_fw_airspd_stall.get();
 		}
@@ -262,7 +262,7 @@ void FixedwingAttitudeControl::Run()
 		_vehicle_status_sub.update(&_vehicle_status);
 		const bool is_in_transition_except_tailsitter = _vehicle_status.in_transition_mode
 				&& !_vehicle_status.is_vtol_tailsitter;
-		const bool is_fixed_wing = _vehicle_status.vehicle_type == vehicle_status_s::VEHICLE_TYPE_FIXED_WING;
+		const bool is_fixed_wing = _vehicle_status.vehicle_type == vehicle_identity_s::VEHICLE_TYPE_FIXED_WING;
 		_in_fw_or_transition_wo_tailsitter_transition =  is_fixed_wing || is_in_transition_except_tailsitter;
 
 		_vehicle_control_mode_sub.update(&_vcontrol_mode);
@@ -276,7 +276,7 @@ void FixedwingAttitudeControl::Run()
 		}
 
 		/* if we are in rotary wing mode, do nothing */
-		if (_vehicle_status.vehicle_type == vehicle_status_s::VEHICLE_TYPE_ROTARY_WING && !_vehicle_status.is_vtol) {
+		if (_vehicle_status.vehicle_type == vehicle_identity_s::VEHICLE_TYPE_ROTARY_WING && !_vehicle_status.is_vtol) {
 			perf_end(_loop_perf);
 			return;
 		}

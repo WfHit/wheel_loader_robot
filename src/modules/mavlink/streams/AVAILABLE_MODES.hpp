@@ -44,7 +44,7 @@ class MavlinkStreamAvailableModes : public MavlinkStream
 public:
 	static MavlinkStream *new_instance(Mavlink *mavlink) { return new MavlinkStreamAvailableModes(mavlink); }
 
-	~MavlinkStreamAvailableModes() { delete[] _external_mode_names; }
+	~MavlinkStreamAvailableModes() { delete[] _proxy_mode_names; }
 
 	static constexpr const char *get_name_static() { return "AVAILABLE_MODES"; }
 	static constexpr uint16_t get_id_static() { return MAVLINK_MSG_ID_AVAILABLE_MODES; }
@@ -58,15 +58,15 @@ public:
 	}
 
 private:
-	static constexpr int MAX_NUM_EXTERNAL_MODES = vehicle_status_s::OPERATION_MODE_EXTERNAL8 -
-			vehicle_status_s::OPERATION_MODE_EXTERNAL1 + 1;
+	static constexpr int MAX_NUM_EXTERNAL_MODES = mode_status_s::OPERATION_MODE_EXTERNAL8 -
+			mode_status_s::OPERATION_MODE_EXTERNAL1 + 1;
 
 	explicit MavlinkStreamAvailableModes(Mavlink *mavlink) : MavlinkStream(mavlink) {}
 
-	struct ExternalModeName {
+	struct ProxyModeName {
 		char name[sizeof(register_ext_component_reply_s::name)] {};
 	};
-	ExternalModeName *_external_mode_names{nullptr};
+	ProxyModeName *_proxy_mode_names{nullptr};
 
 	uORB::Subscription _vehicle_status_sub{ORB_ID(vehicle_status)};
 	uORB::Subscription _register_ext_component_reply_sub{ORB_ID(register_ext_component_reply)};
@@ -94,18 +94,18 @@ private:
 		}
 
 		if (available_modes.standard_mode == MAV_STANDARD_MODE_NON_STANDARD) {
-			static_assert(sizeof(available_modes.mode_name) >= sizeof(ExternalModeName::name), "mode name too short");
+			static_assert(sizeof(available_modes.mode_name) >= sizeof(ProxyModeName::name), "mode name too short");
 
 			// Is it an external mode?
-			unsigned external_mode_index = nav_state - vehicle_status_s::OPERATION_MODE_EXTERNAL1;
+			unsigned external_mode_index = nav_state - mode_status_s::OPERATION_MODE_EXTERNAL1;
 
-			if (nav_state >= vehicle_status_s::OPERATION_MODE_EXTERNAL1 && external_mode_index < MAX_NUM_EXTERNAL_MODES) {
+			if (nav_state >= mode_status_s::OPERATION_MODE_EXTERNAL1 && external_mode_index < MAX_NUM_EXTERNAL_MODES) {
 				if (cannot_be_selected) {
 					// If not selectable, it's not registered
 					strcpy(available_modes.mode_name, "(Mode not available)");
 
-				} else if (_external_mode_names) {
-					strncpy(available_modes.mode_name, _external_mode_names[external_mode_index].name, sizeof(available_modes.mode_name));
+				} else if (_proxy_mode_names) {
+					strncpy(available_modes.mode_name, _proxy_mode_names[external_mode_index].name, sizeof(available_modes.mode_name));
 					available_modes.mode_name[sizeof(available_modes.mode_name) - 1] = '\0';
 				}
 
@@ -142,7 +142,7 @@ private:
 		if (mode_index == 0) { // All
 			int cur_mode_index = 1;
 
-			for (uint8_t nav_state = 0; nav_state < vehicle_status_s::OPERATION_MODE_MAX; ++nav_state) {
+			for (uint8_t nav_state = 0; nav_state < mode_status_s::OPERATION_MODE_MAX; ++nav_state) {
 				if ((1u << nav_state) & vehicle_status.valid_operation_modes_mask) {
 					send_single_mode(vehicle_status, cur_mode_index, total_num_modes, nav_state);
 					++cur_mode_index;
@@ -156,7 +156,7 @@ private:
 			int cur_index = 0;
 			uint8_t nav_state = 0;
 
-			for (; nav_state < vehicle_status_s::OPERATION_MODE_MAX; ++nav_state) {
+			for (; nav_state < mode_status_s::OPERATION_MODE_MAX; ++nav_state) {
 				if ((1u << nav_state) & vehicle_status.valid_operation_modes_mask) {
 					if (++cur_index == mode_index) {
 						break;
@@ -164,7 +164,7 @@ private:
 				}
 			}
 
-			if (nav_state < vehicle_status_s::OPERATION_MODE_MAX) {
+			if (nav_state < mode_status_s::OPERATION_MODE_MAX) {
 				send_single_mode(vehicle_status, mode_index, total_num_modes, nav_state);
 			}
 
@@ -182,14 +182,14 @@ private:
 
 		if (_register_ext_component_reply_sub.update(&reply)) {
 			if (reply.success && reply.mode_id != -1) {
-				if (!_external_mode_names) {
-					_external_mode_names = new ExternalModeName[MAX_NUM_EXTERNAL_MODES];
+				if (!_proxy_mode_names) {
+					_proxy_mode_names = new ProxyModeName[MAX_NUM_EXTERNAL_MODES];
 				}
 
-				unsigned mode_index = reply.mode_id - vehicle_status_s::OPERATION_MODE_EXTERNAL1;
+				unsigned mode_index = reply.mode_id - mode_status_s::OPERATION_MODE_EXTERNAL1;
 
-				if (_external_mode_names && mode_index < MAX_NUM_EXTERNAL_MODES) {
-					memcpy(_external_mode_names[mode_index].name, reply.name, sizeof(ExternalModeName::name));
+				if (_proxy_mode_names && mode_index < MAX_NUM_EXTERNAL_MODES) {
+					memcpy(_proxy_mode_names[mode_index].name, reply.name, sizeof(ProxyModeName::name));
 				}
 
 				dynamic_update = true;

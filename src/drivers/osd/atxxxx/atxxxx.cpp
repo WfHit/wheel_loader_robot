@@ -379,48 +379,48 @@ OSDatxxxx::get_flight_mode(uint8_t nav_state)
 	const char *flight_mode = "UNKNOWN";
 
 	switch (nav_state) {
-	case vehicle_status_s::OPERATION_MODE_MANUAL:
+	case mode_status_s::OPERATION_MODE_MANUAL:
 		flight_mode = "MANUAL";
 		break;
 
-	case vehicle_status_s::OPERATION_MODE_ALTCTL:
+	case mode_status_s::OPERATION_MODE_ALTCTL:
 		flight_mode = "ALTITUDE";
 		break;
 
-	case vehicle_status_s::OPERATION_MODE_POSCTL:
+	case mode_status_s::OPERATION_MODE_POSCTL:
 		flight_mode = "POSITION";
 		break;
 
-	case vehicle_status_s::OPERATION_MODE_AUTO_RTL:
+	case mode_status_s::OPERATION_MODE_AUTO_RTL:
 		flight_mode = "RETURN";
 		break;
 
-	case vehicle_status_s::OPERATION_MODE_AUTO_MISSION:
+	case mode_status_s::OPERATION_MODE_AUTO_MISSION:
 		flight_mode = "MISSION";
 		break;
 
-	case vehicle_status_s::OPERATION_MODE_AUTO_LOITER:
-	case vehicle_status_s::OPERATION_MODE_DESCEND:
-	case vehicle_status_s::OPERATION_MODE_AUTO_TAKEOFF:
-	case vehicle_status_s::OPERATION_MODE_AUTO_LAND:
-	case vehicle_status_s::OPERATION_MODE_AUTO_FOLLOW_TARGET:
-	case vehicle_status_s::OPERATION_MODE_AUTO_PRECLAND:
+	case mode_status_s::OPERATION_MODE_AUTO_LOITER:
+	case mode_status_s::OPERATION_MODE_DESCEND:
+	case mode_status_s::OPERATION_MODE_AUTO_TAKEOFF:
+	case mode_status_s::OPERATION_MODE_AUTO_LAND:
+	case mode_status_s::OPERATION_MODE_AUTO_FOLLOW_TARGET:
+	case mode_status_s::OPERATION_MODE_AUTO_PRECLAND:
 		flight_mode = "AUTO";
 		break;
 
-	case vehicle_status_s::OPERATION_MODE_ACRO:
+	case mode_status_s::OPERATION_MODE_ACRO:
 		flight_mode = "ACRO";
 		break;
 
-	case vehicle_status_s::OPERATION_MODE_TERMINATION:
+	case mode_status_s::OPERATION_MODE_TERMINATION:
 		flight_mode = "TERMINATE";
 		break;
 
-	case vehicle_status_s::OPERATION_MODE_OFFBOARD:
+	case mode_status_s::OPERATION_MODE_OFFBOARD:
 		flight_mode = "OFFBOARD";
 		break;
 
-	case vehicle_status_s::OPERATION_MODE_STAB:
+	case mode_status_s::OPERATION_MODE_STAB:
 		flight_mode = "STABILIZED";
 		break;
 	}

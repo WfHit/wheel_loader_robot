@@ -437,7 +437,7 @@ void FailsafeBase::getSelectedAction(const State &state, const failsafe_flags_s 
 	returned_state.updated_user_intended_mode = state.user_intended_mode;
 	returned_state.cause = Cause::Generic;
 
-	if (state.user_intended_mode == vehicle_status_s::OPERATION_MODE_TERMINATION
+	if (state.user_intended_mode == mode_status_s::OPERATION_MODE_TERMINATION
 	    || _selected_action == Action::Terminate) { // Terminate never clears
 		returned_state.action = Action::Terminate;
 		return;
@@ -500,7 +500,7 @@ void FailsafeBase::getSelectedAction(const State &state, const failsafe_flags_s 
 	if (actionAllowsUserTakeover(selected_action) && takeover_allowed) {
 		if (!_user_takeover_active && rc_sticks_takeover_request) {
 			// TODO: if the user intended mode is a stick-controlled mode, switch back to that instead
-			returned_state.updated_user_intended_mode = vehicle_status_s::OPERATION_MODE_POSCTL;
+			returned_state.updated_user_intended_mode = mode_status_s::OPERATION_MODE_POSCTL;
 		}
 
 		selected_action = Action::Warn;
@@ -527,7 +527,7 @@ void FailsafeBase::getSelectedAction(const State &state, const failsafe_flags_s 
 	switch (selected_action) {
 
 	case Action::FallbackPosCtrl:
-		if (modeCanRun(status_flags, vehicle_status_s::OPERATION_MODE_POSCTL)) {
+		if (modeCanRun(status_flags, mode_status_s::OPERATION_MODE_POSCTL)) {
 			selected_action = Action::FallbackPosCtrl;
 			break;
 		}
@@ -536,7 +536,7 @@ void FailsafeBase::getSelectedAction(const State &state, const failsafe_flags_s 
 
 	// fallthrough
 	case Action::FallbackAltCtrl:
-		if (modeCanRun(status_flags, vehicle_status_s::OPERATION_MODE_ALTCTL)) {
+		if (modeCanRun(status_flags, mode_status_s::OPERATION_MODE_ALTCTL)) {
 			selected_action = Action::FallbackAltCtrl;
 			break;
 		}
@@ -545,7 +545,7 @@ void FailsafeBase::getSelectedAction(const State &state, const failsafe_flags_s 
 
 	// fallthrough
 	case Action::FallbackStab:
-		if (modeCanRun(status_flags, vehicle_status_s::OPERATION_MODE_STAB)) {
+		if (modeCanRun(status_flags, mode_status_s::OPERATION_MODE_STAB)) {
 			selected_action = Action::FallbackStab;
 			break;
 		} // else: fall through here as well. If stabilized isn't available, we most certainly end up in Terminate
@@ -554,7 +554,7 @@ void FailsafeBase::getSelectedAction(const State &state, const failsafe_flags_s 
 
 	// fallthrough
 	case Action::Hold:
-		if (modeCanRun(status_flags, vehicle_status_s::OPERATION_MODE_AUTO_LOITER)) {
+		if (modeCanRun(status_flags, mode_status_s::OPERATION_MODE_AUTO_LOITER)) {
 			selected_action = Action::Hold;
 			break;
 		}
@@ -563,7 +563,7 @@ void FailsafeBase::getSelectedAction(const State &state, const failsafe_flags_s 
 
 	// fallthrough
 	case Action::RTL:
-		if (modeCanRun(status_flags, vehicle_status_s::OPERATION_MODE_AUTO_RTL)) {
+		if (modeCanRun(status_flags, mode_status_s::OPERATION_MODE_AUTO_RTL)) {
 			selected_action = Action::RTL;
 			break;
 		}
@@ -572,7 +572,7 @@ void FailsafeBase::getSelectedAction(const State &state, const failsafe_flags_s 
 
 	// fallthrough
 	case Action::Land:
-		if (modeCanRun(status_flags, vehicle_status_s::OPERATION_MODE_AUTO_LAND)) {
+		if (modeCanRun(status_flags, mode_status_s::OPERATION_MODE_AUTO_LAND)) {
 			selected_action = Action::Land;
 			break;
 		}
@@ -581,7 +581,7 @@ void FailsafeBase::getSelectedAction(const State &state, const failsafe_flags_s 
 
 	// fallthrough
 	case Action::Descend:
-		if (modeCanRun(status_flags, vehicle_status_s::OPERATION_MODE_DESCEND)) {
+		if (modeCanRun(status_flags, mode_status_s::OPERATION_MODE_DESCEND)) {
 			selected_action = Action::Descend;
 			break;
 		}
@@ -605,28 +605,28 @@ void FailsafeBase::getSelectedAction(const State &state, const failsafe_flags_s 
 
 	// UX improvement (this is optional for safety): change failsafe to a warning in certain situations.
 	// If already landing, do not go into RTL
-	if (returned_state.updated_user_intended_mode == vehicle_status_s::OPERATION_MODE_AUTO_LAND) {
+	if (returned_state.updated_user_intended_mode == mode_status_s::OPERATION_MODE_AUTO_LAND) {
 		if ((selected_action == Action::RTL || returned_state.delayed_action == Action::RTL)
-		    && modeCanRun(status_flags, vehicle_status_s::OPERATION_MODE_AUTO_LAND)) {
+		    && modeCanRun(status_flags, mode_status_s::OPERATION_MODE_AUTO_LAND)) {
 			selected_action = Action::Warn;
 			returned_state.delayed_action = Action::None;
 		}
 	}
 
 	// If already in RTL, do not go into RTL again (would cause a Hold delay first, then re-start RTL)
-	if (returned_state.updated_user_intended_mode == vehicle_status_s::OPERATION_MODE_AUTO_RTL) {
+	if (returned_state.updated_user_intended_mode == mode_status_s::OPERATION_MODE_AUTO_RTL) {
 		if ((selected_action == Action::RTL || returned_state.delayed_action == Action::RTL)
-		    && modeCanRun(status_flags, vehicle_status_s::OPERATION_MODE_AUTO_RTL)) {
+		    && modeCanRun(status_flags, mode_status_s::OPERATION_MODE_AUTO_RTL)) {
 			selected_action = Action::Warn;
 			returned_state.delayed_action = Action::None;
 		}
 	}
 
 	// If already precision landing, do not go into RTL or Land
-	if (returned_state.updated_user_intended_mode == vehicle_status_s::OPERATION_MODE_AUTO_PRECLAND) {
+	if (returned_state.updated_user_intended_mode == mode_status_s::OPERATION_MODE_AUTO_PRECLAND) {
 		if ((selected_action == Action::RTL || selected_action == Action::Land ||
 		     returned_state.delayed_action == Action::RTL || returned_state.delayed_action == Action::Land)
-		    && modeCanRun(status_flags, vehicle_status_s::OPERATION_MODE_AUTO_PRECLAND)) {
+		    && modeCanRun(status_flags, mode_status_s::OPERATION_MODE_AUTO_PRECLAND)) {
 			selected_action = Action::Warn;
 			returned_state.delayed_action = Action::None;
 		}
@@ -646,7 +646,7 @@ void FailsafeBase::clearDelayIfNeeded(const State &state,
 	// - Already in a failsafe
 	// - Hold not available
 	// - Takeover is active (due to a mode switch during the delay)
-	if (_selected_action > Action::Hold || !modeCanRun(status_flags, vehicle_status_s::OPERATION_MODE_AUTO_LOITER)
+	if (_selected_action > Action::Hold || !modeCanRun(status_flags, mode_status_s::OPERATION_MODE_AUTO_LOITER)
 	    || _user_takeover_active) {
 		if (_current_delay > 0) {
 			PX4_DEBUG("Clearing delay, Hold not available, already in failsafe or taken over");
@@ -660,19 +660,19 @@ uint8_t FailsafeBase::modeFromAction(const Action &action, uint8_t user_intended
 {
 	switch (action) {
 
-	case Action::FallbackPosCtrl: return vehicle_status_s::OPERATION_MODE_POSCTL;
+	case Action::FallbackPosCtrl: return mode_status_s::OPERATION_MODE_POSCTL;
 
-	case Action::FallbackAltCtrl: return vehicle_status_s::OPERATION_MODE_ALTCTL;
+	case Action::FallbackAltCtrl: return mode_status_s::OPERATION_MODE_ALTCTL;
 
-	case Action::FallbackStab: return vehicle_status_s::OPERATION_MODE_STAB;
+	case Action::FallbackStab: return mode_status_s::OPERATION_MODE_STAB;
 
-	case Action::Hold: return vehicle_status_s::OPERATION_MODE_AUTO_LOITER;
+	case Action::Hold: return mode_status_s::OPERATION_MODE_AUTO_LOITER;
 
-	case Action::RTL: return vehicle_status_s::OPERATION_MODE_AUTO_RTL;
+	case Action::RTL: return mode_status_s::OPERATION_MODE_AUTO_RTL;
 
-	case Action::Land: return vehicle_status_s::OPERATION_MODE_AUTO_LAND;
+	case Action::Land: return mode_status_s::OPERATION_MODE_AUTO_LAND;
 
-	case Action::Descend: return vehicle_status_s::OPERATION_MODE_DESCEND;
+	case Action::Descend: return mode_status_s::OPERATION_MODE_DESCEND;
 
 	case Action::Terminate:
 	case Action::Disarm:

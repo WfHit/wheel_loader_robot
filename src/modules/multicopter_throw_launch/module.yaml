@@ -1,0 +1,29 @@
+module_name: Multicopter Throw Launch
+
+parameters:
+  - group: Multicopter Throw Launch
+    definitions:
+      COM_THROW_EN:
+        description:
+          short: Enable throw-start
+          long: |
+            Allows to start the vehicle by throwing it into the air.
+        type: boolean
+        default: 0
+
+      COM_THROW_SPEED:
+        description:
+          short: Minimum speed for the throw start
+          long: |
+            When the throw launch is enabled, the drone will only allow motors to spin after this speed
+            is exceeded before detecting the freefall. This is a safety feature to ensure the drone does
+            not turn on after accidental drop or a rapid movement before the throw.
+
+            Set to 0 to disable.
+        type: float
+        unit: m/s
+        min: 0
+        max: 30
+        decimal: 1
+        increment: 0.1
+        default: 5
